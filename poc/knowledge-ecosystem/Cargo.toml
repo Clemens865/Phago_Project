@@ -1,0 +1,15 @@
+[package]
+name = "phago-poc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Proof of concept: self-organizing knowledge ecosystem"
+
+[[bin]]
+name = "phago-poc"
+path = "src/main.rs"
+
+[dependencies]
+phago-core = { workspace = true }
+phago-runtime = { workspace = true }
+phago-agents = { workspace = true }
