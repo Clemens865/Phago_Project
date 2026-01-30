@@ -1,0 +1,21 @@
+# Rust
+/target/
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Flow
+.claude-flow/data/
+.claude-flow/logs/
+.claude-flow/sessions/
+
+# Phago runtime data
+.phago/
