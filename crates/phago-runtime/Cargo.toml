@@ -1,0 +1,16 @@
+[package]
+name = "phago-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Colony management, scheduling, and WASM host runtime for Phago"
+
+[dependencies]
+phago-core = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+petgraph = { workspace = true }
+
+[dev-dependencies]
+phago-agents = { workspace = true }

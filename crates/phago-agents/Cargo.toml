@@ -1,0 +1,10 @@
+[package]
+name = "phago-agents"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Reference agent implementations using Phago biological primitives"
+
+[dependencies]
+phago-core = { workspace = true }
+uuid = { workspace = true }
