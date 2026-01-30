@@ -1,0 +1,9 @@
+[package]
+name = "phago-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "WASM compilation targets and host-agent bindings for Phago"
+
+[dependencies]
+phago-core = { workspace = true }
