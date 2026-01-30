@@ -1,17 +1,19 @@
 //! Phago Proof of Concept — Self-Organizing Knowledge Ecosystem
 //!
-//! Phase 2 Demo: Multiple agents self-organize around documents,
-//! build a knowledge graph through digestion and Hebbian wiring,
-//! deposit traces (stigmergy), and die when idle (apoptosis).
+//! Phase 3 Demo: Multiple agent types self-organize around documents.
+//! Digesters break down text. Synthesizers detect cross-document patterns
+//! once quorum is reached. Sentinels mature and detect anomalies.
 
 use phago_agents::digester::Digester;
+use phago_agents::sentinel::Sentinel;
+use phago_agents::synthesizer::Synthesizer;
 use phago_core::types::*;
 use phago_runtime::colony::{Colony, ColonyEvent};
 
 fn main() {
     println!("╔══════════════════════════════════════════════════════╗");
     println!("║  PHAGO — Biological Computing Primitives            ║");
-    println!("║  Phase 2: The Colony Self-Organizes                 ║");
+    println!("║  Phase 3: Emergence — Collective Intelligence       ║");
     println!("╚══════════════════════════════════════════════════════╝");
     println!();
 
@@ -46,6 +48,13 @@ fn main() {
          division. RNA polymerase transcribes DNA into messenger RNA. \
          Ribosomes translate mRNA into proteins using transfer RNA and \
          amino acids.", Position::new(10.0, 0.0)),
+
+        // Anomalous document — unrelated to biology, should trigger Sentinel
+        ("Quantum Computing", "Quantum bits exploit superposition and \
+         entanglement to perform parallel computations. Error correction \
+         in quantum circuits requires topological qubits and surface codes. \
+         Shor's algorithm factors large integers exponentially faster than \
+         classical methods.", Position::new(15.0, 15.0)),
     ];
 
     for (title, content, pos) in &docs {
@@ -58,29 +67,49 @@ fn main() {
     println!("── Spawning Agents ─────────────────────────────────");
     println!();
 
-    let agent_positions = vec![
+    // Digesters — one near each document cluster
+    let digester_positions = vec![
         Position::new(0.0, 0.0),
         Position::new(5.0, 0.0),
         Position::new(0.0, 5.0),
         Position::new(5.0, 5.0),
         Position::new(10.0, 0.0),
-        Position::new(2.5, 2.5), // Center — will explore
-        Position::new(7.5, 2.5), // Between docs
+        Position::new(15.0, 15.0), // Near anomalous doc
+        Position::new(2.5, 2.5),   // Explorer
     ];
 
-    for (i, pos) in agent_positions.iter().enumerate() {
+    for (i, pos) in digester_positions.iter().enumerate() {
         colony.spawn(Box::new(
-            Digester::new(*pos).with_max_idle(40),
+            Digester::new(*pos).with_max_idle(60),
         ));
-        println!("  [agent {}] Digester at ({:.1}, {:.1})", i + 1, pos.x, pos.y);
+        println!("  [digester  {}] at ({:.1}, {:.1})", i + 1, pos.x, pos.y);
     }
+
+    // Synthesizers — positioned centrally to survey the whole substrate
+    for (i, pos) in [Position::new(5.0, 2.5), Position::new(7.5, 5.0)].iter().enumerate() {
+        colony.spawn(Box::new(Synthesizer::new(*pos)));
+        println!("  [synthesizer {}] at ({:.1}, {:.1})", i + 1, pos.x, pos.y);
+    }
+
+    // Sentinels — positioned to observe different regions
+    for (i, pos) in [Position::new(2.5, 2.5), Position::new(12.0, 10.0)].iter().enumerate() {
+        colony.spawn(Box::new(Sentinel::new(*pos)));
+        println!("  [sentinel  {}] at ({:.1}, {:.1})", i + 1, pos.x, pos.y);
+    }
+
+    println!();
+    println!("  Total agents: {} digesters, 2 synthesizers, 2 sentinels",
+        digester_positions.len());
     println!();
 
     // --- Run simulation ---
-    println!("── Running Simulation (50 ticks) ────────────────────");
+    println!("── Running Simulation (80 ticks) ────────────────────");
     println!();
 
-    for tick_num in 1..=50 {
+    let mut total_insights = 0u64;
+    let mut total_anomalies = 0u64;
+
+    for tick_num in 1..=80 {
         let events = colony.tick();
 
         for event in &events {
@@ -94,11 +123,20 @@ fn main() {
                     );
                 }
                 ColonyEvent::Presented { id, fragment_count, .. } => {
+                    // Check if this is an insight or anomaly presentation
+                    let agent_type = if fragment_count > &0 {
+                        // We can infer from agent type string, but since we
+                        // don't have that here, just report generically
+                        "concepts"
+                    } else {
+                        "fragments"
+                    };
                     println!(
-                        "  [tick {:>2}] PRESENT: Agent {:.8} → {} concepts added to graph",
+                        "  [tick {:>2}] PRESENT: Agent {:.8} → {} {} added to graph",
                         tick_num,
                         id.0.to_string(),
-                        fragment_count
+                        fragment_count,
+                        agent_type,
                     );
                 }
                 ColonyEvent::Wired { id, connection_count } => {
@@ -146,20 +184,34 @@ fn main() {
     println!("    Digested:           {}", stats.documents_digested);
     println!();
     println!("  Knowledge Graph:");
-    println!("    Concept nodes:      {}", stats.graph_nodes);
+    println!("    Total nodes:        {}", stats.graph_nodes);
     println!("    Connections:        {}", stats.graph_edges);
     println!();
 
     // Show top concepts (nodes with highest access count)
     use phago_core::topology::TopologyGraph;
     let graph = colony.substrate().graph();
-    let mut nodes: Vec<_> = graph.all_nodes().iter().filter_map(|id| {
-        graph.get_node(id).map(|n| (n.label.clone(), n.access_count))
-    }).collect();
-    nodes.sort_by(|a, b| b.1.cmp(&a.1));
+    let mut concept_nodes = Vec::new();
+    let mut insight_nodes = Vec::new();
+    let mut anomaly_nodes = Vec::new();
+
+    for id in graph.all_nodes() {
+        if let Some(n) = graph.get_node(&id) {
+            if n.label.starts_with("[BRIDGE") || n.label.starts_with("[CLUSTER") {
+                insight_nodes.push((n.label.clone(), n.access_count));
+                total_insights += 1;
+            } else if n.label.starts_with("[ANOMALY") {
+                anomaly_nodes.push((n.label.clone(), n.access_count));
+                total_anomalies += 1;
+            } else {
+                concept_nodes.push((n.label.clone(), n.access_count));
+            }
+        }
+    }
+    concept_nodes.sort_by(|a, b| b.1.cmp(&a.1));
 
     println!("  Top Concepts (by reinforcement):");
-    for (label, count) in nodes.iter().take(10) {
+    for (label, count) in concept_nodes.iter().take(10) {
         let bar = "#".repeat(*count as usize);
         println!("    {:20} ({}) {}", label, count, bar);
     }
@@ -175,13 +227,39 @@ fn main() {
 
     println!("  Strongest Connections:");
     for (from, to, weight, co_act) in edges.iter().take(10) {
-        println!("    {} ←→ {} (weight: {:.3}, co-activations: {})", from, to, weight, co_act);
+        println!("    {} <-> {} (weight: {:.3}, co-activations: {})", from, to, weight, co_act);
+    }
+
+    // --- Phase 3 specific output ---
+    println!();
+    println!("── Emergence & Anomaly Detection ────────────────────");
+    println!();
+
+    if !insight_nodes.is_empty() {
+        println!("  Synthesizer Insights ({}):", insight_nodes.len());
+        for (label, _) in &insight_nodes {
+            println!("    {}", label);
+        }
+    } else {
+        println!("  Synthesizer Insights: (none detected — quorum may not have been reached)");
+    }
+    println!();
+
+    if !anomaly_nodes.is_empty() {
+        println!("  Sentinel Anomalies ({}):", anomaly_nodes.len());
+        for (label, _) in &anomaly_nodes {
+            println!("    {}", label);
+        }
+    } else {
+        println!("  Sentinel Anomalies: (none detected — maturation/scanning may need more ticks)");
     }
 
     println!();
     println!("══════════════════════════════════════════════════════");
-    println!("  Phase 2 complete. The colony self-organizes.");
-    println!("  Knowledge graph built from {} documents by {} agents.",
-        stats.documents_digested, stats.total_spawned);
+    println!("  Phase 3 complete. The colony demonstrates emergence.");
+    println!("  {} documents → {} concepts, {} insights, {} anomalies",
+        stats.documents_digested, concept_nodes.len(), total_insights, total_anomalies);
+    println!("  by {} agents ({} digesters, 2 synthesizers, 2 sentinels).",
+        stats.total_spawned, digester_positions.len());
     println!("══════════════════════════════════════════════════════");
 }

@@ -371,6 +371,7 @@ impl Agent for Digester {
                             label: label.clone(),
                             source_document: doc_id,
                             position: self.position,
+                            node_type: NodeType::Concept,
                         })
                         .collect();
                     AgentAction::PresentFragments(presentations)

@@ -178,11 +178,11 @@ impl Colony {
                             }
                             existing_id
                         } else {
-                            // Create new concept node
+                            // Create new node with the type specified by the agent
                             let node = NodeData {
                                 id: NodeId::new(),
                                 label: frag.label.clone(),
-                                node_type: NodeType::Concept,
+                                node_type: frag.node_type.clone(),
                                 position: frag.position,
                                 access_count: 1,
                                 created_tick: tick,
@@ -193,11 +193,16 @@ impl Colony {
                     }
 
                     // Wire co-occurring concepts (from same document)
+                    // Only wire Concept nodes — Insight/Anomaly nodes don't co-occur
+                    let concept_node_ids: Vec<NodeId> = node_ids.iter().filter(|id| {
+                        self.substrate.graph().get_node(id)
+                            .map_or(false, |n| n.node_type == NodeType::Concept)
+                    }).copied().collect();
                     let mut wire_events = Vec::new();
-                    for i in 0..node_ids.len() {
-                        for j in (i + 1)..node_ids.len() {
-                            let from = node_ids[i];
-                            let to = node_ids[j];
+                    for i in 0..concept_node_ids.len() {
+                        for j in (i + 1)..concept_node_ids.len() {
+                            let from = concept_node_ids[i];
+                            let to = concept_node_ids[j];
                             if let Some(edge) = self.substrate.graph_mut().get_edge_mut(&from, &to) {
                                 // Strengthen existing connection
                                 edge.weight = (edge.weight + 0.1).min(1.0);

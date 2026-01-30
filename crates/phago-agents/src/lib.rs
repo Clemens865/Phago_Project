@@ -6,5 +6,9 @@
 //! specific biological capabilities:
 //!
 //! - **Digester** — DIGEST + SENSE + APOPTOSE — consumes and processes text input
+//! - **Synthesizer** — EMERGE + SENSE + APOPTOSE — collective intelligence through quorum sensing
+//! - **Sentinel** — NEGATE + SENSE + APOPTOSE — anomaly detection through negative selection
 
 pub mod digester;
+pub mod sentinel;
+pub mod synthesizer;

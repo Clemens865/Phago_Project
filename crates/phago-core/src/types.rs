@@ -328,6 +328,8 @@ pub struct FragmentPresentation {
     pub label: String,
     pub source_document: DocumentId,
     pub position: Position,
+    /// What type of node to create. Defaults to Concept.
+    pub node_type: NodeType,
 }
 
 /// Data stored in a knowledge graph node.
