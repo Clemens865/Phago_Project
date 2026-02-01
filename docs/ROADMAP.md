@@ -27,7 +27,7 @@ The core biological computing framework with 10 primitives, 3 agent types, and q
 
 | # | Milestone | Status | Description |
 |---|-----------|--------|-------------|
-| 1 | Query Engine | Not started | Graph traversal from query terms following strongest connections |
+| 1 | Query Engine | **Done** | Graph traversal from query terms following strongest connections |
 | 2 | Document Loader | Not started | CLI that takes a directory of text files as input |
 | 3 | Relevance Scoring | Not started | Rank retrieved concepts by path weight + access count |
 | 4 | Feedback Loop | Not started | Query results reinforce traversed paths (the graph learns from queries) |
@@ -88,8 +88,11 @@ Does a self-organized Hebbian graph produce better training data than a statical
 | Date | Branch | Activity | Outcome |
 |------|--------|----------|---------|
 | 2026-02-01 | main | Phase 5 implemented: metrics, visualization, tests | 51 tests, interactive HTML viz |
-| 2026-02-01 | main | Pushed to GitHub, README added | https://github.com/Clemens865/Phago_Project |
-| 2026-02-01 | all | Created three research branches with plans | bio-rag, agent-evolution, kg-training |
+| 2026-02-01 | main | Pushed to GitHub, README added | `fe6955a` |
+| 2026-02-01 | main | Created roadmap with branch plans | `f8848d0` |
+| 2026-02-01 | bio-rag | Created branch, phago-rag crate with QueryEngine | `b272ca3` — 4 tests passing |
+| 2026-02-01 | agent-evolution | Created branch, EVOLUTION_PLAN.md | `7854217` |
+| 2026-02-01 | kg-training | Created branch, KG_TRAINING_PLAN.md | `79e8622` |
 
 ---
 
