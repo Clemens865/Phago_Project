@@ -13,3 +13,4 @@ path = "src/main.rs"
 phago-core = { workspace = true }
 phago-runtime = { workspace = true }
 phago-agents = { workspace = true }
+phago-viz = { workspace = true }

@@ -16,9 +16,11 @@ use phago_core::agent::Agent;
 use phago_core::substrate::Substrate;
 use phago_core::topology::TopologyGraph;
 use phago_core::types::*;
+use serde::Serialize;
+use serde_json;
 
 /// Event emitted by the colony during simulation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum ColonyEvent {
     /// An agent was spawned.
     Spawned { id: AgentId, agent_type: String },
@@ -36,10 +38,18 @@ pub enum ColonyEvent {
     Died { signal: DeathSignal },
     /// A tick completed.
     TickComplete { tick: Tick, alive: usize, dead_this_tick: usize },
+    /// An agent exported its vocabulary as a capability deposit.
+    CapabilityExported { agent_id: AgentId, terms_count: usize },
+    /// An agent integrated vocabulary from a capability deposit.
+    CapabilityIntegrated { agent_id: AgentId, from_agent: AgentId, terms_count: usize },
+    /// An agent absorbed another through symbiosis.
+    Symbiosis { host: AgentId, absorbed: AgentId, host_type: String, absorbed_type: String },
+    /// An agent's boundary dissolved, externalizing vocabulary.
+    Dissolved { agent_id: AgentId, permeability: f64, terms_externalized: usize },
 }
 
 /// Statistics about the colony.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ColonyStats {
     pub tick: Tick,
     pub agents_alive: usize,
@@ -52,11 +62,52 @@ pub struct ColonyStats {
     pub documents_digested: usize,
 }
 
+/// A serializable snapshot of an agent's state.
+#[derive(Debug, Clone, Serialize)]
+pub struct AgentSnapshot {
+    pub id: AgentId,
+    pub agent_type: String,
+    pub position: Position,
+    pub age: Tick,
+    pub permeability: f64,
+    pub vocabulary_size: usize,
+}
+
+/// A serializable snapshot of a graph node.
+#[derive(Debug, Clone, Serialize)]
+pub struct NodeSnapshot {
+    pub id: NodeId,
+    pub label: String,
+    pub node_type: NodeType,
+    pub position: Position,
+    pub access_count: u64,
+}
+
+/// A serializable snapshot of a graph edge.
+#[derive(Debug, Clone, Serialize)]
+pub struct EdgeSnapshot {
+    pub from_label: String,
+    pub to_label: String,
+    pub weight: f64,
+    pub co_activations: u64,
+}
+
+/// A complete serializable snapshot of the colony at a point in time.
+#[derive(Debug, Clone, Serialize)]
+pub struct ColonySnapshot {
+    pub tick: Tick,
+    pub agents: Vec<AgentSnapshot>,
+    pub nodes: Vec<NodeSnapshot>,
+    pub edges: Vec<EdgeSnapshot>,
+    pub stats: ColonyStats,
+}
+
 /// The colony — manages agent lifecycle and simulation.
 pub struct Colony {
     substrate: SubstrateImpl,
     agents: Vec<Box<dyn Agent<Input = String, Fragment = String, Presentation = Vec<String>>>>,
     death_signals: Vec<DeathSignal>,
+    event_history: Vec<(Tick, ColonyEvent)>,
     total_spawned: usize,
     total_died: usize,
 
@@ -75,6 +126,7 @@ impl Colony {
             substrate: SubstrateImpl::new(),
             agents: Vec::new(),
             death_signals: Vec::new(),
+            event_history: Vec::new(),
             total_spawned: 0,
             total_died: 0,
             signal_decay_rate: 0.05,
@@ -139,6 +191,7 @@ impl Colony {
 
         // Phase 2: Process actions
         let mut to_die = Vec::new();
+        let mut symbiotic_deaths: Vec<(usize, AgentId)> = Vec::new(); // (idx, absorber_id)
 
         for (idx, action) in actions {
             match action {
@@ -271,15 +324,202 @@ impl Colony {
                     });
                 }
 
+                AgentAction::ExportCapability(_cap_id) => {
+                    let agent_id = self.agents[idx].id();
+                    let agent_pos = self.agents[idx].position();
+                    if let Some(vocab_bytes) = self.agents[idx].export_vocabulary() {
+                        // Count terms for event
+                        let terms_count = serde_json::from_slice::<VocabularyCapability>(&vocab_bytes)
+                            .map(|v| v.terms.len())
+                            .unwrap_or(0);
+
+                        // Deposit as CapabilityDeposit trace at agent position
+                        let trace = Trace {
+                            agent_id,
+                            trace_type: TraceType::CapabilityDeposit,
+                            intensity: 1.0,
+                            tick: self.substrate.current_tick(),
+                            payload: vocab_bytes,
+                        };
+                        self.substrate.deposit_trace(
+                            &SubstrateLocation::Spatial(agent_pos),
+                            trace,
+                        );
+
+                        // Emit Capability signal to attract other agents
+                        self.substrate.emit_signal(Signal::new(
+                            SignalType::Capability,
+                            0.8,
+                            agent_pos,
+                            agent_id,
+                            self.substrate.current_tick(),
+                        ));
+
+                        events.push(ColonyEvent::CapabilityExported {
+                            agent_id,
+                            terms_count,
+                        });
+                    }
+                }
+
+                AgentAction::SymbioseWith(target_id) => {
+                    let host_idx = idx;
+                    let host_id = self.agents[host_idx].id();
+
+                    // Find target agent
+                    if let Some(target_idx) = self.agents.iter().position(|a| a.id() == target_id) {
+                        // Build target's profile and extract vocabulary
+                        let target_profile = self.agents[target_idx].profile();
+                        let target_vocab = self.agents[target_idx].export_vocabulary()
+                            .unwrap_or_default();
+
+                        // Evaluate symbiosis
+                        if let Some(SymbiosisEval::Integrate) =
+                            self.agents[host_idx].evaluate_symbiosis(&target_profile)
+                        {
+                            let host_type = self.agents[host_idx].agent_type().to_string();
+                            let absorbed_type = self.agents[target_idx].agent_type().to_string();
+
+                            // Host absorbs the symbiont
+                            self.agents[host_idx].absorb_symbiont(target_profile, target_vocab);
+
+                            // Mark target for removal via symbiotic absorption
+                            symbiotic_deaths.push((target_idx, host_id));
+
+                            events.push(ColonyEvent::Symbiosis {
+                                host: host_id,
+                                absorbed: target_id,
+                                host_type,
+                                absorbed_type,
+                            });
+                        }
+                    }
+                }
+
                 AgentAction::Apoptose => {
                     to_die.push(idx);
                 }
 
                 AgentAction::Idle => {}
 
-                _ => {
-                    // Future actions (SymbioseWith, ExportCapability, etc.)
+                _ => {}
+            }
+        }
+
+        // Phase 2.5: Dissolution + Capability Integration
+        // For each agent: compute BoundaryContext, modulate boundary,
+        // externalize/internalize vocabulary, integrate nearby capabilities
+        {
+            let _tick = self.substrate.current_tick();
+            let agent_count = self.agents.len();
+
+            for i in 0..agent_count {
+                let agent_id = self.agents[i].id();
+                let agent_pos = self.agents[i].position();
+                let agent_age = self.agents[i].age();
+
+                // Compute BoundaryContext — cache externalized vocab for reuse
+                let vocab_terms = self.agents[i].externalize_vocabulary();
+                let mut reinforcement_count = 0u64;
+                let graph = self.substrate.graph();
+                for term in &vocab_terms {
+                    let matching = graph.find_nodes_by_exact_label(term);
+                    for nid in matching {
+                        if let Some(node) = graph.get_node(nid) {
+                            reinforcement_count += node.access_count;
+                        }
+                    }
                 }
+
+                let useful_outputs_estimate = reinforcement_count.min(100);
+                let trust = if agent_age > 0 {
+                    (useful_outputs_estimate as f64 / agent_age as f64).min(1.0)
+                } else {
+                    0.0
+                };
+
+                let context = BoundaryContext {
+                    reinforcement_count,
+                    age: agent_age,
+                    trust,
+                };
+
+                self.agents[i].modulate_boundary(&context);
+                let permeability = self.agents[i].permeability();
+
+                // High permeability: boost matching graph nodes' access_count
+                if permeability > 0.5 {
+                    // Reuse cached vocab_terms instead of calling externalize_vocabulary again
+                    let mut terms_externalized = 0usize;
+                    for term in &vocab_terms {
+                        let matching: Vec<NodeId> = self.substrate.graph().find_nodes_by_exact_label(term).to_vec();
+                        for nid in &matching {
+                            if let Some(node) = self.substrate.graph_mut().get_node_mut(nid) {
+                                node.access_count += 1;
+                                terms_externalized += 1;
+                            }
+                        }
+                    }
+                    if terms_externalized > 0 {
+                        events.push(ColonyEvent::Dissolved {
+                            agent_id,
+                            permeability,
+                            terms_externalized,
+                        });
+                    }
+                }
+
+                // Any permeability > 0: internalize nearby concept labels
+                if permeability > 0.0 {
+                    let all_nodes = self.substrate.graph().all_nodes();
+                    let nearby_labels: Vec<String> = all_nodes.iter()
+                        .filter_map(|nid| {
+                            let node = self.substrate.graph().get_node(nid)?;
+                            if node.position.distance_to(&agent_pos) <= 15.0
+                                && node.node_type == NodeType::Concept
+                            {
+                                Some(node.label.clone())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    if !nearby_labels.is_empty() {
+                        self.agents[i].internalize_vocabulary(&nearby_labels);
+                    }
+                }
+
+                // Capability integration: check for CapabilityDeposit traces near agent
+                let traces = self.substrate.traces_near(
+                    &agent_pos,
+                    10.0,
+                    &TraceType::CapabilityDeposit,
+                );
+                for trace in &traces {
+                    if trace.agent_id != agent_id
+                        && !trace.payload.is_empty()
+                    {
+                        let payload = trace.payload.clone();
+                        let from_agent = trace.agent_id;
+                        let terms_count = serde_json::from_slice::<VocabularyCapability>(&payload)
+                            .map(|v| v.terms.len())
+                            .unwrap_or(0);
+                        if self.agents[i].integrate_vocabulary(&payload) {
+                            events.push(ColonyEvent::CapabilityIntegrated {
+                                agent_id,
+                                from_agent,
+                                terms_count,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add symbiotic deaths to the death list
+        for (idx, _absorber_id) in &symbiotic_deaths {
+            if !to_die.contains(idx) {
+                to_die.push(*idx);
             }
         }
 
@@ -289,7 +529,13 @@ impl Colony {
         let dead_count = to_die.len();
         for idx in to_die.into_iter().rev() {
             let agent = self.agents.remove(idx);
-            let death_signal = agent.prepare_death_signal();
+            let mut death_signal = agent.prepare_death_signal();
+
+            // Override cause if this was a symbiotic absorption
+            if let Some((_, absorber_id)) = symbiotic_deaths.iter().find(|(i, _)| *i == idx) {
+                death_signal.cause = DeathCause::SymbioticAbsorption(*absorber_id);
+            }
+
             events.push(ColonyEvent::Died {
                 signal: death_signal.clone(),
             });
@@ -315,6 +561,12 @@ impl Colony {
             alive: self.agents.len(),
             dead_this_tick: dead_count,
         });
+
+        // Record events in history
+        let current_tick = self.substrate.current_tick();
+        for event in &events {
+            self.event_history.push((current_tick, event.clone()));
+        }
 
         events
     }
@@ -370,6 +622,62 @@ impl Colony {
         self.agents
             .get_mut(agent_idx)
             .map(|agent| agent.engulf(input))
+    }
+
+    /// Take a serializable snapshot of the colony's current state.
+    pub fn snapshot(&self) -> ColonySnapshot {
+        let graph = self.substrate.graph();
+
+        let agents: Vec<AgentSnapshot> = self.agents.iter().map(|a| {
+            AgentSnapshot {
+                id: a.id(),
+                agent_type: a.agent_type().to_string(),
+                position: a.position(),
+                age: a.age(),
+                permeability: a.permeability(),
+                vocabulary_size: a.vocabulary_size(),
+            }
+        }).collect();
+
+        let nodes: Vec<NodeSnapshot> = graph.all_nodes().iter().filter_map(|nid| {
+            let n = graph.get_node(nid)?;
+            Some(NodeSnapshot {
+                id: n.id,
+                label: n.label.clone(),
+                node_type: n.node_type.clone(),
+                position: n.position,
+                access_count: n.access_count,
+            })
+        }).collect();
+
+        let edges: Vec<EdgeSnapshot> = graph.all_edges().iter().map(|(from, to, data)| {
+            let from_label = graph.get_node(from).map(|n| n.label.clone()).unwrap_or_default();
+            let to_label = graph.get_node(to).map(|n| n.label.clone()).unwrap_or_default();
+            EdgeSnapshot {
+                from_label,
+                to_label,
+                weight: data.weight,
+                co_activations: data.co_activations,
+            }
+        }).collect();
+
+        ColonySnapshot {
+            tick: self.substrate.current_tick(),
+            agents,
+            nodes,
+            edges,
+            stats: self.stats(),
+        }
+    }
+
+    /// Get the full event history with tick numbers.
+    pub fn event_history(&self) -> &[(Tick, ColonyEvent)] {
+        &self.event_history
+    }
+
+    /// Get a reference to the agents.
+    pub fn agents(&self) -> &[Box<dyn Agent<Input = String, Fragment = String, Presentation = Vec<String>>>] {
+        &self.agents
     }
 
     /// Emit an input signal at a position (to attract agents).

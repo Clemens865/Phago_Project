@@ -9,3 +9,4 @@
 pub mod substrate_impl;
 pub mod topology_impl;
 pub mod colony;
+pub mod metrics;

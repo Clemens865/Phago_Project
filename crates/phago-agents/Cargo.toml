@@ -8,3 +8,8 @@ description = "Reference agent implementations using Phago biological primitives
 [dependencies]
 phago-core = { workspace = true }
 uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+phago-runtime = { workspace = true }

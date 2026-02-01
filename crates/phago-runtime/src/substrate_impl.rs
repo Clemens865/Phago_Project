@@ -100,6 +100,32 @@ impl SubstrateImpl {
     pub fn total_trace_count(&self) -> usize {
         self.traces.values().map(|v| v.len()).sum()
     }
+
+    /// Get all traces of a given type within a radius of a position.
+    pub fn traces_near(&self, position: &Position, radius: f64, trace_type: &TraceType) -> Vec<&Trace> {
+        let r_grid = (radius * 10.0).ceil() as i64;
+        let cx = (position.x * 10.0).round() as i64;
+        let cy = (position.y * 10.0).round() as i64;
+
+        let mut results = Vec::new();
+        // Scan grid cells within radius
+        for dx in -r_grid..=r_grid {
+            for dy in -r_grid..=r_grid {
+                let key = TraceLocationKey::Spatial(OrderedPosition {
+                    x: cx + dx,
+                    y: cy + dy,
+                });
+                if let Some(traces) = self.traces.get(&key) {
+                    for trace in traces {
+                        if &trace.trace_type == trace_type {
+                            results.push(trace);
+                        }
+                    }
+                }
+            }
+        }
+        results
+    }
 }
 
 impl Default for SubstrateImpl {

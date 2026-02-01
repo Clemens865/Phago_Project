@@ -192,6 +192,22 @@ pub enum DeathCause {
     ExternalSignal,
     /// Runtime terminated the agent.
     RuntimeTermination,
+    /// Agent was absorbed by another through symbiosis.
+    SymbioticAbsorption(AgentId),
+}
+
+/// A vocabulary-based capability for Transfer in v0.1.
+///
+/// Since v0.1 has no WASM runtime, capabilities are learned vocabulary sets
+/// — serialized lists of concept terms that agents can share.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VocabularyCapability {
+    /// The concept terms comprising this capability.
+    pub terms: Vec<String>,
+    /// The agent that produced this vocabulary.
+    pub origin: AgentId,
+    /// How many documents contributed to building this vocabulary.
+    pub document_count: u64,
 }
 
 /// Identifier for a transferable capability.

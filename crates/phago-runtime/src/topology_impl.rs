@@ -15,6 +15,8 @@ pub struct PetTopologyGraph {
     graph: Graph<NodeData, EdgeData, petgraph::Undirected>,
     /// Map from our NodeId to petgraph's internal index.
     node_index: HashMap<NodeId, NodeIndex>,
+    /// Index from lowercase label to node IDs for O(1) exact lookup.
+    label_index: HashMap<String, Vec<NodeId>>,
 }
 
 impl PetTopologyGraph {
@@ -22,7 +24,16 @@ impl PetTopologyGraph {
         Self {
             graph: Graph::new_undirected(),
             node_index: HashMap::new(),
+            label_index: HashMap::new(),
         }
+    }
+
+    /// O(1) exact label lookup (case-insensitive).
+    pub fn find_nodes_by_exact_label(&self, label: &str) -> &[NodeId] {
+        self.label_index
+            .get(&label.to_lowercase())
+            .map(|v| v.as_slice())
+            .unwrap_or(&[])
     }
 }
 
@@ -35,8 +46,10 @@ impl Default for PetTopologyGraph {
 impl TopologyGraph for PetTopologyGraph {
     fn add_node(&mut self, data: NodeData) -> NodeId {
         let id = data.id;
+        let label_key = data.label.to_lowercase();
         let idx = self.graph.add_node(data);
         self.node_index.insert(id, idx);
+        self.label_index.entry(label_key).or_default().push(id);
         id
     }
 

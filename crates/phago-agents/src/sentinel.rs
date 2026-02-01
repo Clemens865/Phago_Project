@@ -13,6 +13,7 @@
 
 use phago_core::agent::Agent;
 use phago_core::primitives::{Apoptose, Digest, Negate, Sense};
+use phago_core::primitives::symbiose::AgentProfile;
 use phago_core::substrate::Substrate;
 use phago_core::types::*;
 use std::collections::HashMap;
@@ -444,6 +445,28 @@ impl Agent for Sentinel {
 
     fn age(&self) -> Tick {
         self.age_ticks
+    }
+
+    fn export_vocabulary(&self) -> Option<Vec<u8>> {
+        if self.self_model.concept_freq.is_empty() {
+            return None;
+        }
+        let terms: Vec<String> = self.self_model.concept_freq.keys().cloned().collect();
+        let cap = VocabularyCapability {
+            terms,
+            origin: self.id,
+            document_count: self.self_model.observation_count,
+        };
+        serde_json::to_vec(&cap).ok()
+    }
+
+    fn profile(&self) -> AgentProfile {
+        AgentProfile {
+            id: self.id,
+            agent_type: "sentinel".to_string(),
+            capabilities: Vec::new(),
+            health: self.self_assess(),
+        }
     }
 }
 

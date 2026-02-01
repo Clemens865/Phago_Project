@@ -10,10 +10,11 @@
 
 use phago_core::agent::Agent;
 use phago_core::primitives::{Apoptose, Digest, Sense};
+use phago_core::primitives::symbiose::AgentProfile;
 use phago_core::signal::compute_gradient;
 use phago_core::substrate::Substrate;
 use phago_core::types::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Internal state machine for the digester's lifecycle.
 #[derive(Debug, Clone, PartialEq)]
@@ -51,6 +52,18 @@ pub struct Digester {
     /// Total useful outputs produced in lifetime.
     useful_outputs: u64,
 
+    // Transfer / Symbiose / Dissolve state
+    /// Vocabulary learned from integrated capabilities and digestion.
+    known_vocabulary: HashSet<String>,
+    /// Whether this agent has exported its vocabulary at least once.
+    has_exported: bool,
+    /// Agent IDs from which we've already integrated vocabulary (avoid re-integration).
+    integrated_from: HashSet<AgentId>,
+    /// Boundary permeability (0.0 = rigid, 1.0 = fully dissolved).
+    boundary_permeability: f64,
+    /// Symbionts absorbed by this agent.
+    symbionts: Vec<SymbiontInfo>,
+
     // Configuration
     /// Max consecutive idle ticks before triggering apoptosis.
     max_idle_ticks: u64,
@@ -71,6 +84,11 @@ impl Digester {
             all_presentations: Vec::new(),
             idle_ticks: 0,
             useful_outputs: 0,
+            known_vocabulary: HashSet::new(),
+            has_exported: false,
+            integrated_from: HashSet::new(),
+            boundary_permeability: 0.0,
+            symbionts: Vec::new(),
             max_idle_ticks: 30,
             sense_radius: 10.0,
         }
@@ -122,7 +140,8 @@ impl Digester {
 ///
 /// This is deterministic — no LLMs in v0.1. We extract meaningful words
 /// by filtering stopwords, short words, and ranking by frequency.
-fn extract_keywords(text: &str) -> Vec<String> {
+/// Words in `known_vocabulary` receive a +3 frequency boost (Transfer effect).
+fn extract_keywords(text: &str, known_vocabulary: Option<&HashSet<String>>) -> Vec<String> {
     let stopwords: std::collections::HashSet<&str> = [
         "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
         "have", "has", "had", "do", "does", "did", "will", "would", "shall",
@@ -147,6 +166,15 @@ fn extract_keywords(text: &str) -> Vec<String> {
         let word = word.to_lowercase();
         if word.len() >= 3 && !stopwords.contains(word.as_str()) {
             *freq.entry(word).or_insert(0) += 1;
+        }
+    }
+
+    // Boost words that are in the known vocabulary (Transfer effect)
+    if let Some(vocab) = known_vocabulary {
+        for (word, count) in freq.iter_mut() {
+            if vocab.contains(word) {
+                *count += 3;
+            }
         }
     }
 
@@ -180,7 +208,12 @@ impl Digest for Digester {
             return Vec::new();
         };
 
-        let keywords = extract_keywords(&text);
+        let vocab = if self.known_vocabulary.is_empty() {
+            None
+        } else {
+            Some(&self.known_vocabulary)
+        };
+        let keywords = extract_keywords(&text, vocab);
         self.fragments = keywords.clone();
 
         if !self.fragments.is_empty() {
@@ -298,6 +331,21 @@ impl Agent for Digester {
 
         match self.state.clone() {
             DigesterState::Seeking => {
+                // Check for symbiosis opportunity: if we have 3+ useful outputs
+                // and sense a non-self signal emitter nearby, attempt symbiosis
+                if self.useful_outputs >= 3 && self.symbionts.is_empty() {
+                    let nearby_signals = substrate.signals_near(&self.position, self.sense_radius);
+                    // Look for Anomaly or Capability signals from other agents
+                    let symbiosis_target = nearby_signals.iter().find(|s| {
+                        matches!(s.signal_type, SignalType::Anomaly | SignalType::Insight)
+                            && s.emitter != self.id
+                    });
+                    if let Some(signal) = symbiosis_target {
+                        let target_id = signal.emitter;
+                        return AgentAction::SymbioseWith(target_id);
+                    }
+                }
+
                 // Look for nearby undigested documents
                 let docs = substrate.undigested_documents();
                 let nearby_doc = docs.iter().find(|d| {
@@ -379,6 +427,16 @@ impl Agent for Digester {
             }
 
             DigesterState::Presenting => {
+                // After presenting, check if we should export vocabulary
+                if self.useful_outputs >= 2 && !self.has_exported {
+                    self.has_exported = true;
+                    self.state = DigesterState::Seeking;
+                    self.current_document = None;
+                    return AgentAction::ExportCapability(CapabilityId(
+                        format!("vocab-{}", self.id.0),
+                    ));
+                }
+
                 // Deposit a trace at our location marking successful digestion
                 self.state = DigesterState::Seeking;
                 self.current_document = None;
@@ -399,6 +457,110 @@ impl Agent for Digester {
 
     fn age(&self) -> Tick {
         self.age_ticks
+    }
+
+    // --- Transfer overrides ---
+
+    fn export_vocabulary(&self) -> Option<Vec<u8>> {
+        if self.all_presentations.is_empty() {
+            return None;
+        }
+        let cap = VocabularyCapability {
+            terms: self.all_presentations.clone(),
+            origin: self.id,
+            document_count: self.useful_outputs,
+        };
+        serde_json::to_vec(&cap).ok()
+    }
+
+    fn integrate_vocabulary(&mut self, data: &[u8]) -> bool {
+        if let Ok(cap) = serde_json::from_slice::<VocabularyCapability>(data) {
+            // Only integrate once per source agent
+            if self.integrated_from.contains(&cap.origin) {
+                return false;
+            }
+            self.integrated_from.insert(cap.origin);
+            for term in cap.terms {
+                self.known_vocabulary.insert(term);
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    // --- Symbiose overrides ---
+
+    fn profile(&self) -> AgentProfile {
+        AgentProfile {
+            id: self.id,
+            agent_type: "digester".to_string(),
+            capabilities: Vec::new(),
+            health: self.self_assess(),
+        }
+    }
+
+    fn evaluate_symbiosis(&self, other: &AgentProfile) -> Option<SymbiosisEval> {
+        // Only consider symbiosis with non-digester agents that are healthy
+        if other.agent_type == "digester" {
+            return Some(SymbiosisEval::Coexist);
+        }
+        if other.health.should_die() {
+            return Some(SymbiosisEval::Coexist);
+        }
+        // Integrate agents of different types — this models endosymbiosis
+        Some(SymbiosisEval::Integrate)
+    }
+
+    fn absorb_symbiont(&mut self, profile: AgentProfile, data: Vec<u8>) -> bool {
+        // Merge target's vocabulary into our known_vocabulary
+        if let Ok(cap) = serde_json::from_slice::<VocabularyCapability>(&data) {
+            for term in &cap.terms {
+                self.known_vocabulary.insert(term.clone());
+            }
+        }
+        self.symbionts.push(SymbiontInfo {
+            id: profile.id,
+            name: profile.agent_type.clone(),
+            capabilities: profile.capabilities,
+        });
+        true
+    }
+
+    // --- Dissolve overrides ---
+
+    fn permeability(&self) -> f64 {
+        self.boundary_permeability
+    }
+
+    fn modulate_boundary(&mut self, context: &BoundaryContext) {
+        // permeability = 0.3*reinforcement + 0.3*age + 0.4*trust, clamped [0,1]
+        let reinforcement_factor = (context.reinforcement_count as f64 / 10.0).min(1.0);
+        let age_factor = (context.age as f64 / 100.0).min(1.0);
+        let trust_factor = context.trust;
+
+        self.boundary_permeability =
+            (0.3 * reinforcement_factor + 0.3 * age_factor + 0.4 * trust_factor).clamp(0.0, 1.0);
+    }
+
+    fn externalize_vocabulary(&self) -> Vec<String> {
+        let mut terms: Vec<String> = self.all_presentations.clone();
+        for term in &self.known_vocabulary {
+            if !terms.contains(term) {
+                terms.push(term.clone());
+            }
+        }
+        terms
+    }
+
+    fn internalize_vocabulary(&mut self, terms: &[String]) {
+        for term in terms {
+            self.known_vocabulary.insert(term.clone());
+        }
+    }
+
+    fn vocabulary_size(&self) -> usize {
+        self.known_vocabulary.len() + self.all_presentations.len()
     }
 }
 
@@ -528,6 +690,7 @@ mod tests {
             "Rust programming language provides memory safety \
              without garbage collection. Rust achieves memory safety \
              through its ownership system.",
+            None,
         );
         assert!(keywords.contains(&"rust".to_string()));
         assert!(keywords.contains(&"memory".to_string()));

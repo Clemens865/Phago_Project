@@ -8,6 +8,7 @@
 //! - SENSE: the ability to detect environmental signals
 
 use crate::primitives::{Apoptose, Digest, Sense};
+use crate::primitives::symbiose::AgentProfile;
 use crate::substrate::Substrate;
 use crate::types::*;
 
@@ -45,4 +46,64 @@ pub trait Agent: Digest + Apoptose + Sense {
 
     /// How many ticks this agent has been alive.
     fn age(&self) -> Tick;
+
+    // --- Transfer (Horizontal Gene Transfer) default methods ---
+
+    /// Export this agent's vocabulary as serialized bytes.
+    /// Returns None if the agent has no vocabulary to export.
+    fn export_vocabulary(&self) -> Option<Vec<u8>> {
+        None
+    }
+
+    /// Integrate foreign vocabulary from serialized bytes.
+    /// Returns true if integration succeeded.
+    fn integrate_vocabulary(&mut self, _data: &[u8]) -> bool {
+        false
+    }
+
+    // --- Symbiose (Endosymbiosis) default methods ---
+
+    /// Build a profile describing this agent's capabilities.
+    fn profile(&self) -> AgentProfile {
+        AgentProfile {
+            id: self.id(),
+            agent_type: self.agent_type().to_string(),
+            capabilities: Vec::new(),
+            health: CellHealth::Healthy,
+        }
+    }
+
+    /// Evaluate whether to absorb another agent as a symbiont.
+    fn evaluate_symbiosis(&self, _other: &AgentProfile) -> Option<SymbiosisEval> {
+        None
+    }
+
+    /// Absorb another agent's profile and vocabulary data as a symbiont.
+    /// Returns true if absorption succeeded.
+    fn absorb_symbiont(&mut self, _profile: AgentProfile, _data: Vec<u8>) -> bool {
+        false
+    }
+
+    // --- Dissolve (Holobiont) default methods ---
+
+    /// Current boundary permeability (0.0 = rigid, 1.0 = fully dissolved).
+    fn permeability(&self) -> f64 {
+        0.0
+    }
+
+    /// Adjust boundary permeability based on environmental context.
+    fn modulate_boundary(&mut self, _context: &BoundaryContext) {}
+
+    /// Return vocabulary terms to externalize (reinforce in the substrate).
+    fn externalize_vocabulary(&self) -> Vec<String> {
+        Vec::new()
+    }
+
+    /// Absorb nearby concept terms from the substrate.
+    fn internalize_vocabulary(&mut self, _terms: &[String]) {}
+
+    /// Return the size of this agent's vocabulary (for metrics).
+    fn vocabulary_size(&self) -> usize {
+        0
+    }
 }

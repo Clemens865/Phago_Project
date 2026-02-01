@@ -19,3 +19,6 @@ Thumbs.db
 
 # Phago runtime data
 .phago/
+
+# Generated output
+output/

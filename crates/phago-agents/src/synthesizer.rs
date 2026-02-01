@@ -15,6 +15,7 @@
 
 use phago_core::agent::Agent;
 use phago_core::primitives::{Apoptose, Digest, Emerge, Sense};
+use phago_core::primitives::symbiose::AgentProfile;
 use phago_core::substrate::Substrate;
 use phago_core::types::*;
 
@@ -445,6 +446,15 @@ impl Agent for Synthesizer {
 
     fn age(&self) -> Tick {
         self.age_ticks
+    }
+
+    fn profile(&self) -> AgentProfile {
+        AgentProfile {
+            id: self.id,
+            agent_type: "synthesizer".to_string(),
+            capabilities: Vec::new(),
+            health: self.self_assess(),
+        }
     }
 }
 
