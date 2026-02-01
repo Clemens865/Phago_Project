@@ -83,6 +83,28 @@ Does a self-organized Hebbian graph produce better training data than a statical
 
 ---
 
+## Branch 4: `agentic-memory` — Persistent Coding Neurosystem
+
+**Goal**: Use Phago's biological primitives to give AI coding agents persistent, growing memory across sessions — code patterns strengthen through use, unused ones decay, and the system evolves with each project.
+
+**Why this is novel**: Current coding agents (Copilot, Cursor, Claude Code) lose all context between sessions. RAG-based memory stores static embeddings. Phago's Hebbian graph would create a living memory where frequently-used patterns strengthen, related concepts wire together, and the agent's knowledge genuinely improves over time — not just retrieves.
+
+### Milestones
+
+| # | Milestone | Status | Description |
+|---|-----------|--------|-------------|
+| 1 | CodeDigester Agent | Not started | Specialized agent that digests code files into the Hebbian graph |
+| 2 | SessionManager | Not started | Tracks coding sessions, feeds events (edits, errors, completions) as stimuli |
+| 3 | Pattern Reinforcement | Not started | Successful code patterns reinforce their graph paths; error patterns get negated |
+| 4 | Cross-Session Persistence | Not started | Colony state serializes/deserializes between coding sessions |
+| 5 | Query Interface | Not started | Coding agent queries the graph for relevant patterns given current context |
+| 6 | MCP Server | Not started | Expose as Model Context Protocol server for Claude Code / other agents |
+
+### Key Question to Answer
+Does a biologically-inspired persistent memory produce measurably better coding suggestions than static RAG retrieval? Measurable by pattern recall accuracy and suggestion relevance.
+
+---
+
 ## Activity Log
 
 | Date | Branch | Activity | Outcome |
@@ -93,6 +115,7 @@ Does a self-organized Hebbian graph produce better training data than a statical
 | 2026-02-01 | bio-rag | Created branch, phago-rag crate with QueryEngine | `b272ca3` — 4 tests passing |
 | 2026-02-01 | agent-evolution | Created branch, EVOLUTION_PLAN.md | `7854217` |
 | 2026-02-01 | kg-training | Created branch, KG_TRAINING_PLAN.md | `79e8622` |
+| 2026-02-01 | agentic-memory | Created branch, AGENTIC_MEMORY_PLAN.md | `1169c25` |
 
 ---
 
@@ -103,6 +126,7 @@ Does a self-organized Hebbian graph produce better training data than a statical
 | 2026-02-01 | Branches over repo duplication | Single codebase, shared base, merge back what works |
 | 2026-02-01 | bio-rag as primary focus | Highest novelty-to-effort ratio, directly benchmarkable, builds on existing infrastructure |
 | 2026-02-01 | No LLMs in base framework | Primitives must prove emergence independently; LLM integration is a branch concern |
+| 2026-02-01 | agentic-memory as 4th branch | Persistent coding memory is a practical application; solves real AI agent limitation |
 
 ---
 
