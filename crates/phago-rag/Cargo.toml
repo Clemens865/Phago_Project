@@ -1,0 +1,13 @@
+[package]
+name = "phago-rag"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Biological RAG — query interface on self-organizing Hebbian knowledge graph"
+
+[dependencies]
+phago-core = { workspace = true }
+phago-runtime = { workspace = true }
+phago-agents = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
