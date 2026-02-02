@@ -1,0 +1,19 @@
+[package]
+name = "phago-bio-rag-demo"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Bio-RAG demo: self-reinforcing retrieval benchmark"
+
+[[bin]]
+name = "phago-bio-rag-demo"
+path = "src/main.rs"
+
+[dependencies]
+phago-core = { workspace = true }
+phago-runtime = { workspace = true }
+phago-agents = { workspace = true }
+phago-rag = { workspace = true }
+phago-viz = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

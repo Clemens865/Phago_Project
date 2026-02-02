@@ -1,0 +1,22 @@
+[
+  {"query": "cell membrane transport", "relevant": ["cell", "membrane", "transport", "lipid", "bilayer", "proteins", "channels"]},
+  {"query": "protein channels receptors", "relevant": ["proteins", "channels", "receptors", "membrane", "carrier"]},
+  {"query": "cytoskeleton structure", "relevant": ["cytoskeleton", "microtubules", "actin", "tubulin", "filaments"]},
+  {"query": "organelle function", "relevant": ["organelles", "endoplasmic", "reticulum", "golgi", "lysosomes"]},
+  {"query": "cell division mitosis", "relevant": ["mitosis", "division", "chromosomes", "spindle", "cell"]},
+  {"query": "programmed cell death", "relevant": ["apoptosis", "caspase", "cytochrome", "death", "cell"]},
+  {"query": "active transport ATP", "relevant": ["transport", "atp", "sodium", "potassium", "pump", "gradient"]},
+  {"query": "passive diffusion molecules", "relevant": ["diffusion", "passive", "transport", "channel", "molecules"]},
+  {"query": "vesicular endocytosis exocytosis", "relevant": ["vesicular", "endocytosis", "exocytosis", "membrane", "vesicles"]},
+  {"query": "mitochondria energy production", "relevant": ["mitochondria", "atp", "oxidative", "phosphorylation", "electron"]},
+  {"query": "signal transduction pathway", "relevant": ["signal", "transduction", "receptors", "kinase", "cascade"]},
+  {"query": "DNA replication fork", "relevant": ["dna", "replication", "helicase", "polymerase", "strand"]},
+  {"query": "transcription RNA polymerase", "relevant": ["transcription", "rna", "polymerase", "promoter", "mrna"]},
+  {"query": "translation ribosome protein", "relevant": ["translation", "ribosome", "amino", "acids", "codons", "protein"]},
+  {"query": "gene regulation expression", "relevant": ["gene", "regulation", "transcription", "factors", "expression", "epigenetic"]},
+  {"query": "CRISPR genome editing", "relevant": ["crispr", "genome", "editing", "cas9", "guide", "dna"]},
+  {"query": "quantum superposition qubit", "relevant": ["quantum", "superposition", "qubit", "qubits", "states"]},
+  {"query": "entanglement Bell states", "relevant": ["entanglement", "bell", "qubits", "quantum", "teleportation"]},
+  {"query": "quantum gates circuits", "relevant": ["quantum", "gates", "hadamard", "cnot", "circuits"]},
+  {"query": "error correction surface code", "relevant": ["error", "correction", "surface", "code", "qubits", "topological"]}
+]

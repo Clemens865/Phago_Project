@@ -6,7 +6,12 @@ members = [
     "crates/phago-wasm",
     "crates/phago-agents",
     "crates/phago-viz",
+    "crates/phago-rag",
     "poc/knowledge-ecosystem",
+    "poc/bio-rag-demo",
+    "poc/agent-evolution-demo",
+    "poc/kg-training-demo",
+    "poc/agentic-memory-demo",
 ]
 
 [workspace.package]
@@ -22,6 +27,7 @@ phago-runtime = { path = "crates/phago-runtime" }
 phago-wasm = { path = "crates/phago-wasm" }
 phago-agents = { path = "crates/phago-agents" }
 phago-viz = { path = "crates/phago-viz" }
+phago-rag = { path = "crates/phago-rag" }
 
 uuid = { version = "1", features = ["v4", "serde"] }
 serde = { version = "1", features = ["derive"] }

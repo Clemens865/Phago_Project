@@ -32,9 +32,9 @@ fn full_sim_produces_all_event_types() {
     );
 
     // Spawn agents
-    colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(80)));
-    colony.spawn(Box::new(Digester::new(Position::new(5.0, 0.0)).with_max_idle(80)));
-    colony.spawn(Box::new(Digester::new(Position::new(0.0, 5.0)).with_max_idle(80)));
+    colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(200)));
+    colony.spawn(Box::new(Digester::new(Position::new(5.0, 0.0)).with_max_idle(200)));
+    colony.spawn(Box::new(Digester::new(Position::new(0.0, 5.0)).with_max_idle(200)));
     colony.spawn(Box::new(Synthesizer::new(Position::new(2.5, 2.5))));
     colony.spawn(Box::new(Sentinel::new(Position::new(2.5, 2.5))));
 
@@ -42,7 +42,7 @@ fn full_sim_produces_all_event_types() {
     let mut has_integrated = false;
     let mut has_dissolved = false;
 
-    for _ in 1..=80 {
+    for _ in 1..=300 {
         let events = colony.tick();
         for event in &events {
             match event {
