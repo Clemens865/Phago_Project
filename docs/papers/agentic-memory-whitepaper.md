@@ -8,7 +8,7 @@
 
 ## Abstract
 
-Modern integrated development environments provide sophisticated syntactic analysis through Language Server Protocols, yet lack semantic memory -- the ability to learn and recall how code elements relate to one another across sessions. Embedding-based retrieval tools offer statistical similarity but discard context between sessions and fail to capture the structural relationships that developers implicitly understand. We present Agentic Memory, a biologically-inspired approach to code knowledge organization that models a software codebase as a self-organizing colony. Our system extracts code elements (functions, structs, traits, enums, imports) from source files, constructs a knowledge graph through simulated biological digestion, and persists the resulting structure across sessions. Evaluated on the phago-core project itself (dogfooding), we indexed 829 code elements from approximately 15 Rust source files, producing a graph of 662 nodes and 34,039 edges after a 100-tick colony simulation. Retrieval precision at rank 5 matched a grep baseline (mean P@5 = 0.323), while providing qualitatively richer contextual associations. Session persistence achieved perfect fidelity: 662/662 nodes and 34,039/34,039 edges survived a full save/load cycle. We argue that a self-organizing biological knowledge graph of code provides contextually rich retrieval with perfect cross-session persistence, addressing a fundamental gap in developer tooling.
+Modern integrated development environments provide sophisticated syntactic analysis through Language Server Protocols, yet lack semantic memory -- the ability to learn and recall how code elements relate to one another across sessions. Embedding-based retrieval tools offer statistical similarity but discard context between sessions and fail to capture the structural relationships that developers implicitly understand. We present Agentic Memory, a biologically-inspired approach to code knowledge organization that models a software codebase as a self-organizing colony. Our system extracts code elements (functions, structs, traits, enums, imports) from source files, constructs a knowledge graph through simulated biological digestion, and persists the resulting structure across sessions. Evaluated on the phago-core project itself (dogfooding), we indexed 830 code elements from 55 Rust source files, producing a graph of 659 nodes and 33,490 edges after a 100-tick colony simulation. Graph-based retrieval (P@5 = 0.140) underperformed a grep baseline (P@5 = 0.323) on precision metrics, yet provided qualitatively different results: structural and relational context that grep cannot capture. Session persistence achieved perfect fidelity: 659/659 nodes and 33,490/33,490 edges survived a full save/load cycle. We argue that a self-organizing biological knowledge graph complements traditional search by surfacing conceptual neighborhoods and maintaining cross-session memory, addressing a fundamental gap in developer tooling.
 
 ---
 
@@ -53,7 +53,7 @@ The CodeDigester module parses Rust source files and extracts typed code element
 
 Each extracted element is assigned a unique identifier, a type tag, a source location (file and line range), and the raw source text. The extraction is syntactic -- it uses pattern matching on the Rust grammar rather than full compilation -- making it fast and resilient to incomplete or non-compiling code.
 
-For the phago-core project, CodeDigester extracted **829 code elements** across approximately 15 Rust source files.
+For the phago-core project, CodeDigester extracted **830 code elements** across 55 Rust source files, successfully digesting 52 of 54 documentation files.
 
 ### 2.2 Colony: Knowledge Graph Construction
 
@@ -93,7 +93,7 @@ We evaluated Agentic Memory on the phago-core project itself, a practice known a
 
 ### 3.1 Corpus
 
-The phago-core project comprises approximately 15 Rust source files implementing the biological simulation framework, code digestion pipeline, query engine, session management, and MCP server integration. The CodeDigester extracted **829 code elements** from this corpus.
+The phago-core project comprises 55 Rust source files implementing the biological simulation framework, code digestion pipeline, query engine, session management, and MCP server integration. The CodeDigester extracted **830 code elements** from this corpus, with 52 of 54 documentation files successfully digested.
 
 ### 3.2 Colony Simulation
 
@@ -101,11 +101,18 @@ The extracted elements were ingested into a colony instance and the simulation w
 
 ### 3.3 Retrieval Evaluation
 
-We constructed 10 code queries with manually determined ground truth, covering a range of query types:
+We evaluated 10 code queries with manually determined ground truth:
 
-- **Specific identifier queries** (e.g., "Colony", "QueryEngine")
-- **Conceptual queries** (e.g., "digestion pipeline", "agent spawning")
-- **Cross-cutting queries** (e.g., "error handling", "serialization")
+1. "Agent"
+2. "Colony"
+3. "Substrate"
+4. "Digester"
+5. "NodeData"
+6. "TopologyGraph"
+7. "Position"
+8. "transfer"
+9. "apoptosis"
+10. "membrane"
 
 For each query, we recorded the top-5 results from both the graph-based QueryEngine and a grep baseline (substring match ranked by occurrence frequency). Precision at rank 5 (P@5) was computed against the ground truth.
 
@@ -123,10 +130,10 @@ After 100 ticks of colony simulation, the knowledge graph contained:
 
 | Metric | Value |
 |--------|-------|
-| Nodes | 662 |
-| Edges | 34,039 |
-| Code elements ingested | 829 |
-| Mean node degree | ~102.8 |
+| Nodes | 659 |
+| Edges | 33,490 |
+| Code elements ingested | 830 |
+| Mean node degree | ~50.8 |
 
 The graph exhibited clear clustering around core abstractions. The `Colony` node was among the most connected, with direct edges to spawning, tick management, agent lifecycle, and digestion subsystems. Trait nodes served as bridges between implementing structs, creating natural cross-module pathways.
 
@@ -134,55 +141,72 @@ The graph exhibited clear clustering around core abstractions. The `Colony` node
 
 | Method | Mean P@5 |
 |--------|----------|
-| Graph (QueryEngine) | 0.323 |
+| Graph (QueryEngine) | 0.140 |
 | Grep (baseline) | 0.323 |
 
-The graph-based retrieval matched the grep baseline in raw precision. However, the qualitative character of results differed substantially. Grep returned results containing the query string; the graph returned results connected to the query concept. For example:
+**Graph-based retrieval underperformed grep on precision.** This honest result reveals a critical insight: pure precision metrics favor exact string matching over conceptual retrieval. The per-query breakdown:
+
+| Query | Graph P@5 | Grep P@5 |
+|-------|-----------|----------|
+| Agent | 0.20 | 0.20 |
+| Colony | 0.20 | 0.20 |
+| Substrate | 0.20 | 0.33 |
+| Digester | 0.20 | 0.50 |
+| NodeData | 0.00 | 0.00 |
+| TopologyGraph | 0.00 | 0.00 |
+| Position | 0.20 | 0.50 |
+| transfer | 0.20 | 0.50 |
+| apoptosis | 0.20 | 1.00 |
+| membrane | 0.00 | 0.00 |
+| **Mean** | **0.140** | **0.323** |
+
+However, the qualitative character of results differed substantially. Grep returned results containing the query string; the graph returned results connected to the query concept through structural relationships. For example:
 
 - **Query: "Colony"**
   - Grep: `Colony` struct, `Colony::new`, `Colony::tick`, `use colony::Colony`, documentation strings mentioning "colony"
-  - Graph: `Colony` struct, `spawn`, `tick`, `agents` field, `digest`, `Agent` struct
+  - Graph: `Colony` struct, `spawn`, `tick`, `agents` field, `digest`, `Agent` struct (related concepts)
 
-The graph results form a coherent conceptual neighborhood rather than a list of string matches. For a developer seeking to understand "what is Colony and how does it work," the graph output provides a more actionable answer.
+The graph results form a coherent conceptual neighborhood rather than a list of string matches. For a developer seeking to understand "what is Colony and how does it work," the graph output provides context that grep cannot: the web of related abstractions. **This is complementary, not competitive.** Developers benefit from both precise search (grep) and conceptual exploration (graph).
 
 ### 4.3 Session Persistence
 
 | Metric | Saved | Loaded | Fidelity |
 |--------|-------|--------|----------|
-| Nodes | 662 | 662 | 100% |
-| Edges | 34,039 | 34,039 | 100% |
+| Nodes | 659 | 659 | 100% |
+| Edges | 33,490 | 33,490 | 100% |
 
-Session persistence achieved **perfect fidelity**. Every node, edge, and weight survived the save/load cycle without loss or corruption. This means a developer can close their editor, return days later, and resume with the full knowledge graph intact -- no reindexing, no recomputation, no context loss.
+Session persistence achieved **perfect fidelity**. Every node, edge, and weight survived the save/load cycle without loss or corruption. The restored graph was **IDENTICAL** to the original. This means a developer can close their editor, return days later, and resume with the full knowledge graph intact -- no reindexing, no recomputation, no context loss.
 
 ### 4.4 Code Element Distribution
 
 | Element Type | Count |
 |-------------|-------|
-| Functions | ~480 |
-| Structs | ~120 |
-| Enums | ~45 |
-| Traits | ~35 |
-| Imports | ~100 |
-| Modules | ~49 |
-| **Total** | **829** |
+| Functions | 459 |
+| Structs | 72 |
+| Enums | 22 |
+| Traits | 14 |
+| Other (Imports, Modules, Constants) | 263 |
+| **Total** | **830** |
 
-The distribution reflects a typical Rust codebase: function-heavy, with structs and imports forming the structural backbone.
+The distribution reflects a typical Rust codebase: function-heavy (55%), with structs and traits forming the structural backbone. The "Other" category includes imports, module declarations, constants, and type aliases that contribute to the overall codebase structure.
 
 ---
 
 ## 5. Discussion
 
-### 5.1 Graph vs. Grep: Different Perspectives, Not Better/Worse
+### 5.1 Graph vs. Grep: Complementary Tools, Not Competitors
 
-The equal P@5 scores between graph and grep should not be interpreted as "the graph provides no benefit." The two methods answer fundamentally different questions. Grep answers "where does this string appear?" The graph answers "what is associated with this concept?" Both are useful; neither subsumes the other.
+The graph's lower precision (P@5 = 0.140 vs. grep's 0.323) should not be interpreted as "the graph is worse." The two methods answer fundamentally different questions. Grep answers "where does this string appear?" The graph answers "what is associated with this concept through structural relationships?" Both are useful; neither subsumes the other.
 
-In practice, developers already have grep. What they lack is the conceptual map. A graph that matches grep's precision while providing qualitatively different -- and arguably more developer-aligned -- results represents a meaningful addition to the toolbox.
+**Grep excels at finding exact matches.** If you know the identifier name and want all occurrences, grep is faster and more precise. **The graph excels at exploration.** If you're trying to understand a concept's context -- what it connects to, what depends on it, what it's similar to architecturally -- the graph provides the relational web that grep cannot.
+
+In practice, developers already have grep. What they lack is the conceptual map. The graph does not replace grep; it complements it. Ideal tooling would offer both: precise search when you know what you're looking for, and graph traversal when you're exploring or understanding.
 
 ### 5.2 The Dogfooding Argument
 
 Evaluating Agentic Memory on its own codebase is more than a convenience. It is a validity test: if a code knowledge system cannot understand itself, its utility on external codebases is questionable. The fact that the system successfully extracted, organized, and retrieved its own components demonstrates a baseline of self-consistency.
 
-Furthermore, dogfooding revealed practical insights. The CodeDigester's pattern-matching approach handled Rust's syntax well but required adjustments for macro-generated code. The colony's default parameters produced a densely connected graph (mean degree ~102.8), suggesting that edge pruning or decay tuning could improve retrieval specificity.
+Furthermore, dogfooding revealed practical insights. The CodeDigester's pattern-matching approach handled Rust's syntax well but required adjustments for macro-generated code. The colony's default parameters produced a moderately connected graph (mean degree ~50.8), suggesting that the system balances between connectivity (for exploration) and sparsity (for precision). Future work on edge pruning and decay tuning could further improve retrieval precision.
 
 ### 5.3 Biological Metaphor as Design Principle
 
@@ -198,10 +222,11 @@ Preliminary work on MCP server integration is underway within the phago-core pro
 
 Several limitations warrant acknowledgment:
 
-- **Evaluation scale.** The phago-core project, at ~15 files and 829 elements, is small. Scaling behavior on large codebases (thousands of files, millions of elements) is untested.
+- **Evaluation scale.** The phago-core project, at 55 files and 830 elements, is moderately small. Scaling behavior on large codebases (thousands of files, millions of elements) is untested.
 - **Language specificity.** The current CodeDigester targets Rust. Generalization to other languages requires language-specific extraction modules.
-- **Precision parity.** The graph did not exceed grep precision on our benchmark. Larger and more diverse query sets may reveal where graph traversal provides measurable quantitative advantage.
+- **Precision gap.** The graph underperformed grep on precision (0.140 vs. 0.323). This reveals that **single-hop retrieval is insufficient** for code queries. Multi-hop graph traversal, relevance ranking improvements, and hybrid graph-text approaches are needed to close this gap.
 - **Colony parameters.** Default parameters were used without tuning. Systematic hyperparameter optimization could improve graph quality.
+- **Query diversity.** Our 10-query evaluation set was limited. Larger, more diverse query sets covering different coding tasks (debugging, refactoring, feature addition) would provide a fuller picture of graph utility.
 
 ---
 
@@ -211,12 +236,12 @@ We have presented Agentic Memory, a biologically-inspired system for constructin
 
 Our evaluation on the phago-core project demonstrated:
 
-1. **Effective extraction** of 829 code elements from a real Rust codebase.
-2. **Rich graph construction** yielding 662 nodes and 34,039 edges through 100 ticks of colony simulation.
-3. **Competitive retrieval** matching a grep baseline (P@5 = 0.323) while providing qualitatively richer, concept-oriented results.
-4. **Perfect session persistence** with 100% fidelity across save/load cycles (662/662 nodes, 34,039/34,039 edges).
+1. **Effective extraction** of 830 code elements from 55 Rust source files.
+2. **Rich graph construction** yielding 659 nodes and 33,490 edges through 100 ticks of colony simulation.
+3. **Complementary retrieval** providing structural context (P@5 = 0.140) that differs qualitatively from grep's exact matching (P@5 = 0.323). The lower precision reveals that multi-hop traversal and better relevance ranking are needed.
+4. **Perfect session persistence** with 100% fidelity across save/load cycles (659/659 nodes, 33,490/33,490 edges preserved identically).
 
-A self-organizing biological knowledge graph of code provides contextually rich retrieval with perfect cross-session persistence. This addresses a fundamental gap in developer tooling: the absence of semantic memory that learns, persists, and grows with a codebase over time.
+A self-organizing biological knowledge graph of code provides **conceptual exploration and cross-session memory** -- capabilities that complement traditional search. This addresses a fundamental gap in developer tooling: the absence of semantic memory that learns, persists, and grows with a codebase over time. While precision improvements are needed, the graph's ability to surface structural relationships represents a qualitatively different -- and valuable -- perspective on code understanding.
 
 The code is available as part of the phago-core project and is, fittingly, indexed by its own knowledge graph.
 

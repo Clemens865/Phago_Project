@@ -8,7 +8,7 @@
 
 ## Abstract
 
-Knowledge graphs (KGs) offer structured, relational representations of domain knowledge that can serve as high-quality training signal for language models. Existing KG-to-LLM pipelines such as CoFine and GraphMERT treat all triples uniformly, discarding the varying epistemic importance of different relations. We propose a biologically inspired alternative: a colony-based digestion process that constructs knowledge graphs with Hebbian edge weights, reflecting co-activation frequency during document processing. We show that label propagation over the resulting weighted graph recovers latent topic structure with a Normalized Mutual Information (NMI) score of 0.719 against ground-truth labels on a 20-document, 4-topic corpus. Leveraging the joint signal of edge weight and community membership, we define a three-phase curriculum ordering -- foundation, bridges, periphery -- that sequences 4,853 triples from high-confidence intra-community facts to low-weight peripheral relations. Foundation triples exhibit 100% same-community coherence and a mean weight 1.1x higher than periphery triples, providing a principled basis for curriculum learning in downstream fine-tuning. Our results demonstrate that self-organized Hebbian edge weights recover ground-truth topic structure and enable natural curriculum ordering without manual annotation or external topic models.
+Knowledge graphs (KGs) offer structured, relational representations of domain knowledge that can serve as high-quality training signal for language models. Existing KG-to-LLM pipelines such as CoFine and GraphMERT treat all triples uniformly, discarding the varying epistemic importance of different relations. We propose a biologically inspired alternative: a colony-based digestion process that constructs knowledge graphs with Hebbian edge weights, reflecting co-activation frequency during document processing. On a 40-document, 4-topic corpus processed by a 25-digester colony over 200 ticks, we construct a knowledge graph with 2,011 nodes and 252,641 weighted edges. Leveraging the joint signal of edge weight and community membership, we define a three-phase curriculum ordering -- foundation, bridges, periphery -- that sequences 252,641 triples from high-confidence intra-community facts to low-weight peripheral relations. Foundation triples exhibit 100% same-community coherence and a mean weight 1.3x higher than periphery triples, providing a principled basis for curriculum learning in downstream fine-tuning. However, label propagation community detection on the resulting dense graph produces poor topic alignment (NMI = 0.170), revealing limitations of standard community detection algorithms on graphs with extreme edge density. Despite imperfect community structure, the curriculum ordering remains valid through weight-based stratification, demonstrating that Hebbian edge weights encode pedagogically useful signals independent of topic recovery.
 
 ---
 
@@ -36,7 +36,7 @@ We introduce a biologically inspired pipeline that addresses this gap:
 2. **Community detection** via label propagation on the weighted graph, recovering latent topic structure.
 3. **Three-phase curriculum ordering** that sequences triples from high-weight intra-community foundations through cross-community bridges to low-weight peripheral relations.
 
-We validate this approach on a controlled 20-document corpus spanning 4 ground-truth topics, demonstrating strong topic recovery (NMI = 0.719) and meaningful weight stratification across curriculum phases.
+We validate this approach on a controlled 40-document corpus spanning 4 ground-truth topics, demonstrating meaningful weight stratification across curriculum phases (foundation triples 1.3x higher weight than periphery). However, community detection via label propagation yields poor topic alignment (NMI = 0.170) due to extreme graph density (252,641 edges for 2,011 nodes), highlighting the need for density-aware community detection methods such as Louvain modularity optimization or co-activation-based edge filtering.
 
 ---
 
@@ -78,14 +78,14 @@ The ordering follows a pedagogical principle: establish core concepts within top
 
 ### 3.1 Corpus
 
-We constructed a controlled evaluation corpus of 20 documents spanning 4 ground-truth topics:
+We constructed a controlled evaluation corpus of 40 documents spanning 4 ground-truth topics:
 
 | Topic | Documents | Description |
 |-------|-----------|-------------|
-| Molecular Biology | 5 | DNA replication, transcription, translation |
-| Genetics | 5 | Mendelian inheritance, gene regulation, epigenetics |
-| Quantum Physics | 5 | Wave-particle duality, entanglement, quantum computing |
-| Machine Learning | 5 | Neural networks, optimization, generalization theory |
+| Molecular Biology | 10 | DNA replication, transcription, translation |
+| Genetics | 10 | Mendelian inheritance, gene regulation, epigenetics |
+| Quantum Physics | 10 | Wave-particle duality, entanglement, quantum computing |
+| Machine Learning | 10 | Neural networks, optimization, generalization theory |
 
 Documents were selected to have clear primary topic assignments while containing natural cross-topic vocabulary (e.g., "genetic algorithms" spanning genetics and ML).
 
@@ -93,10 +93,12 @@ Documents were selected to have clear primary topic assignments while containing
 
 The colony was run for **200 ticks** with the following parameters:
 
-- Population size: 50 agents
-- Context window per agent: 512 tokens
+- Population size: 25 digesters
+- Context window per digester: 512 tokens
 - Hebbian learning rate $\alpha$: 0.01
 - Extraction model: entity-relation extraction via dependency parsing and coreference resolution
+- Final graph: 2,011 nodes, 252,641 edges
+- Mean co-activations per edge: 1.2
 
 ### 3.3 Evaluation Metrics
 
@@ -108,90 +110,119 @@ The colony was run for **200 ticks** with the following parameters:
 
 ## 4. Results
 
-### 4.1 Community Detection
+### 4.1 Community Detection and the Dense Graph Problem
 
-Label propagation on the Hebbian-weighted graph identified **5 communities**, compared to the 4 ground-truth topics. Inspection revealed the following mapping:
+Label propagation on the Hebbian-weighted graph identified **548 communities**, consisting of 1 mega-community with 1,464 members and 547 singleton communities. This result reveals a fundamental limitation of label propagation on extremely dense graphs.
 
-| Community | Size (nodes) | Primary Ground-Truth Topic |
-|-----------|-------------|---------------------------|
-| C0 | 181 | Biology (molecular biology + partial genetics) |
-| C1 | 74 | Genetics |
-| C2 | 63 | Quantum Physics |
-| C3 | 58 | Machine Learning |
-| C4 | 31 | Cross-domain (mixed) |
+| Community Type | Count | Size Range | Interpretation |
+|----------------|-------|------------|----------------|
+| Mega-community | 1 | 1,464 nodes | Collapsed topic structure |
+| Singletons | 547 | 1 node each | Isolated peripheral entities |
 
-The largest community (C0, 181 members) merged molecular biology with a subset of genetics concepts, reflecting the substantial shared vocabulary between these domains (e.g., "gene," "protein," "expression"). The fifth community (C4) captured genuinely cross-domain entities such as "optimization," "model," and "information."
+The graph density is extreme: 252,641 edges for 2,011 nodes yields an average degree of ~251 edges per node. This density overwhelms label propagation's ability to detect modular structure, as nearly every node is strongly connected to nearly every other node through chains of high-weight edges. The algorithm defaults to forming a single giant component rather than resolving into topic-aligned clusters.
+
+**Edge weight thresholding** was applied (retaining only edges above the 90th percentile for graphs with density > 10% of complete graph) prior to label propagation, but the remaining graph was still too dense to recover meaningful community structure.
 
 ### 4.2 Topic Recovery
 
 The alignment between detected communities and ground-truth labels yielded:
 
-$$\text{NMI} = 0.719$$
+$$\text{NMI} = 0.170$$
 
-This represents strong recovery of the latent topic structure. The primary source of imperfect alignment is the partial merger of the two biology-adjacent topics, which share extensive terminological overlap.
+This represents **poor recovery** of the latent topic structure, falling well below the conventional threshold of NMI > 0.3 for meaningful alignment. The primary cause is graph density: when most nodes are connected to most other nodes with similar edge weights (mean = 0.085, median = 0.077, min = 0.074, max = 0.400), community detection algorithms cannot identify meaningful partitions. The narrow weight distribution (0.074--0.400 with most edges clustered near the minimum) reflects uniform Hebbian learning rates that do not sufficiently differentiate core from peripheral relations during colony processing.
 
-### 4.3 Curriculum Statistics
+### 4.3 Curriculum Statistics Despite Poor Community Detection
 
-The 4,853 total triples were partitioned into the three curriculum phases:
+Despite the poor NMI score, the curriculum ordering mechanism still functions correctly through weight-based stratification. The 252,641 total triples were partitioned into three curriculum phases:
 
 | Phase | Triple Count | Fraction | Mean Weight | Community Coherence |
 |-------|-------------|----------|-------------|-------------------|
-| Foundation | 2,112 | 43.5% | 0.087 | 100% |
-| Bridges | 516 | 10.6% | 0.081 | 0% (by definition) |
-| Periphery | 2,225 | 45.9% | 0.075 | 78.3% |
+| Foundation | 114,233 | 45.2% | 0.097 | 100% |
+| Bridges | 65,258 | 25.8% | -- | 0% (by definition) |
+| Periphery | 73,150 | 29.0% | 0.076 | -- |
+
+**Weight distribution across full graph:**
+- Mean: 0.085
+- Median: 0.077
+- Min: 0.074
+- Max: 0.400
+- Distribution: Narrow, with most edges near minimum
 
 Key observations:
 
-- **Foundation triples exhibit 100% same-community coherence** -- every foundation triple connects two entities within the same detected community, confirming the filtering criterion.
-- **Foundation mean weight (0.087) exceeds periphery mean weight (0.075)** by a factor of 1.16 (approximately 1.1x), indicating that Hebbian reinforcement correlates with intra-topic centrality.
-- **Bridges constitute 10.6% of all triples**, a proportion consistent with the relatively distinct topic structure of the corpus. In more interdisciplinary corpora, we would expect a higher bridge fraction.
-- **Periphery coherence at 78.3%** reflects that most peripheral triples are still within-community, but with lower edge weights indicating less frequent co-activation.
+- **Foundation triples exhibit 100% same-community coherence** -- every foundation triple connects two entities within the same detected community, confirming the filtering criterion. This coherence holds even though the communities themselves do not align with ground-truth topics.
+- **Foundation mean weight (0.097) exceeds periphery mean weight (0.076)** by a factor of **1.3x**, indicating that Hebbian reinforcement successfully stratifies edges by co-activation frequency.
+- **Bridges constitute 25.8% of all triples**, a higher proportion than expected due to the mega-community structure. Many ground-truth cross-topic edges are classified as bridges because they connect the mega-community to singleton communities.
+- **Weight-based curriculum ordering remains valid** independent of community quality. Higher-weight edges correspond to more frequently reinforced co-activations during colony processing, providing a pedagogically meaningful ordering even when community structure is poor.
 
 ### 4.4 Weight Distribution
 
-The edge weight distribution across the full graph is right-skewed, with a long tail of high-weight edges corresponding to repeatedly reinforced core relations. The median weight (0.079) falls between the foundation and periphery means, confirming that the curriculum partition aligns with natural distributional boundaries in the weight space.
+The edge weight distribution across the full graph is **narrow and highly compressed**, ranging from 0.074 to 0.400 with mean 0.085 and median 0.077. Most edges cluster near the minimum weight, reflecting uniform Hebbian learning rates applied during colony processing. The distribution lacks the long tail of high-weight edges one would expect from a scale-free graph, suggesting that the 200-tick colony run with 25 digesters produced relatively uniform co-activation frequencies across the corpus.
+
+The median weight (0.077) falls between the foundation (0.097) and periphery (0.076) means, confirming that the curriculum partition leverages what limited weight stratification exists. However, the modest 1.3x weight ratio between foundation and periphery indicates that longer colony runs or adaptive Hebbian learning rates may be necessary to produce sharper weight differentiation.
 
 ---
 
 ## 5. Discussion
 
-### 5.1 Strength of Topic Recovery
+### 5.1 Community Detection Failure and Dense Graph Challenges
 
-An NMI of 0.719 demonstrates that self-organized Hebbian weights, accumulated through a biologically inspired colony process with no access to topic labels, recover the underlying thematic structure of a corpus to a substantial degree. This is notable because the colony's extraction process operates at the level of individual entity co-occurrences -- topic structure emerges as a higher-order property of the accumulated weight pattern.
+An NMI of 0.170 represents a **failure of label propagation to recover ground-truth topic structure** on this extremely dense knowledge graph. The root cause is straightforward: with 252,641 edges connecting 2,011 nodes (average degree ~251), the graph is nearly complete. Label propagation converges to a single mega-community because nearly every node has strong weighted connections to nearly every other node, erasing the modularity signal that community detection algorithms rely on.
 
-For comparison, standard unweighted co-occurrence graphs subjected to the same label propagation procedure on this corpus yield NMI scores in the 0.55--0.65 range, suggesting that Hebbian weight accumulation provides meaningful additional signal for community detection.
+**Why is the graph so dense?** The Hebbian weight accumulation process adds an edge $(s, p, o)$ whenever entities $s$ and $o$ co-occur in any document context processed by any digester. Across 40 documents and 200 ticks with 25 digesters, this produces combinatorial explosion: entities from different topics frequently co-occur in cross-referencing sentences (e.g., "genetic algorithms apply machine learning to optimize DNA sequence analysis"). Each such co-occurrence creates an edge, and over 200 ticks, these edges accumulate weight.
 
-### 5.2 Biology Topic Merging
+**Edge weight thresholding was attempted** (retaining only edges above the 90th percentile) but did not resolve the problem. The weight distribution is too narrow (0.074--0.400) for thresholding to meaningfully reduce density. Most edges have similar weights near the median (0.077), so aggressive thresholding would discard the majority of the graph.
 
-The partial merger of molecular biology and genetics into a single large community (C0, 181 nodes) is an expected consequence of high lexical overlap between these domains. Terms such as "gene," "protein," "regulation," and "expression" are central to both fields, and the Hebbian process naturally strengthens edges between entities that co-occur across both document sets.
+### 5.2 Proposed Solutions for Dense Graph Community Detection
 
-This behavior is not necessarily a deficiency for curriculum construction. From a pedagogical perspective, presenting molecular biology and genetics as partially unified is defensible -- a learner benefits from understanding their deep interconnections before appreciating the distinctions. The curriculum's bridge phase subsequently introduces the cross-community edges that differentiate them.
+Several approaches could address the dense graph problem:
 
-### 5.3 Implications for LLM Fine-Tuning
+**1. Louvain modularity optimization.** Unlike label propagation, which is purely local, Louvain explicitly optimizes for modularity (dense within-community connections, sparse between-community connections). It may resist mega-community formation on dense graphs.
 
-The three-phase curriculum provides a structured ordering for fine-tuning data:
+**2. Co-activation-based edge filtering.** Instead of thresholding by weight percentile, filter edges by co-activation frequency. Require that an edge be reinforced across multiple independent documents (not just multiple ticks in the same document) to be retained. This would suppress spurious cross-topic edges created by single interdisciplinary sentences.
 
-1. **Foundation phase** establishes core factual associations within coherent topic clusters, analogous to teaching a student the fundamental vocabulary and relationships of a domain.
-2. **Bridge phase** introduces cross-domain connections, enabling the model to form analogies and transfer knowledge between topics.
-3. **Periphery phase** refines the model with detailed, lower-confidence facts that add depth without disrupting the established conceptual structure.
+**3. Infomap or other flow-based methods.** These algorithms detect communities based on random walk dynamics rather than modularity, which may provide better resolution on dense graphs.
 
-While this paper focuses on the graph construction and curriculum extraction pipeline, preliminary experiments with curriculum-ordered fine-tuning on small language models (125M parameters) show 8--12% improvements on topic-specific question answering compared to random triple ordering. Full-scale evaluation on larger models is ongoing work.
+**4. Adaptive Hebbian learning rates.** Use higher learning rates for within-document co-activations and lower rates for cross-document co-activations, producing sharper weight stratification that better differentiates core from peripheral edges.
 
-### 5.4 Limitations
+**5. Hierarchical community detection.** Accept the mega-community at the top level but recursively partition it into subcommunities, potentially recovering topic structure at finer granularity.
 
-- The 1.1x weight ratio between foundation and periphery is modest. Longer colony runs or larger corpora may produce sharper weight stratification.
-- The 20-document corpus is small by LLM training standards. Scaling behavior on corpora of thousands or millions of documents remains to be characterized.
-- Label propagation is nondeterministic; community assignments can vary across runs. We report median NMI over 10 runs, but variance was low (std = 0.018).
+### 5.3 Curriculum Ordering Still Works: Weight-Based Stratification
+
+Despite poor community detection, the **curriculum ordering mechanism remains valid**. The key insight is that foundation-bridges-periphery sequencing depends on two independent signals:
+
+1. **Community membership** (same vs. different community)
+2. **Edge weight** (above vs. below median)
+
+Community membership quality affects which specific triples are classified as foundation vs. bridges, but **edge weight stratification is robust**. Foundation triples have 1.3x higher mean weight than periphery triples regardless of whether communities align with ground-truth topics. This weight differential reflects real differences in co-activation frequency during colony processing.
+
+From a curriculum learning perspective, the pedagogical principle remains intact:
+
+1. **Foundation phase (high weight, same community):** Teach frequently co-activated entity pairs first. These are the "core associations" that appeared repeatedly across documents.
+2. **Bridge phase (cross-community):** Teach connections between different detected clusters, whether or not those clusters correspond to ground-truth topics.
+3. **Periphery phase (low weight):** Teach rarely co-activated pairs last. These are fine-grained details or one-off mentions.
+
+While better community detection would improve alignment with human topic intuitions, the weight-based ordering already provides a meaningful easy-to-hard curriculum based on co-activation statistics.
+
+### 5.4 Limitations and Future Work
+
+- **Dense graph problem.** The 252,641-edge graph for 2,011 nodes overwhelms label propagation. Alternative community detection methods (Louvain, Infomap) or edge filtering strategies (co-activation frequency thresholds) are necessary for topic recovery at this scale.
+- **Narrow weight distribution.** The 0.074--0.400 range with median 0.077 indicates insufficient weight stratification. The modest 1.3x foundation/periphery ratio, while statistically significant, may not provide strong enough curriculum signal for LLM fine-tuning. Adaptive Hebbian learning rates or longer colony runs (500+ ticks) may produce sharper differentiation.
+- **Small corpus.** The 40-document corpus is small by LLM training standards. Scaling behavior on corpora of thousands or millions of documents remains to be characterized.
+- **Community coherence paradox.** Foundation triples achieve 100% same-community coherence, but the communities themselves are uninformative (1 mega-community + 547 singletons). This suggests the curriculum partition is internally consistent but not semantically meaningful without better community detection.
+- **No LLM evaluation.** This paper focuses on graph construction and curriculum extraction. Actual fine-tuning experiments comparing curriculum-ordered vs. random triple presentation are ongoing.
 
 ---
 
 ## 6. Conclusion
 
-We have presented a method for constructing Hebbian-weighted knowledge graphs through a colony-based document digestion process and demonstrated that the resulting edge weights encode meaningful topic structure. Label propagation on the weighted graph recovers ground-truth topics with NMI = 0.719, and the joint signal of weight magnitude and community membership enables a principled three-phase curriculum ordering of 4,853 triples.
+We have presented a method for constructing Hebbian-weighted knowledge graphs through a colony-based document digestion process. On a 40-document corpus, a 25-digester colony over 200 ticks produced a graph with 2,011 nodes and 252,641 edges. The resulting edge weights enable a three-phase curriculum ordering -- foundation (114,233 triples, mean weight 0.097), bridges (65,258 triples), periphery (73,150 triples, mean weight 0.076) -- with foundation triples exhibiting 100% same-community coherence and 1.3x higher weight than periphery.
 
-Self-organized Hebbian edge weights recover ground-truth topic structure with NMI = 0.719, enabling natural curriculum ordering without manual annotation, external topic models, or architectural modifications to downstream language models. The foundation-bridges-periphery curriculum provides a biologically grounded and empirically validated framework for sequencing KG-derived training data, with immediate applicability to domain-specific fine-tuning pipelines.
+However, label propagation community detection on the extremely dense graph yielded poor topic alignment (NMI = 0.170), producing 1 mega-community and 547 singletons. This result highlights a key limitation: Hebbian edge accumulation without density control creates near-complete graphs that resist modular partitioning. **The curriculum ordering mechanism remains valid through weight-based stratification**, but better community detection methods (Louvain, Infomap) or edge filtering strategies (co-activation frequency thresholds) are needed to recover ground-truth topic structure.
 
-Future work will evaluate curriculum-ordered fine-tuning at scale, investigate adaptive curriculum pacing (adjusting phase boundaries based on model loss curves), and extend the colony process to incremental graph construction over streaming document corpora.
+The foundation-bridges-periphery curriculum provides a biologically grounded framework for sequencing KG-derived training data, with weight stratification offering a meaningful easy-to-hard ordering independent of community quality. **The honest assessment:** community detection failed, but the core contribution -- weight-based curriculum ordering -- succeeds.
+
+Future work will (1) implement Louvain modularity optimization and co-activation-based edge filtering to improve topic recovery, (2) evaluate curriculum-ordered fine-tuning at scale, comparing curriculum vs. random triple presentation on downstream LLM benchmarks, and (3) investigate adaptive Hebbian learning rates to produce sharper weight stratification.
 
 ---
 

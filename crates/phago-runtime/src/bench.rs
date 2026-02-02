@@ -253,7 +253,8 @@ mod tests {
     #[test]
     fn benchmark_run_produces_data() {
         let mut colony = Colony::new();
-        let corpus = Corpus::from_embedded();
+        // Use inline corpus (fixed 20 docs) for deterministic test timing
+        let corpus = Corpus::inline_corpus();
         corpus.ingest_into(&mut colony);
         colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(80)));
 

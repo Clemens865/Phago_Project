@@ -49,6 +49,7 @@ pub fn genome_divergence(genomes: &[AgentGenome]) -> f64 {
 }
 
 /// Compute specialization index from genome parameter spread.
+#[allow(dead_code)]
 pub fn specialization_index(genomes: &[AgentGenome]) -> f64 {
     if genomes.len() < 2 {
         return 0.0;
@@ -66,6 +67,7 @@ pub fn specialization_index(genomes: &[AgentGenome]) -> f64 {
     cvs.iter().sum::<f64>() / cvs.len() as f64
 }
 
+#[allow(dead_code)]
 fn cv(values: Vec<f64>) -> f64 {
     let n = values.len() as f64;
     if n < 2.0 {

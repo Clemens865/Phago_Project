@@ -51,13 +51,13 @@ This sounds harsh, but it is the engine that drives improvement. Every agent tha
 
 The key insight is that failure is not waste -- it is information. Every agent that fails and gets replaced tells the system something about what does not work. That information, accumulated over many generations, is what makes the surviving agents so effective.
 
-## 4. 155 Generations of Digital Evolution
+## 4. 300 Ticks, 140 Agents Spawned, 135 Generations of Digital Evolution
 
 What happens when you actually run this system? The results are striking.
 
-In simulation experiments tracking evolutionary agent populations over 155 generations, evolved agents dramatically outperformed their static counterparts in building and maintaining knowledge networks. By tick 300 -- a point well into the simulation where knowledge structures have had time to mature and stabilize -- evolved agents maintained 87% more knowledge connections than static agents given the same task and the same resources.
+In simulation experiments tracking evolutionary agent populations across 40 documents over 300 ticks, evolved agents dramatically outperformed their static counterparts in building and maintaining knowledge networks. The evolutionary system spawned 140 total agents, reaching generation 135. By tick 300 -- a point well into the simulation where knowledge structures have had time to mature and stabilize -- evolved agents maintained 101,824 edges compared to 8,769 edges in the static population. That is 11.6 times more knowledge connections. The evolved population also grew to 1,582 nodes versus 864 nodes in the static system.
 
-That number deserves unpacking. Knowledge connections are the links between pieces of information that an agent builds and maintains over time. More connections, maintained well, means a richer and more useful knowledge base. It means the agent can find relationships between ideas, recall relevant information, and respond to new situations with greater nuance. An 87% advantage is not a marginal improvement. It is the difference between a student who memorized a few facts and a student who understands how those facts relate to each other.
+That number deserves unpacking. Knowledge connections are the links between pieces of information that an agent builds and maintains over time. More connections, maintained well, means a richer and more useful knowledge base. It means the agent can find relationships between ideas, recall relevant information, and respond to new situations with greater nuance. An 11.6x advantage is not a marginal improvement. It is the difference between a student who memorized a few facts and a student who understands how those facts relate to each other.
 
 How does this happen? Several dynamics work together across the generations:
 
@@ -65,9 +65,9 @@ How does this happen? Several dynamics work together across the generations:
 
 **Middle generations (30-90)**: The population converges on effective strategies. Mutation rates naturally decrease as the system finds productive parameter ranges. Agents begin to specialize, with some optimizing for building new connections and others optimizing for maintaining existing ones.
 
-**Late generations (90-155)**: Refined specialization. The population has found configurations that static design would be unlikely to produce. Agents exhibit emergent behaviors -- patterns of knowledge management that no developer explicitly programmed but that arose from the evolutionary pressure to perform or be replaced.
+**Late generations (90-135)**: Refined specialization. The population has found configurations that static design would be unlikely to produce. Agents exhibit emergent behaviors -- patterns of knowledge management that no developer explicitly programmed but that arose from the evolutionary pressure to perform or be replaced.
 
-The 87% advantage at tick 300 is not a one-time spike. It represents a sustained, structural improvement in how the agent population handles knowledge -- an improvement that compounds over time as better agents pass their traits to even better successors.
+The 11.6x advantage at tick 300 is not a one-time spike. It represents a sustained, structural improvement in how the agent population handles knowledge -- an improvement that compounds over time as better agents pass their traits to even better successors. **The hypothesis that evolutionary agents build richer knowledge structures is strongly supported by these results.**
 
 ## 5. Agents That Specialize and Outperform -- Implications for AI Systems
 

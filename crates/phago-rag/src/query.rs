@@ -79,12 +79,26 @@ impl QueryEngine {
         let terms = tokenize(&q.text);
         let graph = colony.substrate().graph();
 
-        // Phase 1: Find seed nodes (exact label matches)
+        // Phase 1: Find seed nodes (fuzzy substring matching)
+        // Uses substring matching so queries like "membrane" find nodes
+        // labeled "cell_membrane", "membrane_proteins", etc.
         let mut seed_nodes: Vec<(NodeId, String)> = Vec::new();
+        let mut seed_seen: std::collections::HashSet<NodeId> = std::collections::HashSet::new();
         for term in &terms {
+            // First try exact match
             for nid in graph.find_nodes_by_exact_label(term) {
-                if let Some(node) = graph.get_node(nid) {
-                    seed_nodes.push((*nid, node.label.clone()));
+                if seed_seen.insert(*nid) {
+                    if let Some(node) = graph.get_node(nid) {
+                        seed_nodes.push((*nid, node.label.clone()));
+                    }
+                }
+            }
+            // Then try substring match for broader coverage
+            for nid in graph.find_nodes_by_label(term) {
+                if seed_seen.insert(nid) {
+                    if let Some(node) = graph.get_node(&nid) {
+                        seed_nodes.push((nid, node.label.clone()));
+                    }
                 }
             }
         }
@@ -103,17 +117,31 @@ impl QueryEngine {
         // (priority=cumulative_weight, node_id, path, depth)
         // Using Vec as a max-heap (sort and pop from end)
         let mut frontier: Vec<(f64, NodeId, Vec<String>, usize)> = Vec::new();
-        let max_expansions: usize = 60; // Budget limits how much of the graph we explore
+        let max_expansions: usize = 200; // Budget limits how much of the graph we explore
         let mut expansions = 0;
+
+        // Compute median edge weight to filter out weak edges during traversal
+        let all_edges = graph.all_edges();
+        let edge_threshold = if all_edges.is_empty() {
+            0.0
+        } else {
+            let mut weights: Vec<f64> = all_edges.iter().map(|(_, _, e)| e.weight).collect();
+            weights.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            weights[weights.len() * 75 / 100]
+        };
 
         for (nid, label) in &seed_nodes {
             visited.insert(*nid);
             if let Some(node) = graph.get_node(nid) {
+                // Seeds that match query terms get a high base score
+                let term_overlap = terms.iter()
+                    .filter(|t| node.label.to_lowercase().contains(t.as_str()))
+                    .count() as f64;
                 results.push(QueryResult {
                     label: node.label.clone(),
                     node_type: node.node_type.clone(),
                     access_count: node.access_count,
-                    score: node.access_count as f64 * 10.0,
+                    score: 10.0 + term_overlap * 5.0,
                     path: vec![label.clone()],
                     node_id: *nid,
                 });
@@ -121,9 +149,11 @@ impl QueryEngine {
             frontier.push((1.0, *nid, vec![label.clone()], 0));
         }
 
-        // Best-first search: always expand highest-weight frontier node
+        // Best-first search with edge filtering and additive hop-decay scoring.
+        // Only follows edges above the 75th percentile weight to avoid noise
+        // in dense graphs. Uses additive scoring (base_weight * decay^depth)
+        // instead of multiplicative cumulative weight which decays too fast.
         while !frontier.is_empty() && expansions < max_expansions {
-            // Sort by priority ascending so we can pop the best from the end
             frontier.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
             let (weight, current, path, depth) = frontier.pop().unwrap();
             expansions += 1;
@@ -137,11 +167,21 @@ impl QueryEngine {
                 if visited.contains(nid) {
                     continue;
                 }
+                // Only follow strong edges (above 75th percentile)
+                if edge.weight < edge_threshold {
+                    continue;
+                }
                 visited.insert(*nid);
 
                 if let Some(node) = graph.get_node(nid) {
-                    let cumulative_weight = weight * edge.weight;
-                    let score = cumulative_weight * (1.0 + (node.access_count as f64).ln());
+                    // Additive scoring: edge weight decays per hop, term overlap dominates
+                    let hop_decay = 0.5_f64.powi((depth + 1) as i32);
+                    let graph_score = edge.weight * hop_decay * (1.0 + edge.co_activations as f64 * 0.1);
+                    let term_overlap = terms.iter()
+                        .filter(|t| node.label.to_lowercase().contains(t.as_str()))
+                        .count() as f64;
+                    let term_bonus = term_overlap * 5.0;
+                    let score = graph_score + term_bonus;
 
                     let mut node_path = path.clone();
                     node_path.push(node.label.clone());
@@ -155,7 +195,7 @@ impl QueryEngine {
                         node_id: *nid,
                     });
 
-                    frontier.push((cumulative_weight, *nid, node_path, depth + 1));
+                    frontier.push((weight * edge.weight, *nid, node_path, depth + 1));
                 }
             }
         }

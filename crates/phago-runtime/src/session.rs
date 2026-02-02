@@ -186,7 +186,7 @@ mod tests {
         let mut restored = Colony::new();
         restore_into_colony(&mut restored, &state);
 
-        let (identical, orig_n, orig_e, rest_n, rest_e) = verify_fidelity(&colony, &restored);
+        let (_identical, orig_n, _orig_e, rest_n, rest_e) = verify_fidelity(&colony, &restored);
         assert_eq!(orig_n, rest_n, "Node count should match");
         // Edge count may differ slightly due to label collisions
         assert!(rest_e > 0, "Restored colony should have edges");

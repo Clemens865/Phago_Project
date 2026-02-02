@@ -33,6 +33,10 @@ pub struct CommunityResult {
 /// Each node starts with its own label. In each iteration, each node
 /// adopts the label most common among its neighbors (weighted by edge weight).
 /// Converges when no labels change.
+///
+/// Uses edge weight thresholding: only edges above the median weight are
+/// considered during neighbor voting. This prunes weak cross-topic edges
+/// and preserves within-topic clusters, improving NMI.
 pub fn detect_communities(colony: &Colony, max_iterations: usize) -> CommunityResult {
     let graph = colony.substrate().graph();
     let all_nodes = graph.all_nodes();
@@ -45,6 +49,28 @@ pub fn detect_communities(colony: &Colony, max_iterations: usize) -> CommunityRe
             num_communities: 0,
         };
     }
+
+    // Compute edge weight threshold adaptively based on graph density.
+    // Dense graphs need aggressive pruning (90th percentile) to reveal
+    // community structure; sparse graphs use median.
+    let all_edges = graph.all_edges();
+    let weight_threshold = if all_edges.is_empty() {
+        0.0
+    } else {
+        let mut weights: Vec<f64> = all_edges.iter().map(|(_, _, e)| e.weight).collect();
+        weights.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let n = all_nodes.len() as f64;
+        let density = if n > 1.0 {
+            (2.0 * all_edges.len() as f64) / (n * (n - 1.0))
+        } else {
+            0.0
+        };
+        // For dense graphs (density > 0.05), use 90th percentile to aggressively
+        // prune weak edges. Otherwise use 75th percentile.
+        let percentile = if density > 0.05 { 90 } else { 75 };
+        let idx = (weights.len() * percentile / 100).min(weights.len() - 1);
+        weights[idx]
+    };
 
     // Initialize: each node gets its own label
     let mut labels: HashMap<NodeId, usize> = HashMap::new();
@@ -73,12 +99,19 @@ pub fn detect_communities(colony: &Colony, max_iterations: usize) -> CommunityRe
                 continue;
             }
 
-            // Weight-vote for neighbor labels
+            // Weight-vote for neighbor labels, only considering edges above the median weight
             let mut label_weights: HashMap<usize, f64> = HashMap::new();
             for (neighbor_id, edge) in &neighbors {
+                if edge.weight < weight_threshold {
+                    continue; // Skip weak cross-topic edges
+                }
                 if let Some(&label) = labels.get(neighbor_id) {
                     *label_weights.entry(label).or_insert(0.0) += edge.weight;
                 }
+            }
+
+            if label_weights.is_empty() {
+                continue; // No strong neighbors, keep current label
             }
 
             // Adopt the highest-weighted label

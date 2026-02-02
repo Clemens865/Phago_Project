@@ -11,7 +11,6 @@
 //! 5. Measure NMI vs ground truth
 
 use phago_agents::digester::Digester;
-use phago_core::types::Position;
 use phago_runtime::bench::{self, BenchmarkConfig};
 use phago_runtime::colony::Colony;
 use phago_runtime::community;
@@ -27,17 +26,21 @@ fn main() {
     println!();
 
     // --- Phase 1: Build colony ---
-    let corpus = Corpus::from_embedded();
-    let ground_truth = corpus.ground_truth();
+    let corpus = Corpus::from_embedded().limit(40);
+    let _ground_truth = corpus.ground_truth();
     println!("Corpus: {} documents, {} categories",
         corpus.len(), corpus.categories().len());
 
     let mut colony = Colony::new();
     corpus.ingest_into(&mut colony);
 
-    for doc in &corpus.documents {
+    // Spawn digesters distributed across the corpus (cap at 25 for scalability)
+    let max_digesters = 25.min(corpus.documents.len());
+    let step = corpus.documents.len().max(1) / max_digesters.max(1);
+    for i in 0..max_digesters {
+        let doc_idx = (i * step).min(corpus.documents.len() - 1);
         colony.spawn(Box::new(
-            Digester::new(doc.position).with_max_idle(120),
+            Digester::new(corpus.documents[doc_idx].position).with_max_idle(120),
         ));
     }
 

@@ -29,13 +29,13 @@ fn main() {
     println!("╚══════════════════════════════════════════════════════╝");
     println!();
 
-    let corpus = Corpus::from_embedded();
+    let corpus = Corpus::from_embedded().limit(40);
     let total_ticks = 300u64;
     let checkpoint_ticks = vec![100, 200, 300];
 
     // --- Condition 1: Static Population ---
     println!("── Condition 1: Static Population (11 agents) ────────");
-    let (static_snapshots, static_checkpoints, static_evo_snapshots) =
+    let (_static_snapshots, static_checkpoints, static_evo_snapshots) =
         run_condition("static", &corpus, total_ticks, &checkpoint_ticks,
             11, &mut NoSpawnPolicy, 0.0);
 
@@ -47,7 +47,7 @@ fn main() {
 
     // --- Condition 3: Random Spawn (control) ---
     println!("── Condition 3: Random Spawn (5→15, random genomes) ──");
-    let (random_snapshots, random_checkpoints, random_evo_snapshots) =
+    let (_random_snapshots, random_checkpoints, random_evo_snapshots) =
         run_condition("random", &corpus, total_ticks, &checkpoint_ticks,
             5, &mut RandomSpawnPolicy::new(15), 0.5);
 
@@ -199,7 +199,7 @@ fn run_condition(
     let mut snapshots = Vec::new();
     let mut checkpoint_metrics = Vec::new();
     let mut evo_snapshots = Vec::new();
-    let mut total_spawned = 0u64;
+    let mut _total_spawned = 0u64;
 
     snapshots.push(colony.snapshot());
 
@@ -241,7 +241,7 @@ fn run_condition(
                         agent_genomes.insert(id, genome);
                         fitness_tracker.register(id, generation);
                         colony.spawn(Box::new(digester));
-                        total_spawned += 1;
+                        _total_spawned += 1;
                     }
                 }
                 _ => {}

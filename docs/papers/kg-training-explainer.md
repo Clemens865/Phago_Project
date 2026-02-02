@@ -48,15 +48,15 @@ Once communities are identified, the system can order the material for training.
 
 This is the critical question. It is one thing to build an elegant system. It is another thing entirely to show that it works.
 
-To test the approach, the team used a document collection spanning four known topics. The system had no access to the topic labels. It had to discover the structure on its own, using nothing but the patterns of concept co-occurrence extracted from the text.
+To test the approach, the team used a document collection of 40 documents spanning four known topics. The system had no access to the topic labels. It had to discover the structure on its own, using nothing but the patterns of concept co-occurrence extracted from the text.
 
-The results were striking.
+The results were mixed but instructive.
 
-The system detected five communities in the knowledge graph. Four of these mapped cleanly onto the four known topics. The fifth captured a small cluster of cross-cutting concepts that bridged multiple topics -- which, if you think about it, is exactly what you would expect in a well-organized body of knowledge. Some ideas (like "data analysis" or "methodology") genuinely belong to multiple fields.
+The system extracted 252,641 triples from the documents and built a dense knowledge graph. It then detected 548 communities in that graph -- far more than the four known topics. Most of these communities were singletons or very small clusters, suggesting that the graph's density made it difficult for the community detection algorithm to identify coherent large-scale structure.
 
-To measure how well the system's discovered structure matched the actual topic structure, the team used a metric called Normalized Mutual Information, or NMI. An NMI of 0 means the system's groupings are completely random relative to the real topics. An NMI of 1 means perfect agreement. The system achieved an NMI of 0.719 -- meaning it recovered the four-topic structure with roughly 72% accuracy, without ever being told the topics existed.
+To measure how well the system's discovered structure matched the actual topic structure, the team used a metric called Normalized Mutual Information, or NMI. An NMI of 0 means the system's groupings are completely random relative to the real topics. An NMI of 1 means perfect agreement. The system achieved an NMI of 0.170 -- meaning it recovered only about 17% of the four-topic structure. The dense graph, with its many cross-cutting connections, prevented clean topic separation.
 
-Even more telling: when the team examined the foundation layer -- the concepts the system identified as the most fundamental, the ones that would go at the very beginning of the "textbook" -- 100% of them came from a single topic. The system had independently identified a coherent foundational body of knowledge and placed it first in the curriculum. It had, without instruction, done what a good teacher does: start with the basics, build from there.
+However, one result held strong: when the team examined the foundation layer -- the concepts the system identified as the most fundamental, the ones that would go at the very beginning of the "textbook" -- 100% of them came from a single topic. Even though community detection struggled, the system successfully identified a coherent foundational body of knowledge and placed it first in the curriculum. It had, without instruction, done what a good teacher does: start with the basics, build from there. The challenge lies in the middle layers, where dense connectivity obscures topic boundaries.
 
 ## 5. What This Means for AI Training
 

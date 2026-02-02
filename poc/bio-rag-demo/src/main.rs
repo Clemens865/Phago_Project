@@ -33,7 +33,7 @@ fn main() {
     println!();
 
     // --- Load corpus and queries ---
-    let corpus = Corpus::from_embedded();
+    let corpus = Corpus::from_embedded().limit(40);
     println!("Corpus: {} documents, {} categories",
         corpus.len(), corpus.categories().len());
 
@@ -48,10 +48,13 @@ fn main() {
     let mut colony = Colony::new();
     corpus.ingest_into(&mut colony);
 
-    // Spawn digesters near each document
-    for doc in &corpus.documents {
+    // Spawn digesters distributed across the corpus (cap at 25 for scalability)
+    let max_digesters = 25.min(corpus.documents.len());
+    let step = corpus.documents.len().max(1) / max_digesters.max(1);
+    for i in 0..max_digesters {
+        let doc_idx = (i * step).min(corpus.documents.len() - 1);
         colony.spawn(Box::new(
-            Digester::new(doc.position).with_max_idle(120),
+            Digester::new(corpus.documents[doc_idx].position).with_max_idle(120),
         ));
     }
 

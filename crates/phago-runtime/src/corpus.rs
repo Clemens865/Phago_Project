@@ -82,11 +82,52 @@ impl Corpus {
         Ok(Corpus { documents, name })
     }
 
-    /// Built-in 20-document test corpus across 4 topics.
+    /// Load corpus from disk or fall back to inline content.
     ///
-    /// Topics: cell_biology (5), molecular_transport (5), genetics (5), quantum_computing (5).
+    /// Tries to load the expanded 100-document corpus from the `poc/data/corpus/`
+    /// directory. Falls back to an inline 20-document corpus if the directory
+    /// is not found (e.g., when running tests from a different working directory).
+    ///
+    /// Topics: cell_biology, molecular_transport, genetics, quantum_computing.
     /// Ground-truth clusters enable measuring community detection purity.
     pub fn from_embedded() -> Self {
+        // Try common corpus directory paths
+        let candidate_paths = [
+            Path::new("poc/data/corpus"),
+            Path::new("../../poc/data/corpus"),
+        ];
+        for path in &candidate_paths {
+            if path.exists() {
+                if let Ok(corpus) = Self::from_directory(path) {
+                    if corpus.len() >= 20 {
+                        return corpus;
+                    }
+                }
+            }
+        }
+
+        // Also try relative to CARGO_MANIFEST_DIR at compile time
+        let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(|p| p.parent())
+            .map(|p| p.join("poc/data/corpus"));
+        if let Some(path) = manifest_path {
+            if path.exists() {
+                if let Ok(corpus) = Self::from_directory(&path) {
+                    if corpus.len() >= 20 {
+                        return corpus;
+                    }
+                }
+            }
+        }
+
+        // Fallback: inline 20-document corpus
+        Self::inline_corpus()
+    }
+
+    /// Inline fallback corpus with 20 documents across 4 topics.
+    /// Used when the disk corpus directory is not available.
+    pub fn inline_corpus() -> Self {
         let topics: &[(&str, &[&str])] = &[
             ("cell_biology", &[
                 "The cell membrane is a phospholipid bilayer that forms the outer boundary of every living cell. Integral membrane proteins span the bilayer and serve as channels receptors and enzymes. The fluid mosaic model describes the dynamic nature of the membrane where lipids and proteins move laterally within the layer.",
@@ -178,6 +219,25 @@ impl Corpus {
         cats
     }
 
+    /// Limit corpus to at most `max` documents, evenly sampled across categories.
+    pub fn limit(mut self, max: usize) -> Self {
+        if self.documents.len() <= max {
+            return self;
+        }
+        let cats = self.categories();
+        let per_cat = max / cats.len().max(1);
+        let mut limited = Vec::new();
+        for cat in &cats {
+            let cat_docs: Vec<_> = self.documents.iter()
+                .filter(|d| d.category.as_deref() == Some(cat))
+                .cloned()
+                .collect();
+            limited.extend(cat_docs.into_iter().take(per_cat));
+        }
+        self.documents = limited;
+        self
+    }
+
     /// Ingest all documents into a colony.
     pub fn ingest_into(&self, colony: &mut Colony) {
         for doc in &self.documents {
@@ -191,9 +251,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn embedded_corpus_has_20_documents() {
+    fn embedded_corpus_has_at_least_20_documents() {
         let corpus = Corpus::from_embedded();
-        assert_eq!(corpus.len(), 20);
+        assert!(corpus.len() >= 20, "corpus has {} docs, expected >= 20", corpus.len());
     }
 
     #[test]
@@ -209,7 +269,13 @@ mod tests {
     fn ground_truth_maps_all_documents() {
         let corpus = Corpus::from_embedded();
         let gt = corpus.ground_truth();
-        assert_eq!(gt.len(), 20);
+        assert!(gt.len() >= 20, "ground truth has {} entries, expected >= 20", gt.len());
+    }
+
+    #[test]
+    fn inline_corpus_has_20_documents() {
+        let corpus = Corpus::inline_corpus();
+        assert_eq!(corpus.len(), 20);
     }
 
     #[test]
@@ -222,7 +288,7 @@ mod tests {
             .join("poc/data/corpus");
         if path.exists() {
             let corpus = Corpus::from_directory(&path).unwrap();
-            assert_eq!(corpus.len(), 20);
+            assert!(corpus.len() >= 20, "directory corpus has {} docs", corpus.len());
         }
     }
 }

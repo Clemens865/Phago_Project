@@ -48,17 +48,15 @@ No one programs these connections. They emerge.
 
 ---
 
-## 4. The Experiment: 20 Questions, 10 Rounds
+## 4. The Experiment: 40 Documents, 20 Questions, 10 Rounds
 
-We tested this with a straightforward experiment. We prepared a knowledge base of documents and asked the system 20 questions. Then we asked them again. And again. Ten rounds total -- the same 20 questions, asked 10 times each.
+We tested this with a straightforward experiment. We prepared a knowledge base of 40 documents spanning 4 topics and asked the system 20 questions. Then we asked them again. And again. Ten rounds total -- the same 20 questions, asked 10 times each.
 
-We measured performance using a metric called Mean Reciprocal Rank, or MRR. Here is what MRR means in plain language: if the correct answer is the very first result the system returns, that scores a 1.0. If the correct answer is second, it scores 0.5. Third, it scores 0.33. The higher the MRR, the closer the best answer is to the top of the list.
+We measured performance using two metrics. Mean Reciprocal Rank (MRR) tells us how close the first relevant result is to the top: if the correct answer is the very first result, that scores 1.0. If second, it scores 0.5. Third, 0.33. Precision at 5 (P@5) tells us what fraction of the top 5 results are actually relevant.
 
-By the end of the experiment, the system achieved an MRR of 0.875. That means the correct answer was almost always the first or second result returned. For most questions, you would not need to scroll down at all.
+The graph-based system achieved an MRR of 0.714 and a P@5 of 0.270. For comparison, a traditional TF-IDF baseline achieved a P@5 of 0.658. What this tells us is nuanced: the graph retrieval finds the first relevant result faster on average (higher MRR), but has lower overall precision than keyword-based retrieval. The graph is better at surfacing *one* highly relevant document quickly, but TF-IDF is better at filling the top-5 list with multiple relevant documents.
 
-To put that number in context, consider what would happen with random retrieval -- a system that just grabs documents at random from the knowledge base. Against a corpus of meaningful size, random retrieval would produce an MRR so low it barely registers. Our graph-based system outperformed random retrieval by a factor of roughly 50. Not 50 percent better -- 50 times better.
-
-More importantly, the system improved over rounds. Early rounds showed lower MRR scores. Later rounds showed higher ones. The system was learning. Each round of questions reinforced the useful pathways and weakened the unhelpful ones. By round seven or eight, performance had largely plateaued -- the graph had settled into a stable, high-performing structure.
+Importantly, we did not observe round-over-round improvement in this experiment. The graph's performance remained relatively stable across all 10 rounds, suggesting that the reinforcement mechanism needs more diverse query patterns or a longer timescale to demonstrate cumulative learning. The system worked as designed -- it retrieved documents by walking weighted edges -- but the hypothesized improvement over time did not materialize in this particular test.
 
 No model was retrained. No weights in a neural network were updated. No new data was added. The only thing that changed was the structure of the graph, reshaped by the simple signal of which answers were good and which were not.
 

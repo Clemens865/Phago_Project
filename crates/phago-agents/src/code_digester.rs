@@ -4,8 +4,6 @@
 //! patterns from Rust source code. Builds a code knowledge graph
 //! where concepts are identifiers and edges are co-occurrence relations.
 
-use phago_core::types::Position;
-
 /// A code element extracted from source files.
 #[derive(Debug, Clone)]
 pub struct CodeElement {
