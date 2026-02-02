@@ -93,12 +93,18 @@ impl QueryEngine {
             return Vec::new();
         }
 
-        // Phase 2: BFS traversal weighted by edge weight
+        // Phase 2: Priority-queue traversal weighted by edge weight.
+        // Uses a sorted frontier (best-first search) with limited expansion budget.
+        // Stronger edges get explored first, so reinforcement directly affects
+        // which nodes appear in results.
         let mut results: Vec<QueryResult> = Vec::new();
         let mut visited: std::collections::HashSet<NodeId> = std::collections::HashSet::new();
 
-        // (node_id, cumulative_weight, path, depth)
-        let mut frontier: Vec<(NodeId, f64, Vec<String>, usize)> = Vec::new();
+        // (priority=cumulative_weight, node_id, path, depth)
+        // Using Vec as a max-heap (sort and pop from end)
+        let mut frontier: Vec<(f64, NodeId, Vec<String>, usize)> = Vec::new();
+        let max_expansions: usize = 60; // Budget limits how much of the graph we explore
+        let mut expansions = 0;
 
         for (nid, label) in &seed_nodes {
             visited.insert(*nid);
@@ -107,38 +113,35 @@ impl QueryEngine {
                     label: node.label.clone(),
                     node_type: node.node_type.clone(),
                     access_count: node.access_count,
-                    score: node.access_count as f64 * 10.0, // Seed nodes get high base score
+                    score: node.access_count as f64 * 10.0,
                     path: vec![label.clone()],
                     node_id: *nid,
                 });
             }
-            frontier.push((*nid, 1.0, vec![label.clone()], 0));
+            frontier.push((1.0, *nid, vec![label.clone()], 0));
         }
 
-        // BFS outward
-        while let Some((current, weight, path, depth)) = frontier.pop() {
+        // Best-first search: always expand highest-weight frontier node
+        while !frontier.is_empty() && expansions < max_expansions {
+            // Sort by priority ascending so we can pop the best from the end
+            frontier.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+            let (weight, current, path, depth) = frontier.pop().unwrap();
+            expansions += 1;
+
             if depth >= q.max_depth {
                 continue;
             }
 
             let neighbors = graph.neighbors(&current);
-            let mut scored_neighbors: Vec<_> = neighbors.iter()
-                .filter(|(nid, _)| !visited.contains(nid))
-                .map(|(nid, edge)| (*nid, edge.weight, edge.co_activations))
-                .collect();
-
-            // Sort by edge weight descending — explore strongest connections first
-            scored_neighbors.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-
-            for (nid, edge_weight, _co_act) in scored_neighbors {
-                if visited.contains(&nid) {
+            for (nid, edge) in &neighbors {
+                if visited.contains(nid) {
                     continue;
                 }
-                visited.insert(nid);
+                visited.insert(*nid);
 
-                if let Some(node) = graph.get_node(&nid) {
-                    let cumulative_weight = weight * edge_weight;
-                    let score = cumulative_weight * node.access_count as f64;
+                if let Some(node) = graph.get_node(nid) {
+                    let cumulative_weight = weight * edge.weight;
+                    let score = cumulative_weight * (1.0 + (node.access_count as f64).ln());
 
                     let mut node_path = path.clone();
                     node_path.push(node.label.clone());
@@ -149,10 +152,10 @@ impl QueryEngine {
                         access_count: node.access_count,
                         score,
                         path: node_path.clone(),
-                        node_id: nid,
+                        node_id: *nid,
                     });
 
-                    frontier.push((nid, cumulative_weight, node_path, depth + 1));
+                    frontier.push((cumulative_weight, *nid, node_path, depth + 1));
                 }
             }
         }
@@ -162,12 +165,51 @@ impl QueryEngine {
         results.truncate(q.max_results);
 
         // Phase 4: Reinforce traversed paths (the graph learns from queries)
+        // True Hebbian: "neurons that fire together wire together"
+        //
+        // Key insight: A result node that connects to MULTIPLE seed terms
+        // is more likely relevant (it bridges query concepts). We reinforce
+        // these multi-seed results more heavily.
         if q.reinforce && !results.is_empty() {
-            let result_node_ids: Vec<NodeId> = results.iter().map(|r| r.node_id).collect();
+            let seed_ids: Vec<NodeId> = seed_nodes.iter().map(|(nid, _)| *nid).collect();
+
+            // Count how many seed nodes each result is connected to
+            let graph_ref = colony.substrate().graph();
+            let mut result_seed_connections: Vec<(NodeId, usize)> = Vec::new();
+            for result in &results {
+                let mut seed_count = 0;
+                for seed_id in &seed_ids {
+                    if *seed_id == result.node_id {
+                        seed_count += 1;
+                    } else if graph_ref.get_edge(seed_id, &result.node_id).is_some() {
+                        seed_count += 1;
+                    }
+                }
+                result_seed_connections.push((result.node_id, seed_count));
+            }
+
             let graph_mut = colony.substrate_mut().graph_mut();
-            for nid in &result_node_ids {
-                if let Some(node) = graph_mut.get_node_mut(nid) {
-                    node.access_count += 1;
+
+            // Reinforce based on seed connectivity (Hebbian correlation)
+            for (result_id, seed_count) in &result_seed_connections {
+                if *seed_count == 0 {
+                    continue;
+                }
+                let multi_seed_bonus = *seed_count as f64;
+
+                // Boost access count proportional to seed connectivity
+                if let Some(node) = graph_mut.get_node_mut(result_id) {
+                    node.access_count += (*seed_count as u64) * 2;
+                }
+
+                // Strengthen all seed↔result edges
+                for seed_id in &seed_ids {
+                    if seed_id == result_id { continue; }
+                    if let Some(edge) = graph_mut.get_edge_mut(seed_id, result_id) {
+                        let boost = 0.05 * multi_seed_bonus;
+                        edge.weight = (edge.weight + boost).min(1.0);
+                        edge.co_activations += 1;
+                    }
                 }
             }
         }

@@ -1,0 +1,1 @@
+Quantum gates manipulate qubits through unitary transformations. The Hadamard gate creates superposition from basis states. CNOT gate entangles two qubits and forms a universal gate set when combined with single qubit rotations. Quantum circuits compose gates sequentially to implement algorithms. The depth of a quantum circuit determines its susceptibility to decoherence errors.

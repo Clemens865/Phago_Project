@@ -1,0 +1,1 @@
+DNA replication is semiconservative with each strand serving as a template. DNA helicase unwinds the double helix at the replication fork. DNA polymerase synthesizes new strands in the five prime to three prime direction. Leading strand synthesis is continuous while lagging strand synthesis produces Okazaki fragments joined by DNA ligase.

@@ -1,0 +1,1 @@
+Transcription converts DNA sequence into messenger RNA through RNA polymerase activity. Promoter regions upstream of genes recruit transcription factors and RNA polymerase. Introns are spliced out by the spliceosome complex leaving exons joined in the mature mRNA. The five prime cap and poly-A tail protect mRNA from degradation and facilitate ribosome binding.

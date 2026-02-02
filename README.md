@@ -49,17 +49,84 @@ open output/phago-colony.html
 - **Synthesizer** — Dormant until quorum reached, then identifies bridge concepts and topic clusters. Implements EMERGE + SENSE + APOPTOSE.
 - **Sentinel** — Learns what "normal" looks like, flags anomalies by deviation from self-model. Implements NEGATE + SENSE + APOPTOSE.
 
+## Research Branches
+
+Four falsifiable hypotheses, each with a working prototype, benchmark, visualization, and papers.
+
+### 1. Bio-RAG — Self-Reinforcing Retrieval
+
+Hebbian-reinforced knowledge graph retrieval that improves with repeated queries.
+
+```bash
+cargo run --bin phago-bio-rag-demo
+```
+
+| Metric | Reinforced | Static | TF-IDF | Random |
+|--------|-----------|--------|--------|--------|
+| P@5 (round 10) | 0.500 | 0.490 | 0.808 | 0.010 |
+| MRR | 0.875 | 0.875 | — | — |
+| Improvement over rounds | +4.2% | flat | fixed | fixed |
+
+### 2. Agent Evolution — Evolutionary Agents Through Apoptosis
+
+Agents evolving through intrinsic selection pressure (death + mutation + inheritance) produce richer knowledge graphs.
+
+```bash
+cargo run --bin phago-agent-evolution-demo
+```
+
+| Metric (tick 300) | Evolved | Static | Random |
+|-------------------|---------|--------|--------|
+| Edges | 1,741 | 1,173 | 973 |
+| Clustering coeff. | 0.894 | 0.883 | 0.861 |
+
+### 3. KG Training — Knowledge Graph to Training Data
+
+Hebbian-weighted triples with curriculum ordering for language model fine-tuning.
+
+```bash
+cargo run --bin phago-kg-training-demo
+```
+
+| Metric | Value |
+|--------|-------|
+| Communities detected | 14 |
+| NMI vs ground truth | 0.540 |
+| Triples exported | ~5,000 |
+| Foundation coherence | 100% same-community |
+
+### 4. Agentic Memory — Persistent Code Knowledge
+
+Self-organizing code knowledge graph that persists across sessions.
+
+```bash
+cargo run --bin phago-agentic-memory-demo
+```
+
+| Metric | Value |
+|--------|-------|
+| Code elements extracted | 829 |
+| Graph nodes / edges | 652 / 33,395 |
+| Session persistence | 100% fidelity |
+
 ## Architecture
 
 ```
 crates/
 ├── phago-core/       # Traits (10 primitives) + shared types
-├── phago-runtime/    # Colony, substrate, topology graph, metrics
-├── phago-agents/     # Digester, Sentinel, Synthesizer implementations
+├── phago-runtime/    # Colony, substrate, topology, corpus, sessions, export
+├── phago-agents/     # Digester, Sentinel, Synthesizer, genome, evolution
+├── phago-rag/        # Query engine, scoring, baselines, code queries
 ├── phago-viz/        # Self-contained HTML visualization (D3.js)
 └── phago-wasm/       # WASM integration (future)
 poc/
-└── knowledge-ecosystem/  # Proof of concept binary
+├── knowledge-ecosystem/   # Original proof of concept
+├── bio-rag-demo/          # Branch 1: self-reinforcing RAG
+├── agent-evolution-demo/  # Branch 2: evolutionary agents
+├── kg-training-demo/      # Branch 3: KG → training data
+├── agentic-memory-demo/   # Branch 4: persistent code knowledge
+└── data/corpus/           # 20-doc test corpus (4 topics)
+docs/papers/               # White papers + explainers for each branch
 ```
 
 ### Colony Lifecycle (per tick)
@@ -104,6 +171,7 @@ The POC also generates `output/phago-colony.html` — an interactive D3.js visua
 | 3 — Emergence | Done | Synthesizer (quorum sensing), Sentinel (negative selection) |
 | 4 — Cooperation | Done | Transfer, Symbiosis, Dissolution |
 | 5 — Prove It Works | Done | Metrics, visualization, hardening tests, performance optimization |
+| 6 — Research Branches | Done | 4 branches with prototypes, benchmarks, papers |
 
 ## Tests
 
@@ -125,6 +193,15 @@ cargo test -p phago-viz                # HTML visualization
 - [`docs/WHITEPAPER.md`](docs/WHITEPAPER.md) — Theoretical foundation
 - [`docs/PRD.md`](docs/PRD.md) — Product requirements and specifications
 - [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md) — Phased implementation roadmap
+
+### Research Papers
+
+| Branch | White Paper | Explainer |
+|--------|-----------|-----------|
+| Bio-RAG | [`bio-rag-whitepaper.md`](docs/papers/bio-rag-whitepaper.md) | [`bio-rag-explainer.md`](docs/papers/bio-rag-explainer.md) |
+| Agent Evolution | [`agent-evolution-whitepaper.md`](docs/papers/agent-evolution-whitepaper.md) | [`agent-evolution-explainer.md`](docs/papers/agent-evolution-explainer.md) |
+| KG Training | [`kg-training-whitepaper.md`](docs/papers/kg-training-whitepaper.md) | [`kg-training-explainer.md`](docs/papers/kg-training-explainer.md) |
+| Agentic Memory | [`agentic-memory-whitepaper.md`](docs/papers/agentic-memory-whitepaper.md) | [`agentic-memory-explainer.md`](docs/papers/agentic-memory-explainer.md) |
 
 ## License
 

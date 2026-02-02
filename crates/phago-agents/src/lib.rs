@@ -12,3 +12,7 @@
 pub mod digester;
 pub mod sentinel;
 pub mod synthesizer;
+pub mod genome;
+pub mod fitness;
+pub mod spawn;
+pub mod code_digester;

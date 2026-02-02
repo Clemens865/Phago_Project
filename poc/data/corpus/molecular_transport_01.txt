@@ -1,0 +1,1 @@
+Active transport moves molecules against their concentration gradient using ATP hydrolysis. The sodium potassium pump exchanges three sodium ions outward for two potassium ions inward, maintaining the electrochemical gradient. Primary active transport directly couples ATP hydrolysis to ion movement across the membrane through conformational changes in the transporter protein.

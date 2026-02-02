@@ -17,5 +17,8 @@
 //! | Flat retrieval | Structured, weighted paths |
 
 pub mod query;
+pub mod scoring;
+pub mod baseline;
+pub mod code_query;
 
 pub use query::{Query, QueryResult, QueryEngine};
