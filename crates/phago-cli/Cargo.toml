@@ -1,0 +1,25 @@
+[package]
+name = "phago-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Command-line interface for Phago biological computing framework"
+documentation = "https://docs.rs/phago-cli"
+readme = "README.md"
+
+[[bin]]
+name = "phago"
+path = "src/main.rs"
+
+[dependencies]
+phago = { workspace = true }
+clap = { version = "4", features = ["derive"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = "0.8"
+colored = "2"
+indicatif = "0.17"
+anyhow = "1"
+dirs = "5"
