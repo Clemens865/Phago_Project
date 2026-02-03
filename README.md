@@ -244,10 +244,11 @@ cargo test -p phago-viz                # HTML visualization
 
 ## Documentation
 
+- [`docs/papers/phago-whitepaper-v2.md`](docs/papers/phago-whitepaper-v2.md) — **Main whitepaper (v2.0)** — comprehensive technical paper
 - [`docs/EXECUTIVE_SUMMARY.md`](docs/EXECUTIVE_SUMMARY.md) — Latest results and roadmap
 - [`docs/COMPETITIVE_ANALYSIS.md`](docs/COMPETITIVE_ANALYSIS.md) — Where Phago wins vs traditional approaches
 - [`docs/USE_CASES.md`](docs/USE_CASES.md) — Practical applications
-- [`docs/WHITEPAPER.md`](docs/WHITEPAPER.md) — Theoretical foundation
+- [`docs/WHITEPAPER.md`](docs/WHITEPAPER.md) — Original theoretical foundation
 - [`docs/PRD.md`](docs/PRD.md) — Product requirements and specifications
 - [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md) — Phased implementation roadmap
 
