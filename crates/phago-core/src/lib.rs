@@ -15,6 +15,18 @@
 //! - **STIGMERGE** — Coordinate through environmental modification (stigmergy)
 //! - **NEGATE** — Define identity by exclusion, detect anomalies (negative selection)
 //! - **DISSOLVE** — Modulate agent-substrate boundaries (holobiont)
+//!
+//! ## Quick Start
+//!
+//! ```rust
+//! use phago_core::prelude::*;
+//!
+//! // Create a position
+//! let pos = Position::new(0.0, 0.0);
+//!
+//! // Create a deterministic agent ID (for testing)
+//! let id = AgentId::from_seed(42);
+//! ```
 
 pub mod primitives;
 pub mod types;
@@ -22,3 +34,5 @@ pub mod agent;
 pub mod substrate;
 pub mod signal;
 pub mod topology;
+pub mod error;
+pub mod prelude;

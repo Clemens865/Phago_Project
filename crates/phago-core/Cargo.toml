@@ -8,4 +8,5 @@ description = "Core traits and types for Phago biological computing primitives"
 [dependencies]
 uuid = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 petgraph = { workspace = true }

@@ -48,18 +48,13 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-phago-runtime = { git = "https://github.com/Clemens865/Phago_Project.git" }
-phago-agents = { git = "https://github.com/Clemens865/Phago_Project.git" }
-phago-rag = { git = "https://github.com/Clemens865/Phago_Project.git" }
+phago = { git = "https://github.com/Clemens865/Phago_Project.git" }
 ```
 
-Basic usage:
+Basic usage with the prelude:
 
 ```rust
-use phago_agents::digester::Digester;
-use phago_core::types::Position;
-use phago_rag::{hybrid_query, HybridConfig};
-use phago_runtime::colony::Colony;
+use phago::prelude::*;
 
 fn main() {
     let mut colony = Colony::new();

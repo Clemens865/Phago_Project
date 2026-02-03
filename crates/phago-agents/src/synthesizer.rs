@@ -92,6 +92,23 @@ impl Synthesizer {
         }
     }
 
+    /// Create a synthesizer with a deterministic ID (for testing).
+    pub fn with_seed(position: Position, seed: u64) -> Self {
+        Self {
+            id: AgentId::from_seed(seed),
+            position,
+            age_ticks: 0,
+            state: SynthesizerState::Dormant,
+            insights_produced: 0,
+            engulfed: None,
+            fragments: Vec::new(),
+            sense_radius: 50.0,
+            cooldown_ticks: 10,
+            max_idle_ticks: 100,
+            idle_ticks: 0,
+        }
+    }
+
     /// Total insights produced in lifetime.
     pub fn insights_produced(&self) -> u64 {
         self.insights_produced

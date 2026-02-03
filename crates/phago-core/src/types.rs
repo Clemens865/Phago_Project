@@ -11,6 +11,15 @@ impl AgentId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
     }
+
+    /// Create a deterministic AgentId from a seed (for testing).
+    pub fn from_seed(seed: u64) -> Self {
+        let bytes = seed.to_le_bytes();
+        let mut uuid_bytes = [0u8; 16];
+        uuid_bytes[0..8].copy_from_slice(&bytes);
+        uuid_bytes[8..16].copy_from_slice(&bytes);
+        Self(Uuid::from_bytes(uuid_bytes))
+    }
 }
 
 impl Default for AgentId {
@@ -27,6 +36,15 @@ impl NodeId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
     }
+
+    /// Create a deterministic NodeId from a seed (for testing).
+    pub fn from_seed(seed: u64) -> Self {
+        let bytes = seed.to_le_bytes();
+        let mut uuid_bytes = [0u8; 16];
+        uuid_bytes[0..8].copy_from_slice(&bytes);
+        uuid_bytes[8..16].copy_from_slice(&bytes);
+        Self(Uuid::from_bytes(uuid_bytes))
+    }
 }
 
 impl Default for NodeId {
@@ -42,6 +60,15 @@ pub struct DocumentId(pub Uuid);
 impl DocumentId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
+    }
+
+    /// Create a deterministic DocumentId from a seed (for testing).
+    pub fn from_seed(seed: u64) -> Self {
+        let bytes = seed.to_le_bytes();
+        let mut uuid_bytes = [0u8; 16];
+        uuid_bytes[0..8].copy_from_slice(&bytes);
+        uuid_bytes[8..16].copy_from_slice(&bytes);
+        Self(Uuid::from_bytes(uuid_bytes))
     }
 }
 

@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/phago",
     "crates/phago-core",
     "crates/phago-runtime",
     "crates/phago-wasm",
@@ -16,12 +17,16 @@ members = [
 
 [workspace.package]
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 license = "MIT"
-repository = "https://github.com/phago-framework/phago"
-description = "Biological computing primitives for emergent agent systems"
+repository = "https://github.com/Clemens865/Phago_Project"
+description = "Self-evolving knowledge substrates through biological computing primitives"
+authors = ["Clemens Hoenig"]
+keywords = ["knowledge-graph", "hebbian-learning", "rag", "agents", "biological-computing"]
+categories = ["science", "data-structures", "algorithms"]
 
 [workspace.dependencies]
+phago = { path = "crates/phago" }
 phago-core = { path = "crates/phago-core" }
 phago-runtime = { path = "crates/phago-runtime" }
 phago-wasm = { path = "crates/phago-wasm" }

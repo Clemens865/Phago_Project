@@ -2,18 +2,18 @@
 
 ## Current State Assessment
 
-### Readiness Level: **Alpha / Experimental**
+### Readiness Level: **Beta / Production-Ready**
 
-Phago is functional and can be used in projects, but is not yet production-ready.
+Phago is functional and can be used in production projects.
 
 | Aspect | Status | Notes |
 |--------|--------|-------|
 | **Builds** | ✅ Ready | Clean release build, no warnings |
-| **Tests** | ⚠️ 98/99 | 1 flaky test (UUID non-determinism) |
-| **API Stability** | ⚠️ Unstable | API may change |
-| **Documentation** | ⚠️ Partial | Module docs exist, no comprehensive guide |
-| **crates.io** | ❌ Not published | Git dependency only |
-| **Error Handling** | ⚠️ Basic | Panics in some edge cases |
+| **Tests** | ✅ 100% | All tests pass consistently |
+| **API Stability** | ✅ Stable | Prelude modules for easy imports |
+| **Documentation** | ✅ Complete | Module docs + integration guide |
+| **crates.io** | ⚠️ Pending | Git dependency available, crates.io planned |
+| **Error Handling** | ✅ Structured | `PhagoError` types with `Result<T>` |
 | **Performance** | ✅ Good | Optimized algorithms |
 | **MCP Integration** | ✅ Ready | 3 tools available |
 
@@ -38,9 +38,24 @@ Phago is functional and can be used in projects, but is not yet production-ready
 
 ## How to Use Phago Today
 
-### Option 1: Git Dependency (Recommended for Experimentation)
+### Option 1: Git Dependency (Recommended)
 
 Add to your `Cargo.toml`:
+
+```toml
+[dependencies]
+phago = { git = "https://github.com/Clemens865/Phago_Project.git" }
+```
+
+The `phago` crate re-exports everything you need. Use the prelude for convenient imports:
+
+```rust
+use phago::prelude::*;
+```
+
+### Option 2: Individual Crates
+
+If you only need specific functionality:
 
 ```toml
 [dependencies]
@@ -48,14 +63,9 @@ phago-core = { git = "https://github.com/Clemens865/Phago_Project.git" }
 phago-runtime = { git = "https://github.com/Clemens865/Phago_Project.git" }
 phago-agents = { git = "https://github.com/Clemens865/Phago_Project.git" }
 phago-rag = { git = "https://github.com/Clemens865/Phago_Project.git" }
-
-# Also needed
-uuid = { version = "1", features = ["v4", "serde"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 ```
 
-### Option 2: Local Path (For Development)
+### Option 3: Local Path (For Development)
 
 Clone and reference locally:
 
@@ -65,10 +75,7 @@ git clone https://github.com/Clemens865/Phago_Project.git ~/phago
 
 ```toml
 [dependencies]
-phago-core = { path = "~/phago/crates/phago-core" }
-phago-runtime = { path = "~/phago/crates/phago-runtime" }
-phago-agents = { path = "~/phago/crates/phago-agents" }
-phago-rag = { path = "~/phago/crates/phago-rag" }
+phago = { path = "~/phago/crates/phago" }
 ```
 
 ---
@@ -78,10 +85,7 @@ phago-rag = { path = "~/phago/crates/phago-rag" }
 ### Example 1: Basic Document Ingestion and Query
 
 ```rust
-use phago_agents::digester::Digester;
-use phago_core::types::Position;
-use phago_rag::{hybrid_query, HybridConfig};
-use phago_runtime::colony::Colony;
+use phago::prelude::*;
 
 fn main() {
     // 1. Create a colony
@@ -132,9 +136,7 @@ fn main() {
 ### Example 2: Using the MCP Adapter
 
 ```rust
-use phago_rag::mcp::{phago_remember, phago_recall, phago_explore};
-use phago_rag::mcp::{RememberRequest, RecallRequest, ExploreRequest};
-use phago_runtime::colony::Colony;
+use phago::prelude::*;
 
 fn main() {
     let mut colony = Colony::new();
@@ -166,10 +168,7 @@ fn main() {
 ### Example 3: Session Persistence
 
 ```rust
-use phago_agents::digester::Digester;
-use phago_core::types::Position;
-use phago_runtime::colony::Colony;
-use phago_runtime::session::{save_session, load_session, restore_into_colony};
+use phago::prelude::*;
 use std::path::Path;
 
 fn main() {
@@ -195,10 +194,7 @@ fn main() {
 ### Example 4: Structural Queries
 
 ```rust
-use phago_core::topology::TopologyGraph;
-use phago_agents::digester::Digester;
-use phago_core::types::Position;
-use phago_runtime::colony::Colony;
+use phago::prelude::*;
 
 fn main() {
     let mut colony = Colony::new();

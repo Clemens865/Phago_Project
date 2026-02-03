@@ -11,12 +11,19 @@ use phago_runtime::colony::{Colony, ColonyEvent};
 fn full_sim_produces_all_event_types() {
     let mut colony = Colony::new();
 
-    // Ingest documents
+    // Ingest multiple documents near each digester position so each agent
+    // can process at least 2 documents (required for CapabilityExport)
     colony.ingest_document(
         "Cell Biology",
         "The cell membrane controls transport of molecules into and out of the cell. \
          Proteins embedded in the membrane serve as channels and receptors.",
         Position::new(0.0, 0.0),
+    );
+    colony.ingest_document(
+        "Cell Structure",
+        "The cytoplasm contains organelles including mitochondria and ribosomes. \
+         The nucleus houses genetic material and controls cell function.",
+        Position::new(0.5, 0.5),
     );
     colony.ingest_document(
         "Molecular Transport",
@@ -25,18 +32,31 @@ fn full_sim_produces_all_event_types() {
         Position::new(5.0, 0.0),
     );
     colony.ingest_document(
+        "Transport Mechanisms",
+        "Vesicular transport moves large molecules through endocytosis and exocytosis. \
+         Motor proteins transport cargo along microtubule tracks.",
+        Position::new(5.5, 0.5),
+    );
+    colony.ingest_document(
         "Signaling",
         "Signal transduction begins when ligand binds to receptor protein on cell membrane. \
          This triggers cascade of intracellular events involving kinase enzymes.",
         Position::new(0.0, 5.0),
     );
+    colony.ingest_document(
+        "Signal Pathways",
+        "G-protein coupled receptors activate second messengers like cAMP and calcium. \
+         Phosphorylation cascades amplify and propagate cellular signals.",
+        Position::new(0.5, 5.5),
+    );
 
-    // Spawn agents
-    colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(200)));
-    colony.spawn(Box::new(Digester::new(Position::new(5.0, 0.0)).with_max_idle(200)));
-    colony.spawn(Box::new(Digester::new(Position::new(0.0, 5.0)).with_max_idle(200)));
-    colony.spawn(Box::new(Synthesizer::new(Position::new(2.5, 2.5))));
-    colony.spawn(Box::new(Sentinel::new(Position::new(2.5, 2.5))));
+    // Spawn agents with deterministic seeds for reproducible behavior
+    // Each digester is positioned near 2 documents
+    colony.spawn(Box::new(Digester::with_seed(Position::new(0.0, 0.0), 1).with_max_idle(200)));
+    colony.spawn(Box::new(Digester::with_seed(Position::new(5.0, 0.0), 2).with_max_idle(200)));
+    colony.spawn(Box::new(Digester::with_seed(Position::new(0.0, 5.0), 3).with_max_idle(200)));
+    colony.spawn(Box::new(Synthesizer::with_seed(Position::new(2.5, 2.5), 4)));
+    colony.spawn(Box::new(Sentinel::with_seed(Position::new(2.5, 2.5), 5)));
 
     let mut has_exported = false;
     let mut has_integrated = false;

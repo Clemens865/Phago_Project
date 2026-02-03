@@ -104,6 +104,25 @@ impl Sentinel {
         }
     }
 
+    /// Create a sentinel with a deterministic ID (for testing).
+    pub fn with_seed(position: Position, seed: u64) -> Self {
+        Self {
+            id: AgentId::from_seed(seed),
+            position,
+            age_ticks: 0,
+            state: SentinelState::Maturing(MATURATION_TICKS),
+            self_model: ConceptSelfModel::new(),
+            anomalies_detected: 0,
+            last_scan_tick: 0,
+            engulfed: None,
+            fragments: Vec::new(),
+            sense_radius: 50.0,
+            max_idle_ticks: 200,
+            idle_ticks: 0,
+            scan_interval: 5,
+        }
+    }
+
     pub fn anomalies_detected(&self) -> u64 {
         self.anomalies_detected
     }

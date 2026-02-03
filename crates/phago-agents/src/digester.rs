@@ -94,6 +94,29 @@ impl Digester {
         }
     }
 
+    /// Create a digester with a deterministic ID (for testing).
+    pub fn with_seed(position: Position, seed: u64) -> Self {
+        Self {
+            id: AgentId::from_seed(seed),
+            position,
+            age_ticks: 0,
+            state: DigesterState::Seeking,
+            engulfed: None,
+            current_document: None,
+            fragments: Vec::new(),
+            all_presentations: Vec::new(),
+            idle_ticks: 0,
+            useful_outputs: 0,
+            known_vocabulary: HashSet::new(),
+            has_exported: false,
+            integrated_from: HashSet::new(),
+            boundary_permeability: 0.0,
+            symbionts: Vec::new(),
+            max_idle_ticks: 30,
+            sense_radius: 10.0,
+        }
+    }
+
     /// Create a digester with custom idle threshold.
     pub fn with_max_idle(mut self, max_idle: u64) -> Self {
         self.max_idle_ticks = max_idle;
