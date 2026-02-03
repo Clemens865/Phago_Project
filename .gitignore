@@ -12,10 +12,10 @@ Cargo.lock
 .DS_Store
 Thumbs.db
 
-# Claude Flow
-.claude-flow/data/
-.claude-flow/logs/
-.claude-flow/sessions/
+# Claude Code IDE config (local only)
+.claude/
+.claude-flow/
+CLAUDE.md
 
 # Phago runtime data
 .phago/
