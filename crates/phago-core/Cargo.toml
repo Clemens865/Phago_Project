@@ -3,7 +3,13 @@ name = "phago-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Core traits and types for Phago biological computing primitives"
+documentation = "https://docs.rs/phago-core"
+readme = "README.md"
 
 [dependencies]
 uuid = { workspace = true }

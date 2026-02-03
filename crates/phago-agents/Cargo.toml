@@ -3,7 +3,13 @@ name = "phago-agents"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Reference agent implementations using Phago biological primitives"
+documentation = "https://docs.rs/phago-agents"
+readme = "README.md"
 
 [dependencies]
 phago-core = { workspace = true }

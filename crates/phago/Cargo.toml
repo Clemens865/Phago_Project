@@ -1,19 +1,21 @@
 [package]
 name = "phago"
-version = "0.1.0"
-edition = "2021"
-license = "MIT"
-repository = "https://github.com/Clemens865/Phago_Project"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Self-evolving knowledge substrates through biological computing primitives"
+documentation = "https://docs.rs/phago"
 readme = "../../README.md"
-keywords = ["knowledge-graph", "hebbian-learning", "rag", "agents", "biological-computing"]
-categories = ["science", "data-structures", "algorithms"]
 
 [dependencies]
-phago-core = { path = "../phago-core" }
-phago-runtime = { path = "../phago-runtime" }
-phago-agents = { path = "../phago-agents" }
-phago-rag = { path = "../phago-rag" }
+phago-core = { workspace = true }
+phago-runtime = { workspace = true }
+phago-agents = { workspace = true }
+phago-rag = { workspace = true }
 
 [features]
 default = []

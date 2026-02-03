@@ -3,7 +3,13 @@ name = "phago-runtime"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Colony management, scheduling, and WASM host runtime for Phago"
+repository.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Colony management, scheduling, and runtime for Phago biological computing"
+documentation = "https://docs.rs/phago-runtime"
+readme = "README.md"
 
 [dependencies]
 phago-core = { workspace = true }

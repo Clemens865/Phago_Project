@@ -26,13 +26,13 @@ keywords = ["knowledge-graph", "hebbian-learning", "rag", "agents", "biological-
 categories = ["science", "data-structures", "algorithms"]
 
 [workspace.dependencies]
-phago = { path = "crates/phago" }
-phago-core = { path = "crates/phago-core" }
-phago-runtime = { path = "crates/phago-runtime" }
-phago-wasm = { path = "crates/phago-wasm" }
-phago-agents = { path = "crates/phago-agents" }
-phago-viz = { path = "crates/phago-viz" }
-phago-rag = { path = "crates/phago-rag" }
+phago = { version = "0.1.0", path = "crates/phago" }
+phago-core = { version = "0.1.0", path = "crates/phago-core" }
+phago-runtime = { version = "0.1.0", path = "crates/phago-runtime" }
+phago-wasm = { version = "0.1.0", path = "crates/phago-wasm" }
+phago-agents = { version = "0.1.0", path = "crates/phago-agents" }
+phago-viz = { version = "0.1.0", path = "crates/phago-viz" }
+phago-rag = { version = "0.1.0", path = "crates/phago-rag" }
 
 uuid = { version = "1", features = ["v4", "serde"] }
 serde = { version = "1", features = ["derive"] }

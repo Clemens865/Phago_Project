@@ -3,7 +3,13 @@ name = "phago-rag"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Biological RAG — query interface on self-organizing Hebbian knowledge graph"
+documentation = "https://docs.rs/phago-rag"
+readme = "README.md"
 
 [dependencies]
 phago-core = { workspace = true }
