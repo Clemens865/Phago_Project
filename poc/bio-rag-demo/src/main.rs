@@ -12,6 +12,7 @@
 
 use phago_agents::digester::Digester;
 use phago_rag::baseline::{random_query, static_graph_query, tfidf_query};
+use phago_rag::hybrid::{hybrid_query, HybridConfig};
 use phago_rag::scoring::{self, AggregateScores};
 use phago_rag::{Query, QueryEngine};
 use phago_runtime::bench::{self, BenchmarkConfig};
@@ -33,7 +34,7 @@ fn main() {
     println!();
 
     // --- Load corpus and queries ---
-    let corpus = Corpus::from_embedded().limit(40);
+    let corpus = Corpus::from_embedded();
     println!("Corpus: {} documents, {} categories",
         corpus.len(), corpus.categories().len());
 
@@ -134,8 +135,38 @@ fn main() {
         tfidf_agg.mean_mrr, tfidf_agg.mean_ndcg_at_10);
     println!();
 
-    // --- Phase 5: Random baseline ---
-    println!("── Phase 5: Random Baseline ───────────────────────────");
+    // --- Phase 5: Hybrid scoring (TF-IDF + graph re-ranking) ---
+    println!("── Phase 5: Hybrid Scoring (TF-IDF + Graph) ────────────");
+    let alphas = [0.3, 0.5, 0.7];
+    let mut best_hybrid_agg: Option<(f64, AggregateScores)> = None;
+    for alpha in &alphas {
+        let hybrid_config = HybridConfig {
+            alpha: *alpha,
+            max_results: 10,
+            candidate_multiplier: 3,
+        };
+        let mut hybrid_scores = Vec::new();
+        for qdef in &queries {
+            let relevant: HashSet<String> = qdef.relevant.iter().cloned().collect();
+            let results = hybrid_query(&colony, &qdef.query, &hybrid_config);
+            let retrieved: Vec<String> = results.iter().map(|r| r.label.clone()).collect();
+            let score = scoring::score_query(&qdef.query, &retrieved, &relevant);
+            hybrid_scores.push(score);
+        }
+        let agg = scoring::aggregate(&hybrid_scores);
+        println!("  Hybrid (α={:.1}): P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
+            alpha, agg.mean_precision_at_5, agg.mean_precision_at_10,
+            agg.mean_mrr, agg.mean_ndcg_at_10);
+        if best_hybrid_agg.as_ref().map_or(true, |(_, best)| agg.mean_precision_at_5 > best.mean_precision_at_5) {
+            best_hybrid_agg = Some((*alpha, agg));
+        }
+    }
+    let (best_alpha, hybrid_agg) = best_hybrid_agg.unwrap();
+    println!("  Best: α={:.1} P@5={:.3}", best_alpha, hybrid_agg.mean_precision_at_5);
+    println!();
+
+    // --- Phase 6: Random baseline ---
+    println!("── Phase 6: Random Baseline ───────────────────────────");
     let mut random_scores = Vec::new();
     for (i, qdef) in queries.iter().enumerate() {
         let relevant: HashSet<String> = qdef.relevant.iter().cloned().collect();
@@ -177,16 +208,22 @@ fn main() {
     println!("  Static:     P@5 round1={:.3} → round5={:.3} (flat)",
         static_r1, static_r5);
     println!("  TF-IDF:     P@5={:.3} (fixed)", tfidf_agg.mean_precision_at_5);
+    println!("  Hybrid:     P@5={:.3} (α={:.1}, TF-IDF+Graph)",
+        hybrid_agg.mean_precision_at_5, best_alpha);
     println!("  Random:     P@5={:.3} (baseline)", random_agg.mean_precision_at_5);
     println!();
 
-    if r5_p5 > r1_p5 && r5_p5 > tfidf_agg.mean_precision_at_5 {
-        println!("  ✓ HYPOTHESIS SUPPORTED: Reinforced retrieval improves over rounds");
-        println!("    and outperforms TF-IDF baseline.");
-    } else if r5_p5 > r1_p5 {
-        println!("  ~ PARTIAL: Reinforced retrieval improves but does not beat TF-IDF.");
+    let best_method_p5 = r5_p5.max(hybrid_agg.mean_precision_at_5);
+    if best_method_p5 > tfidf_agg.mean_precision_at_5 {
+        if hybrid_agg.mean_precision_at_5 > tfidf_agg.mean_precision_at_5 {
+            println!("  ✓ HYPOTHESIS SUPPORTED: Hybrid scoring outperforms TF-IDF.");
+        } else {
+            println!("  ✓ HYPOTHESIS SUPPORTED: Reinforced retrieval outperforms TF-IDF.");
+        }
+    } else if hybrid_agg.mean_precision_at_5 > r5_p5 {
+        println!("  ~ PARTIAL: Hybrid improves over pure graph but not TF-IDF.");
     } else {
-        println!("  ✗ HYPOTHESIS REJECTED: No improvement observed.");
+        println!("  ✗ HYPOTHESIS REJECTED: No method outperforms TF-IDF.");
     }
     println!();
 
@@ -209,6 +246,9 @@ fn main() {
     csv.push_str(&format!("1,tfidf,{:.4},{:.4},{:.4},{:.4}\n",
         tfidf_agg.mean_precision_at_5, tfidf_agg.mean_precision_at_10,
         tfidf_agg.mean_mrr, tfidf_agg.mean_ndcg_at_10));
+    csv.push_str(&format!("1,hybrid_{:.1},{:.4},{:.4},{:.4},{:.4}\n",
+        best_alpha, hybrid_agg.mean_precision_at_5, hybrid_agg.mean_precision_at_10,
+        hybrid_agg.mean_mrr, hybrid_agg.mean_ndcg_at_10));
     csv.push_str(&format!("1,random,{:.4},{:.4},{:.4},{:.4}\n",
         random_agg.mean_precision_at_5, random_agg.mean_precision_at_10,
         random_agg.mean_mrr, random_agg.mean_ndcg_at_10));

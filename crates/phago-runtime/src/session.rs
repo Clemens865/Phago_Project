@@ -26,6 +26,8 @@ pub struct SerializedNode {
     pub access_count: u64,
     pub position_x: f64,
     pub position_y: f64,
+    #[serde(default)]
+    pub created_tick: u64,
 }
 
 /// Serializable edge.
@@ -35,6 +37,10 @@ pub struct SerializedEdge {
     pub to_label: String,
     pub weight: f64,
     pub co_activations: u64,
+    #[serde(default)]
+    pub created_tick: u64,
+    #[serde(default)]
+    pub last_activated_tick: u64,
 }
 
 /// Session metadata.
@@ -60,6 +66,7 @@ pub fn save_session(colony: &Colony, path: &Path, files_indexed: &[String]) -> s
             access_count: n.access_count,
             position_x: n.position.x,
             position_y: n.position.y,
+            created_tick: n.created_tick,
         })
         .collect();
 
@@ -72,6 +79,8 @@ pub fn save_session(colony: &Colony, path: &Path, files_indexed: &[String]) -> s
                 to_label,
                 weight: edge.weight,
                 co_activations: edge.co_activations,
+                created_tick: edge.created_tick,
+                last_activated_tick: edge.last_activated_tick,
             })
         })
         .collect();
@@ -129,13 +138,13 @@ pub fn restore_into_colony(colony: &mut Colony, state: &GraphState) {
             node_type,
             position: Position::new(node.position_x, node.position_y),
             access_count: node.access_count,
-            created_tick: 0,
+            created_tick: node.created_tick,
         };
         let id = colony.substrate_mut().add_node(data);
         label_to_id.insert(node.label.clone(), id);
     }
 
-    // Add edges
+    // Add edges with full temporal state
     for edge in &state.edges {
         if let (Some(&from_id), Some(&to_id)) = (
             label_to_id.get(&edge.from_label),
@@ -144,10 +153,17 @@ pub fn restore_into_colony(colony: &mut Colony, state: &GraphState) {
             colony.substrate_mut().set_edge(from_id, to_id, EdgeData {
                 weight: edge.weight,
                 co_activations: edge.co_activations,
-                created_tick: 0,
-                last_activated_tick: 0,
+                created_tick: edge.created_tick,
+                last_activated_tick: edge.last_activated_tick,
             });
         }
+    }
+
+    // Advance colony tick to match the saved session
+    // so that maturation/staleness calculations remain correct
+    let target_tick = state.metadata.tick;
+    while colony.stats().tick < target_tick {
+        colony.substrate_mut().advance_tick();
     }
 }
 

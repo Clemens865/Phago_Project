@@ -18,10 +18,16 @@ pub struct AgentFitness {
     pub edges_contributed: u64,
     /// Total ticks alive.
     pub ticks_alive: u64,
-    /// Fitness score = (concepts_added + edges_contributed) / ticks_alive.
+    /// Fitness score = weighted multi-objective combination.
     pub fitness: f64,
     /// Generation number (0 = original, 1 = first offspring, etc.)
     pub generation: u32,
+    /// Novel concepts: concepts that didn't exist before this agent created them.
+    pub novel_concepts: u64,
+    /// Bridge edges: edges that connect previously disconnected node clusters.
+    pub bridge_edges: u64,
+    /// Strong edges: edges with co_activations >= 2 (reinforced across documents).
+    pub strong_edges: u64,
 }
 
 /// Tracks fitness across all agents in a colony.
@@ -47,6 +53,9 @@ impl FitnessTracker {
             ticks_alive: 0,
             fitness: 0.0,
             generation,
+            novel_concepts: 0,
+            bridge_edges: 0,
+            strong_edges: 0,
         });
     }
 
@@ -66,6 +75,30 @@ impl FitnessTracker {
         }
     }
 
+    /// Record novel concepts (concepts that didn't exist in the graph before).
+    pub fn record_novel_concepts(&mut self, agent_id: &AgentId, count: u64) {
+        if let Some(f) = self.data.get_mut(agent_id) {
+            f.novel_concepts += count;
+            Self::recompute_fitness(f);
+        }
+    }
+
+    /// Record bridge edges (edges connecting previously isolated clusters).
+    pub fn record_bridge_edges(&mut self, agent_id: &AgentId, count: u64) {
+        if let Some(f) = self.data.get_mut(agent_id) {
+            f.bridge_edges += count;
+            Self::recompute_fitness(f);
+        }
+    }
+
+    /// Record strong edges (co_activations >= 2).
+    pub fn record_strong_edges(&mut self, agent_id: &AgentId, count: u64) {
+        if let Some(f) = self.data.get_mut(agent_id) {
+            f.strong_edges += count;
+            Self::recompute_fitness(f);
+        }
+    }
+
     /// Record a tick for all registered agents.
     pub fn tick_all(&mut self, alive_ids: &[AgentId]) {
         for id in alive_ids {
@@ -76,10 +109,40 @@ impl FitnessTracker {
         }
     }
 
+    /// Multi-objective fitness function.
+    ///
+    /// Weights:
+    /// - 30% productivity: (concepts + edges) / ticks  (throughput)
+    /// - 30% novelty: novel_concepts / concepts_added  (exploration value)
+    /// - 20% quality: strong_edges / edges_contributed  (reinforcement signal)
+    /// - 20% connectivity: bridge_edges / edges_contributed  (integration value)
     fn recompute_fitness(f: &mut AgentFitness) {
-        if f.ticks_alive > 0 {
-            f.fitness = (f.concepts_added as f64 + f.edges_contributed as f64) / f.ticks_alive as f64;
+        if f.ticks_alive == 0 {
+            return;
         }
+
+        let productivity = (f.concepts_added as f64 + f.edges_contributed as f64)
+            / f.ticks_alive as f64;
+
+        let novelty = if f.concepts_added > 0 {
+            f.novel_concepts as f64 / f.concepts_added as f64
+        } else {
+            0.0
+        };
+
+        let quality = if f.edges_contributed > 0 {
+            f.strong_edges as f64 / f.edges_contributed as f64
+        } else {
+            0.0
+        };
+
+        let connectivity = if f.edges_contributed > 0 {
+            f.bridge_edges as f64 / f.edges_contributed as f64
+        } else {
+            0.0
+        };
+
+        f.fitness = 0.3 * productivity + 0.3 * novelty + 0.2 * quality + 0.2 * connectivity;
     }
 
     /// Get the fittest living agent.

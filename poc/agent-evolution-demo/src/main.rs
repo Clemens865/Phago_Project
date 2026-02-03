@@ -29,7 +29,7 @@ fn main() {
     println!("╚══════════════════════════════════════════════════════╝");
     println!();
 
-    let corpus = Corpus::from_embedded().limit(40);
+    let corpus = Corpus::from_embedded();
     let total_ticks = 300u64;
     let checkpoint_ticks = vec![100, 200, 300];
 

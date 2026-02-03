@@ -20,7 +20,7 @@ impl Default for AgentId {
 }
 
 /// Unique identifier for a node in the knowledge graph.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct NodeId(pub Uuid);
 
 impl NodeId {

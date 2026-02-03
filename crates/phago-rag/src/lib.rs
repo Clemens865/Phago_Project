@@ -20,5 +20,9 @@ pub mod query;
 pub mod scoring;
 pub mod baseline;
 pub mod code_query;
+pub mod hybrid;
+pub mod mcp;
 
 pub use query::{Query, QueryResult, QueryEngine};
+pub use hybrid::{hybrid_query, HybridConfig, HybridResult};
+pub use mcp::{phago_remember, phago_recall, phago_explore};

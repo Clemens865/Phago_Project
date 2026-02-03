@@ -20,6 +20,15 @@ pub struct AgentGenome {
     pub explore_bias: f64,
     /// Tendency to move toward substrate boundary vs center.
     pub boundary_bias: f64,
+
+    // Wiring strategy parameters
+    /// Initial weight for tentative edges (first co-occurrence). Range: [0.05, 0.5].
+    pub tentative_weight: f64,
+    /// Weight boost per subsequent co-activation. Range: [0.01, 0.3].
+    pub reinforcement_boost: f64,
+    /// Fraction of concept pairs to wire per document. Range: [0.1, 1.0].
+    /// 1.0 = wire all pairs, 0.5 = wire ~half (probabilistic), etc.
+    pub wiring_selectivity: f64,
 }
 
 impl AgentGenome {
@@ -31,6 +40,9 @@ impl AgentGenome {
             keyword_boost: 3.0,
             explore_bias: 0.2,
             boundary_bias: 0.0,
+            tentative_weight: 0.1,
+            reinforcement_boost: 0.1,
+            wiring_selectivity: 1.0,
         }
     }
 
@@ -52,6 +64,9 @@ impl AgentGenome {
             keyword_boost: (self.keyword_boost * (1.0 + next() * mutation_rate)).clamp(0.5, 10.0),
             explore_bias: (self.explore_bias + next() * mutation_rate * 0.5).clamp(0.0, 1.0),
             boundary_bias: (self.boundary_bias + next() * mutation_rate * 0.5).clamp(-1.0, 1.0),
+            tentative_weight: (self.tentative_weight * (1.0 + next() * mutation_rate)).clamp(0.05, 0.5),
+            reinforcement_boost: (self.reinforcement_boost * (1.0 + next() * mutation_rate)).clamp(0.01, 0.3),
+            wiring_selectivity: (self.wiring_selectivity + next() * mutation_rate * 0.3).clamp(0.1, 1.0),
         }
     }
 
@@ -64,6 +79,9 @@ impl AgentGenome {
             ((self.keyword_boost - 0.5) / 9.5, (other.keyword_boost - 0.5) / 9.5),
             (self.explore_bias, other.explore_bias),
             ((self.boundary_bias + 1.0) / 2.0, (other.boundary_bias + 1.0) / 2.0),
+            ((self.tentative_weight - 0.05) / 0.45, (other.tentative_weight - 0.05) / 0.45),
+            ((self.reinforcement_boost - 0.01) / 0.29, (other.reinforcement_boost - 0.01) / 0.29),
+            ((self.wiring_selectivity - 0.1) / 0.9, (other.wiring_selectivity - 0.1) / 0.9),
         ];
 
         let sum_sq: f64 = dims.iter().map(|(a, b)| (a - b).powi(2)).sum();

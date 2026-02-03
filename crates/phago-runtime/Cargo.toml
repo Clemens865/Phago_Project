@@ -7,10 +7,8 @@ description = "Colony management, scheduling, and WASM host runtime for Phago"
 
 [dependencies]
 phago-core = { workspace = true }
+phago-agents = { workspace = true }
 uuid = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 petgraph = { workspace = true }
-
-[dev-dependencies]
-phago-agents = { workspace = true }

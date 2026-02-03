@@ -51,6 +51,42 @@ pub trait TopologyGraph {
     /// Returns edges that fell below the threshold after decay.
     fn decay_edges(&mut self, rate: f64, prune_threshold: f64) -> Vec<PrunedConnection>;
 
+    /// Activity-aware decay: edges that haven't been co-activated recently decay faster.
+    /// Edges younger than `maturation_ticks` get base rate only.
+    fn decay_edges_activity(
+        &mut self,
+        base_rate: f64,
+        prune_threshold: f64,
+        current_tick: u64,
+        staleness_factor: f64,
+        maturation_ticks: u64,
+    ) -> Vec<PrunedConnection>;
+
+    /// Competitive pruning: for each node, keep only top `max_degree` edges by weight.
+    /// An edge survives if EITHER endpoint keeps it in their top-K.
+    fn prune_to_max_degree(&mut self, max_degree: usize) -> Vec<PrunedConnection>;
+
     /// Find nodes matching a label (substring match).
     fn find_nodes_by_label(&self, query: &str) -> Vec<NodeId>;
+
+    // --- Structural query types ---
+
+    /// Find the shortest weighted path between two nodes.
+    /// Returns (path_of_node_ids, total_weight). Uses inverse weight as cost
+    /// so stronger edges are preferred.
+    fn shortest_path(&self, from: &NodeId, to: &NodeId) -> Option<(Vec<NodeId>, f64)>;
+
+    /// Compute betweenness centrality for all nodes (approximate, sampled).
+    /// Returns (node_id, centrality_score) sorted descending by centrality.
+    /// Centrality measures how often a node lies on shortest paths between
+    /// other node pairs — high centrality = hub/bridge concept.
+    fn betweenness_centrality(&self, sample_size: usize) -> Vec<(NodeId, f64)>;
+
+    /// Find bridge nodes whose removal would most increase graph fragmentation.
+    /// Returns (node_id, fragility_score) sorted descending.
+    /// Fragility = (components_after_removal - components_before) / node_degree.
+    fn bridge_nodes(&self, top_k: usize) -> Vec<(NodeId, f64)>;
+
+    /// Count connected components in the graph.
+    fn connected_components(&self) -> usize;
 }

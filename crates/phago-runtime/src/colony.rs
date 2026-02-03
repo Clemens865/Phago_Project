@@ -12,6 +12,7 @@
 //! 5. The tick counter advances
 
 use crate::substrate_impl::SubstrateImpl;
+use phago_agents::fitness::FitnessTracker;
 use phago_core::agent::Agent;
 use phago_core::substrate::Substrate;
 use phago_core::topology::TopologyGraph;
@@ -110,6 +111,7 @@ pub struct Colony {
     event_history: Vec<(Tick, ColonyEvent)>,
     total_spawned: usize,
     total_died: usize,
+    fitness_tracker: FitnessTracker,
 
     // Configuration
     signal_decay_rate: f64,
@@ -118,6 +120,9 @@ pub struct Colony {
     trace_removal_threshold: f64,
     edge_decay_rate: f64,
     edge_prune_threshold: f64,
+    staleness_factor: f64,
+    maturation_ticks: u64,
+    max_edge_degree: usize,
 }
 
 impl Colony {
@@ -129,12 +134,16 @@ impl Colony {
             event_history: Vec::new(),
             total_spawned: 0,
             total_died: 0,
+            fitness_tracker: FitnessTracker::new(),
             signal_decay_rate: 0.05,
             signal_removal_threshold: 0.01,
             trace_decay_rate: 0.02,
             trace_removal_threshold: 0.01,
             edge_decay_rate: 0.005,
             edge_prune_threshold: 0.05,
+            staleness_factor: 1.5,
+            maturation_ticks: 50,
+            max_edge_degree: 30,
         }
     }
 
@@ -145,6 +154,7 @@ impl Colony {
     ) -> AgentId {
         let id = agent.id();
         self.total_spawned += 1;
+        self.fitness_tracker.register(id, 0);
         self.agents.push(agent);
         id
     }
@@ -247,6 +257,13 @@ impl Colony {
 
                     // Wire co-occurring concepts (from same document)
                     // Only wire Concept nodes — Insight/Anomaly nodes don't co-occur
+                    //
+                    // Co-activation gating (Hebbian LTP model):
+                    // - First co-occurrence: create a TENTATIVE edge with low weight (0.1)
+                    // - Subsequent co-occurrences: reinforce to full weight (+0.1 per hit)
+                    // - Only edges reinforced by multiple documents survive synaptic pruning
+                    // This reduces the dense graph problem: single-doc edges are weak
+                    // and decay quickly unless reinforced by cross-document co-occurrence.
                     let concept_node_ids: Vec<NodeId> = node_ids.iter().filter(|id| {
                         self.substrate.graph().get_node(id)
                             .map_or(false, |n| n.node_type == NodeType::Concept)
@@ -257,14 +274,16 @@ impl Colony {
                             let from = concept_node_ids[i];
                             let to = concept_node_ids[j];
                             if let Some(edge) = self.substrate.graph_mut().get_edge_mut(&from, &to) {
-                                // Strengthen existing connection
+                                // Edge already exists: strengthen it (Hebbian reinforcement)
                                 edge.weight = (edge.weight + 0.1).min(1.0);
                                 edge.co_activations += 1;
                                 edge.last_activated_tick = tick;
                             } else {
-                                // Create new connection
+                                // First co-occurrence: create tentative edge with low weight.
+                                // Low initial weight means single-doc edges decay faster
+                                // under synaptic pruning unless reinforced.
                                 self.substrate.set_edge(from, to, EdgeData {
-                                    weight: 0.2,
+                                    weight: 0.1,  // Tentative: half the reinforced weight
                                     co_activations: 1,
                                     created_tick: tick,
                                     last_activated_tick: tick,
@@ -548,10 +567,34 @@ impl Colony {
             .decay_signals(self.signal_decay_rate, self.signal_removal_threshold);
         self.substrate
             .decay_traces(self.trace_decay_rate, self.trace_removal_threshold);
-        // Hebbian decay: weaken all edges, prune the weakest
+        // Synaptic pruning: activity-based decay with maturation protection
+        let current_tick = self.substrate.current_tick();
+        self.substrate.graph_mut().decay_edges_activity(
+            self.edge_decay_rate,
+            self.edge_prune_threshold,
+            current_tick,
+            self.staleness_factor,
+            self.maturation_ticks,
+        );
+        // Competitive pruning: cap per-node degree
         self.substrate
             .graph_mut()
-            .decay_edges(self.edge_decay_rate, self.edge_prune_threshold);
+            .prune_to_max_degree(self.max_edge_degree);
+
+        // Phase 4b: Fitness tracking — wire colony events to the tracker
+        for event in &events {
+            match event {
+                ColonyEvent::Presented { id, fragment_count, .. } => {
+                    self.fitness_tracker.record_concepts(id, *fragment_count as u64);
+                }
+                ColonyEvent::Wired { id, connection_count } => {
+                    self.fitness_tracker.record_edges(id, *connection_count as u64);
+                }
+                _ => {}
+            }
+        }
+        let alive_ids: Vec<AgentId> = self.agents.iter().map(|a| a.id()).collect();
+        self.fitness_tracker.tick_all(&alive_ids);
 
         // Phase 5: Advance tick
         self.substrate.advance_tick();
@@ -678,6 +721,16 @@ impl Colony {
     /// Get a reference to the agents.
     pub fn agents(&self) -> &[Box<dyn Agent<Input = String, Fragment = String, Presentation = Vec<String>>>] {
         &self.agents
+    }
+
+    /// Get a reference to the fitness tracker.
+    pub fn fitness_tracker(&self) -> &FitnessTracker {
+        &self.fitness_tracker
+    }
+
+    /// Get a mutable reference to the fitness tracker.
+    pub fn fitness_tracker_mut(&mut self) -> &mut FitnessTracker {
+        &mut self.fitness_tracker
     }
 
     /// Emit an input signal at a position (to attract agents).
