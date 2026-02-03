@@ -1,8 +1,10 @@
 # Phago — Biological Computing Primitives
 
+**Status: Beta / Production-Ready**
+
 A framework that maps cellular biology mechanisms to computational operations. Agents self-organize, consume documents, build a Hebbian knowledge graph, share vocabulary, detect anomalies, and exhibit emergent collective behavior — all without top-down orchestration.
 
-## Latest Results (After Ralph Loop Optimization)
+## Latest Results (Production Release)
 
 | Metric | Before | After | Change |
 |--------|--------|-------|--------|
@@ -79,6 +81,14 @@ fn main() {
 ```
 
 See [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md) for complete examples and API reference.
+
+### Production Features
+
+- **Single import**: `use phago::prelude::*` gives you everything
+- **Structured errors**: `Result<T, PhagoError>` with typed error categories
+- **Deterministic testing**: `Digester::with_seed(pos, seed)` for reproducible simulations
+- **Session persistence**: Save/restore colony state across sessions
+- **MCP adapter**: Ready for external LLM/agent integration
 
 ## The Ten Biological Primitives
 
@@ -207,7 +217,8 @@ External LLMs/agents can interact via typed request/response API:
 
 ```
 crates/
-├── phago-core/       # Traits (10 primitives) + shared types
+├── phago/            # Unified facade crate (use this!)
+├── phago-core/       # Traits (10 primitives) + shared types + error handling
 ├── phago-runtime/    # Colony, substrate, topology, corpus, sessions, export
 ├── phago-agents/     # Digester, Sentinel, Synthesizer, genome, evolution
 ├── phago-rag/        # Query engine, scoring, baselines, hybrid, MCP adapter
@@ -266,6 +277,7 @@ The POC also generates `output/phago-colony.html` — an interactive D3.js visua
 | 4 — Cooperation | Done | Transfer, Symbiosis, Dissolution |
 | 5 — Prove It Works | Done | Metrics, visualization, hardening tests, performance optimization |
 | 6 — Research Branches | Done | 4 branches with prototypes, benchmarks, papers |
+| 7 — Production Ready | Done | Facade crate, preludes, error types, deterministic testing |
 
 ## Tests
 
