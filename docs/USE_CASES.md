@@ -4,6 +4,28 @@
 
 Phago is not a search engine. It is a **biological knowledge substrate** where autonomous agents digest information, build Hebbian connections, and exhibit emergent collective behavior. This document outlines concrete use cases where Phago's unique capabilities provide value that traditional approaches cannot match.
 
+> **Ready to integrate?** See the [Integration Guide](INTEGRATION_GUIDE.md) for installation instructions, code examples, and API reference.
+
+---
+
+## Current Status: Alpha / Experimental
+
+| Aspect | Status |
+|--------|--------|
+| Build | ✅ Clean release build |
+| Tests | ✅ 98/99 passing (1 flaky) |
+| API | ⚠️ Unstable (may change) |
+| crates.io | ❌ Git dependency only |
+| MCP | ✅ 3 tools available |
+
+**Quick start:**
+```toml
+[dependencies]
+phago-runtime = { git = "https://github.com/Clemens865/Phago_Project.git" }
+phago-agents = { git = "https://github.com/Clemens865/Phago_Project.git" }
+phago-rag = { git = "https://github.com/Clemens865/Phago_Project.git" }
+```
+
 ---
 
 ## Quick Reference: When to Use Phago
