@@ -337,17 +337,19 @@ Iteration 5: Documentation
 
 ---
 
-## Priority 5: Streaming Ingestion
+## ✅ Priority 5: Streaming Ingestion — COMPLETE (Core)
 
 ### Goal
 Real-time document processing as they arrive, not batch.
 
 ### Success Criteria
-- [ ] `colony.ingest_stream()` accepts async iterator
-- [ ] Documents processed incrementally
-- [ ] Backpressure handling
-- [ ] Works with file watchers
-- [ ] Kafka/Redis stream support (optional)
+- [x] `StreamingColony` with async ingestion
+- [x] Documents processed incrementally via channels
+- [x] Backpressure handling with bounded channels
+- [x] Works with file watchers (`FileWatcher` + `notify` crate)
+- [ ] Kafka/Redis stream support (optional, future)
+
+**Completed:** v0.6.0 — `crates/phago-runtime/src/streaming.rs`
 
 ### Ralph Loop Plan
 
@@ -571,13 +573,13 @@ Iteration 6: Configuration and docs
 ### ✅ Phase B: User Interface — COMPLETE
 3. ~~**Priority 1: Web Dashboard** (5-8 days) — Major visibility~~ ✅
 
-### ✅ Phase C: Ecosystem — PARTIAL
+### ✅ Phase C: Ecosystem — COMPLETE
 4. ~~**Priority 2: Python Integrations** (5-7 days) — Adoption driver~~ ✅
-5. **Priority 5: Streaming** (4-6 days) — Production feature ← **NEXT**
+5. ~~**Priority 5: Streaming** (4-6 days) — Production feature~~ ✅
 
-### Phase D: Scale (Remaining)
-6. **Priority 6: Distributed** (15-25 days) — Enterprise feature
-7. **Priority 7: Vector DBs** (5-7 days) — Performance at scale
+### Phase D: Scale (Remaining) ← **NEXT**
+6. **Priority 7: Vector DBs** (5-7 days) — Performance at scale
+7. **Priority 6: Distributed** (15-25 days) — Enterprise feature
 
 ---
 
@@ -605,9 +607,9 @@ cd /Users/clemenshoenig/Documents/My-Coding-Programs/Phago-Experimental
 |---------|---------------------|--------|
 | **0.3.0** | Config | ✅ Complete |
 | **0.4.0** | Web Dashboard | ✅ Complete |
-| **0.5.0** | Python Integrations, Louvain | ✅ Complete (current) |
-| **0.6.0** | Streaming Ingestion | 🔜 Next |
-| **0.7.0** | Vector DB Integration | Planned |
+| **0.5.0** | Python Integrations, Louvain | ✅ Complete |
+| **0.6.0** | Streaming Ingestion | ✅ Complete (current) |
+| **0.7.0** | Vector DB Integration | 🔜 Next |
 | **1.0.0** | Distributed Colony | Planned |
 | **1.0.0** | Distributed Colony | Week 10 |
 
