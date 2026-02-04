@@ -39,3 +39,6 @@ pub use crate::semantic::{
     l2_distance, dot_product, l2_normalize, l2_normalized,
     SemanticWiringConfig,
 };
+
+// Re-export Louvain community detection
+pub use crate::louvain::{louvain_communities, compute_modularity, LouvainResult};

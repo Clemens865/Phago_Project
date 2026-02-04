@@ -46,7 +46,7 @@ pub fn normalized_similarity(a: &[f32], b: &[f32]) -> Option<f64> {
 }
 
 /// Configuration for semantic wiring.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SemanticWiringConfig {
     /// Minimum similarity threshold for creating/strengthening edges.
     /// Edges between concepts with similarity below this are not created.

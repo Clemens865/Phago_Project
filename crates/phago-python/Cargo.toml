@@ -1,0 +1,23 @@
+[package]
+name = "phago-python"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Python bindings for Phago biological computing framework"
+
+[lib]
+name = "_phago"
+crate-type = ["cdylib"]
+
+[dependencies]
+phago = { workspace = true }
+phago-core = { workspace = true }
+phago-runtime = { workspace = true }
+phago-agents = { workspace = true }
+phago-rag = { workspace = true }
+
+pyo3 = { version = "0.21", features = ["extension-module", "abi3-py38"] }
+serde = { workspace = true }
+serde_json = { workspace = true }

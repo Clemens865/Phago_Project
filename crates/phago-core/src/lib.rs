@@ -36,4 +36,5 @@ pub mod signal;
 pub mod topology;
 pub mod error;
 pub mod semantic;
+pub mod louvain;
 pub mod prelude;

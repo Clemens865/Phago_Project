@@ -31,7 +31,7 @@
 //! colony.save()?;
 //! ```
 
-use crate::colony::Colony;
+use crate::colony::{Colony, ColonyConfig};
 use crate::topology_impl::PetTopologyGraph;
 use phago_core::topology::TopologyGraph;
 use phago_core::types::*;
@@ -70,6 +70,7 @@ pub struct ColonyBuilder {
     persistence_path: Option<PathBuf>,
     auto_save: bool,
     cache_size: usize,
+    colony_config: ColonyConfig,
 }
 
 impl Default for ColonyBuilder {
@@ -85,7 +86,17 @@ impl ColonyBuilder {
             persistence_path: None,
             auto_save: false,
             cache_size: 1000,
+            colony_config: ColonyConfig::default(),
         }
+    }
+
+    /// Set the colony configuration for simulation parameters.
+    ///
+    /// This allows customizing decay rates, pruning thresholds, and
+    /// semantic wiring settings.
+    pub fn with_config(mut self, config: ColonyConfig) -> Self {
+        self.colony_config = config;
+        self
     }
 
     /// Enable SQLite persistence at the given path.
@@ -122,13 +133,13 @@ impl ColonyBuilder {
 
     /// Build a standard Colony (no persistence).
     pub fn build_simple(self) -> Colony {
-        Colony::new()
+        Colony::from_config(self.colony_config)
     }
 
     /// Build a PersistentColony with SQLite backing.
     #[cfg(feature = "sqlite")]
     pub fn build(self) -> Result<PersistentColony, BuilderError> {
-        let mut colony = Colony::new();
+        let mut colony = Colony::from_config(self.colony_config);
 
         let persistence = if let Some(path) = self.persistence_path {
             let db = SqliteTopologyGraph::open(&path)
@@ -160,7 +171,7 @@ impl ColonyBuilder {
             return Err(BuilderError::SqliteNotEnabled);
         }
         Ok(PersistentColony {
-            colony: Colony::new(),
+            colony: Colony::from_config(self.colony_config),
             persistence: None,
         })
     }

@@ -15,6 +15,10 @@ pub struct Config {
     pub wiring: WiringConfig,
     #[serde(default)]
     pub query: QueryConfig,
+    #[serde(default)]
+    pub decay: DecayConfig,
+    #[serde(default)]
+    pub semantic: SemanticConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,6 +55,40 @@ pub struct QueryConfig {
     pub max_results: usize,
 }
 
+/// Configuration for signal and trace decay.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DecayConfig {
+    #[serde(default = "default_signal_decay_rate")]
+    pub signal_decay_rate: f64,
+    #[serde(default = "default_signal_removal_threshold")]
+    pub signal_removal_threshold: f64,
+    #[serde(default = "default_trace_decay_rate")]
+    pub trace_decay_rate: f64,
+    #[serde(default = "default_trace_removal_threshold")]
+    pub trace_removal_threshold: f64,
+    #[serde(default = "default_edge_decay_rate")]
+    pub edge_decay_rate: f64,
+    #[serde(default = "default_edge_prune_threshold")]
+    pub edge_prune_threshold: f64,
+    #[serde(default = "default_staleness_factor")]
+    pub staleness_factor: f64,
+    #[serde(default = "default_maturation_ticks")]
+    pub maturation_ticks: u64,
+    #[serde(default = "default_max_edge_degree")]
+    pub max_edge_degree: usize,
+}
+
+/// Configuration for semantic wiring (embedding-based edge weights).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SemanticConfig {
+    #[serde(default = "default_min_similarity")]
+    pub min_similarity: f64,
+    #[serde(default = "default_similarity_influence")]
+    pub similarity_influence: f64,
+    #[serde(default)]
+    pub require_embeddings: bool,
+}
+
 // Default value functions
 fn default_tick_rate() -> u64 { 100 }
 fn default_max_agents() -> usize { 50 }
@@ -62,6 +100,21 @@ fn default_tentative_weight() -> f64 { 0.1 }
 fn default_alpha() -> f64 { 0.5 }
 fn default_max_results() -> usize { 10 }
 
+// Decay config defaults (match Colony::new() hardcoded values)
+fn default_signal_decay_rate() -> f64 { 0.05 }
+fn default_signal_removal_threshold() -> f64 { 0.01 }
+fn default_trace_decay_rate() -> f64 { 0.02 }
+fn default_trace_removal_threshold() -> f64 { 0.01 }
+fn default_edge_decay_rate() -> f64 { 0.005 }
+fn default_edge_prune_threshold() -> f64 { 0.05 }
+fn default_staleness_factor() -> f64 { 1.5 }
+fn default_maturation_ticks() -> u64 { 50 }
+fn default_max_edge_degree() -> usize { 30 }
+
+// Semantic config defaults
+fn default_min_similarity() -> f64 { 0.0 }
+fn default_similarity_influence() -> f64 { 0.5 }
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -69,6 +122,8 @@ impl Default for Config {
             digester: DigesterConfig::default(),
             wiring: WiringConfig::default(),
             query: QueryConfig::default(),
+            decay: DecayConfig::default(),
+            semantic: SemanticConfig::default(),
         }
     }
 }
@@ -110,6 +165,32 @@ impl Default for QueryConfig {
     }
 }
 
+impl Default for DecayConfig {
+    fn default() -> Self {
+        Self {
+            signal_decay_rate: default_signal_decay_rate(),
+            signal_removal_threshold: default_signal_removal_threshold(),
+            trace_decay_rate: default_trace_decay_rate(),
+            trace_removal_threshold: default_trace_removal_threshold(),
+            edge_decay_rate: default_edge_decay_rate(),
+            edge_prune_threshold: default_edge_prune_threshold(),
+            staleness_factor: default_staleness_factor(),
+            maturation_ticks: default_maturation_ticks(),
+            max_edge_degree: default_max_edge_degree(),
+        }
+    }
+}
+
+impl Default for SemanticConfig {
+    fn default() -> Self {
+        Self {
+            min_similarity: default_min_similarity(),
+            similarity_influence: default_similarity_influence(),
+            require_embeddings: false,
+        }
+    }
+}
+
 impl Config {
     /// Load config from phago.toml in the current or parent directories.
     pub fn load() -> Result<Self> {
@@ -136,6 +217,31 @@ impl Config {
     pub fn default_toml() -> String {
         let config = Config::default();
         toml::to_string_pretty(&config).unwrap()
+    }
+
+    /// Convert to runtime colony configuration.
+    ///
+    /// This creates a `phago::runtime::colony::ColonyConfig` from the CLI config
+    /// for use with `Colony::from_config()` or `ColonyBuilder::with_config()`.
+    pub fn to_runtime_config(&self) -> phago::runtime::colony::ColonyConfig {
+        use phago::core::semantic::SemanticWiringConfig;
+
+        phago::runtime::colony::ColonyConfig {
+            signal_decay_rate: self.decay.signal_decay_rate,
+            signal_removal_threshold: self.decay.signal_removal_threshold,
+            trace_decay_rate: self.decay.trace_decay_rate,
+            trace_removal_threshold: self.decay.trace_removal_threshold,
+            edge_decay_rate: self.decay.edge_decay_rate,
+            edge_prune_threshold: self.decay.edge_prune_threshold,
+            staleness_factor: self.decay.staleness_factor,
+            maturation_ticks: self.decay.maturation_ticks,
+            max_edge_degree: self.decay.max_edge_degree,
+            semantic_wiring: SemanticWiringConfig {
+                min_similarity: self.semantic.min_similarity,
+                similarity_influence: self.semantic.similarity_influence,
+                require_embeddings: self.semantic.require_embeddings,
+            },
+        }
     }
 }
 

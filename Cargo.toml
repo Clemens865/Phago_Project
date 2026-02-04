@@ -11,11 +11,28 @@ members = [
     "crates/phago-rag",
     "crates/phago-embeddings",
     "crates/phago-llm",
+    "crates/phago-web",
+    "crates/phago-python",
     "poc/knowledge-ecosystem",
     "poc/bio-rag-demo",
     "poc/agent-evolution-demo",
     "poc/kg-training-demo",
     "poc/agentic-memory-demo",
+]
+
+# phago-python must be built with maturin, not cargo build
+default-members = [
+    "crates/phago",
+    "crates/phago-cli",
+    "crates/phago-core",
+    "crates/phago-runtime",
+    "crates/phago-wasm",
+    "crates/phago-agents",
+    "crates/phago-viz",
+    "crates/phago-rag",
+    "crates/phago-embeddings",
+    "crates/phago-llm",
+    "crates/phago-web",
 ]
 
 [workspace.package]

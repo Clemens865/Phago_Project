@@ -5,7 +5,7 @@
 //! ```
 
 // Re-export colony
-pub use crate::colony::{Colony, ColonyEvent, ColonyStats, ColonySnapshot};
+pub use crate::colony::{Colony, ColonyConfig, ColonyEvent, ColonyStats, ColonySnapshot};
 
 // Re-export colony builder
 pub use crate::colony_builder::{ColonyBuilder, PersistentColony, BuilderError};
@@ -35,3 +35,6 @@ pub use crate::async_runtime::{
 
 // Re-export from agents
 pub use phago_agents::prelude::*;
+
+// Re-export Louvain community detection
+pub use phago_core::louvain::LouvainResult;

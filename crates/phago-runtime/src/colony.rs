@@ -18,7 +18,7 @@ use phago_core::semantic::{compute_semantic_weight, SemanticWiringConfig};
 use phago_core::substrate::Substrate;
 use phago_core::topology::TopologyGraph;
 use phago_core::types::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json;
 
 /// Event emitted by the colony during simulation.
@@ -104,6 +104,52 @@ pub struct ColonySnapshot {
     pub stats: ColonyStats,
 }
 
+/// Configuration for colony simulation parameters.
+///
+/// This struct contains all the tunable parameters that were previously
+/// hardcoded in Colony::new(). Use with Colony::from_config() to create
+/// a colony with custom settings.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ColonyConfig {
+    /// Rate at which signals decay per tick (default: 0.05).
+    pub signal_decay_rate: f64,
+    /// Threshold below which signals are removed (default: 0.01).
+    pub signal_removal_threshold: f64,
+    /// Rate at which traces decay per tick (default: 0.02).
+    pub trace_decay_rate: f64,
+    /// Threshold below which traces are removed (default: 0.01).
+    pub trace_removal_threshold: f64,
+    /// Rate at which edges decay per tick (default: 0.005).
+    pub edge_decay_rate: f64,
+    /// Threshold below which edges are pruned (default: 0.05).
+    pub edge_prune_threshold: f64,
+    /// Factor for staleness-based decay (default: 1.5).
+    pub staleness_factor: f64,
+    /// Number of ticks before edges mature and become decay-resistant (default: 50).
+    pub maturation_ticks: u64,
+    /// Maximum number of edges per node before pruning (default: 30).
+    pub max_edge_degree: usize,
+    /// Semantic wiring configuration.
+    pub semantic_wiring: SemanticWiringConfig,
+}
+
+impl Default for ColonyConfig {
+    fn default() -> Self {
+        Self {
+            signal_decay_rate: 0.05,
+            signal_removal_threshold: 0.01,
+            trace_decay_rate: 0.02,
+            trace_removal_threshold: 0.01,
+            edge_decay_rate: 0.005,
+            edge_prune_threshold: 0.05,
+            staleness_factor: 1.5,
+            maturation_ticks: 50,
+            max_edge_degree: 30,
+            semantic_wiring: SemanticWiringConfig::default(),
+        }
+    }
+}
+
 /// The colony — manages agent lifecycle and simulation.
 pub struct Colony {
     substrate: SubstrateImpl,
@@ -128,7 +174,13 @@ pub struct Colony {
 }
 
 impl Colony {
+    /// Create a new colony with default configuration.
     pub fn new() -> Self {
+        Self::from_config(ColonyConfig::default())
+    }
+
+    /// Create a new colony with the specified configuration.
+    pub fn from_config(config: ColonyConfig) -> Self {
         Self {
             substrate: SubstrateImpl::new(),
             agents: Vec::new(),
@@ -137,16 +189,32 @@ impl Colony {
             total_spawned: 0,
             total_died: 0,
             fitness_tracker: FitnessTracker::new(),
-            signal_decay_rate: 0.05,
-            signal_removal_threshold: 0.01,
-            trace_decay_rate: 0.02,
-            trace_removal_threshold: 0.01,
-            edge_decay_rate: 0.005,
-            edge_prune_threshold: 0.05,
-            staleness_factor: 1.5,
-            maturation_ticks: 50,
-            max_edge_degree: 30,
-            semantic_wiring: SemanticWiringConfig::default(),
+            signal_decay_rate: config.signal_decay_rate,
+            signal_removal_threshold: config.signal_removal_threshold,
+            trace_decay_rate: config.trace_decay_rate,
+            trace_removal_threshold: config.trace_removal_threshold,
+            edge_decay_rate: config.edge_decay_rate,
+            edge_prune_threshold: config.edge_prune_threshold,
+            staleness_factor: config.staleness_factor,
+            maturation_ticks: config.maturation_ticks,
+            max_edge_degree: config.max_edge_degree,
+            semantic_wiring: config.semantic_wiring,
+        }
+    }
+
+    /// Get the current configuration.
+    pub fn config(&self) -> ColonyConfig {
+        ColonyConfig {
+            signal_decay_rate: self.signal_decay_rate,
+            signal_removal_threshold: self.signal_removal_threshold,
+            trace_decay_rate: self.trace_decay_rate,
+            trace_removal_threshold: self.trace_removal_threshold,
+            edge_decay_rate: self.edge_decay_rate,
+            edge_prune_threshold: self.edge_prune_threshold,
+            staleness_factor: self.staleness_factor,
+            maturation_ticks: self.maturation_ticks,
+            max_edge_degree: self.max_edge_degree,
+            semantic_wiring: self.semantic_wiring.clone(),
         }
     }
 
