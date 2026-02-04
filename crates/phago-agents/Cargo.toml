@@ -24,6 +24,5 @@ phago-embeddings = { workspace = true, optional = true }
 default = []
 semantic = ["phago-embeddings"]
 
-# dev-dependencies temporarily removed for publishing
-# [dev-dependencies]
-# phago-runtime = { workspace = true }
+[dev-dependencies]
+phago-runtime = { workspace = true }
