@@ -9,6 +9,8 @@ members = [
     "crates/phago-agents",
     "crates/phago-viz",
     "crates/phago-rag",
+    "crates/phago-embeddings",
+    "crates/phago-llm",
     "poc/knowledge-ecosystem",
     "poc/bio-rag-demo",
     "poc/agent-evolution-demo",
@@ -34,8 +36,11 @@ phago-wasm = { version = "0.1.0", path = "crates/phago-wasm" }
 phago-agents = { version = "0.1.0", path = "crates/phago-agents" }
 phago-viz = { version = "0.1.0", path = "crates/phago-viz" }
 phago-rag = { version = "0.1.0", path = "crates/phago-rag" }
+phago-embeddings = { version = "0.1.0", path = "crates/phago-embeddings" }
+phago-llm = { version = "0.1.0", path = "crates/phago-llm" }
 
 uuid = { version = "1", features = ["v4", "serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 petgraph = "0.7"
+rusqlite = { version = "0.31", features = ["bundled"] }

@@ -123,6 +123,7 @@ fn competitive_pruning_enforces_degree_cap() {
         position: Position::new(0.0, 0.0),
         access_count: 1,
         created_tick: 0,
+        embedding: None,
     });
 
     for i in 0..40 {
@@ -134,6 +135,7 @@ fn competitive_pruning_enforces_degree_cap() {
             position: Position::new(0.0, 0.0),
             access_count: 1,
             created_tick: 0,
+            embedding: None,
         });
         graph.set_edge(hub_id, spoke_id, EdgeData {
             weight: 0.1 + (i as f64) * 0.02, // weights from 0.1 to 0.88

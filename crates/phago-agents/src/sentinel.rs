@@ -47,6 +47,17 @@ impl ConceptSelfModel {
             edge_weight_std: 0.0,
         }
     }
+
+    /// Get all concepts in the self-model.
+    fn concepts(&self) -> Vec<&String> {
+        self.concept_freq.keys().collect()
+    }
+
+    /// Observe a concept with a given frequency.
+    fn observe(&mut self, concept: &str, freq: f64) {
+        *self.concept_freq.entry(concept.to_string()).or_insert(0.0) += freq;
+        self.observation_count += 1;
+    }
 }
 
 /// State machine for the Sentinel.
@@ -485,6 +496,58 @@ impl Agent for Sentinel {
             agent_type: "sentinel".to_string(),
             capabilities: Vec::new(),
             health: self.self_assess(),
+        }
+    }
+}
+
+// --- Serialization ---
+
+use crate::serialize::{
+    SerializableAgent, SerializedAgent,
+    SentinelState as SerializedSentinelState,
+};
+
+impl SerializableAgent for Sentinel {
+    fn export_state(&self) -> SerializedAgent {
+        SerializedAgent::Sentinel(SerializedSentinelState {
+            id: self.id,
+            position: self.position,
+            age_ticks: self.age_ticks,
+            idle_ticks: self.idle_ticks,
+            anomalies_detected: self.anomalies_detected,
+            last_scan_tick: self.last_scan_tick,
+            self_model_concepts: self.self_model.concepts().into_iter().cloned().collect(),
+            sense_radius: self.sense_radius,
+            max_idle_ticks: self.max_idle_ticks,
+            scan_interval: self.scan_interval,
+        })
+    }
+
+    fn from_state(state: &SerializedAgent) -> Option<Self> {
+        match state {
+            SerializedAgent::Sentinel(s) => {
+                let mut sentinel = Sentinel {
+                    id: s.id,
+                    position: s.position,
+                    age_ticks: s.age_ticks,
+                    state: SentinelState::Scanning,
+                    self_model: ConceptSelfModel::new(),
+                    anomalies_detected: s.anomalies_detected,
+                    last_scan_tick: s.last_scan_tick,
+                    engulfed: None,
+                    fragments: Vec::new(),
+                    sense_radius: s.sense_radius,
+                    max_idle_ticks: s.max_idle_ticks,
+                    idle_ticks: s.idle_ticks,
+                    scan_interval: s.scan_interval,
+                };
+                // Restore self-model concepts with default frequency
+                for concept in &s.self_model_concepts {
+                    sentinel.self_model.observe(concept, 1.0);
+                }
+                Some(sentinel)
+            }
+            _ => None,
         }
     }
 }

@@ -27,6 +27,7 @@
 pub mod substrate_impl;
 pub mod topology_impl;
 pub mod colony;
+pub mod colony_builder;
 pub mod metrics;
 pub mod corpus;
 pub mod bench;
@@ -36,4 +37,11 @@ pub mod curriculum;
 pub mod training_format;
 pub mod session;
 pub mod project_context;
+pub mod backend;
 pub mod prelude;
+
+#[cfg(feature = "sqlite")]
+pub mod sqlite_topology;
+
+#[cfg(feature = "async")]
+pub mod async_runtime;

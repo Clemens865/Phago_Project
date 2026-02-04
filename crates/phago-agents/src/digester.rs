@@ -587,6 +587,56 @@ impl Agent for Digester {
     }
 }
 
+// --- Serialization ---
+
+use crate::serialize::{
+    hashset_to_vec, vec_to_hashset, DigesterState as SerializedDigesterState,
+    SerializableAgent, SerializedAgent,
+};
+
+impl SerializableAgent for Digester {
+    fn export_state(&self) -> SerializedAgent {
+        SerializedAgent::Digester(SerializedDigesterState {
+            id: self.id,
+            position: self.position,
+            age_ticks: self.age_ticks,
+            idle_ticks: self.idle_ticks,
+            useful_outputs: self.useful_outputs,
+            all_presentations: self.all_presentations.clone(),
+            known_vocabulary: hashset_to_vec(&self.known_vocabulary),
+            has_exported: self.has_exported,
+            boundary_permeability: self.boundary_permeability,
+            max_idle_ticks: self.max_idle_ticks,
+            sense_radius: self.sense_radius,
+        })
+    }
+
+    fn from_state(state: &SerializedAgent) -> Option<Self> {
+        match state {
+            SerializedAgent::Digester(s) => Some(Digester {
+                id: s.id,
+                position: s.position,
+                age_ticks: s.age_ticks,
+                state: DigesterState::Seeking,
+                engulfed: None,
+                current_document: None,
+                fragments: Vec::new(),
+                all_presentations: s.all_presentations.clone(),
+                idle_ticks: s.idle_ticks,
+                useful_outputs: s.useful_outputs,
+                known_vocabulary: vec_to_hashset(&s.known_vocabulary),
+                has_exported: s.has_exported,
+                integrated_from: HashSet::new(),
+                boundary_permeability: s.boundary_permeability,
+                symbionts: Vec::new(),
+                max_idle_ticks: s.max_idle_ticks,
+                sense_radius: s.sense_radius,
+            }),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

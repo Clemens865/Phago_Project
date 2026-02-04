@@ -16,6 +16,8 @@ Phago is functional and can be used in production projects.
 | **Error Handling** | ✅ Structured | `PhagoError` types with `Result<T>` |
 | **Performance** | ✅ Good | Optimized algorithms |
 | **MCP Integration** | ✅ Ready | 3 tools available |
+| **SQLite Persistence** | ✅ Ready | Feature flag `sqlite` |
+| **Async Runtime** | ✅ Ready | Feature flag `async` |
 
 ### What Works Well
 
@@ -29,10 +31,8 @@ Phago is functional and can be used in production projects.
 ### Known Limitations
 
 1. **Flaky test**: `full_sim_produces_all_event_types` fails ~40% due to UUID non-determinism
-2. **No prelude**: Users must know internal module structure
-3. **Not on crates.io**: Git dependency required
-4. **Limited error types**: Some operations panic instead of returning Result
-5. **No async**: All operations are synchronous
+2. **Not on crates.io**: Git dependency required
+3. **Limited error types**: Some operations panic instead of returning Result
 
 ---
 
@@ -165,7 +165,7 @@ fn main() {
 }
 ```
 
-### Example 3: Session Persistence
+### Example 3: Session Persistence (JSON)
 
 ```rust
 use phago::prelude::*;
@@ -189,6 +189,76 @@ fn main() {
     restore_into_colony(&mut restored, &state);
     println!("Restored: {} nodes, {} edges", restored.stats().graph_nodes, restored.stats().graph_edges);
 }
+```
+
+### Example 4: SQLite Persistence with ColonyBuilder
+
+```rust
+use phago_runtime::prelude::*;
+use phago_agents::digester::Digester;
+
+fn main() -> Result<(), BuilderError> {
+    // Create colony with SQLite persistence
+    let mut colony = ColonyBuilder::new()
+        .with_persistence("knowledge.db")  // SQLite file
+        .auto_save(true)                   // Save on drop
+        .build()?;
+
+    // Ingest documents
+    colony.ingest_document("Biology", "Cell membrane transport proteins", Position::new(0.0, 0.0));
+    colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(50)));
+    colony.run(100);
+
+    // Explicitly save (also happens on drop with auto_save)
+    colony.save()?;
+    println!("Saved: {} nodes, {} edges", colony.stats().graph_nodes, colony.stats().graph_edges);
+
+    // Later: reload from same database
+    let colony2 = ColonyBuilder::new()
+        .with_persistence("knowledge.db")
+        .build()?;
+    println!("Loaded: {} nodes, {} edges", colony2.stats().graph_nodes, colony2.stats().graph_edges);
+
+    Ok(())
+}
+```
+
+Requires the `sqlite` feature:
+```toml
+phago-runtime = { version = "0.1", features = ["sqlite"] }
+```
+
+### Example 5: Async Runtime
+
+```rust
+use phago_runtime::prelude::*;
+use phago_runtime::async_runtime::{AsyncColony, run_in_local, TickTimer};
+use phago_agents::digester::Digester;
+
+#[tokio::main]
+async fn main() {
+    let mut colony = Colony::new();
+    colony.ingest_document("Doc", "Content here", Position::new(0.0, 0.0));
+    colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(50)));
+
+    // Simple: run_in_local handles LocalSet setup
+    let events = run_in_local(colony, |async_colony| async move {
+        async_colony.run_async(50).await
+    }).await;
+    println!("Completed {} ticks", events.len());
+
+    // Advanced: controlled tick rate for visualization
+    let colony2 = Colony::new();
+    run_in_local(colony2, |async_colony| async move {
+        let mut timer = TickTimer::new(100);  // 100ms per tick
+        timer.run_timed(&async_colony, 50).await;
+    }).await;
+}
+```
+
+Requires the `async` feature:
+```toml
+phago-runtime = { version = "0.1", features = ["async"] }
 ```
 
 ### Example 4: Structural Queries
@@ -369,18 +439,34 @@ petgraph = "0.7"
 
 ---
 
+## Feature Flags
+
+| Feature | Description | Dependencies Added |
+|---------|-------------|-------------------|
+| `sqlite` | SQLite-backed persistence via ColonyBuilder | rusqlite |
+| `async` | Async runtime with AsyncColony, TickTimer | tokio, async-trait, futures |
+| `semantic` | Semantic wiring with embeddings | - |
+
+Enable features in your Cargo.toml:
+```toml
+phago-runtime = { version = "0.1", features = ["sqlite", "async"] }
+```
+
+---
+
 ## Roadmap to Production
 
 ### Short-term (Next Release)
 
 - [ ] Fix flaky test (deterministic seeding)
-- [ ] Add prelude module for easier imports
+- [x] Add prelude module for easier imports
 - [ ] Publish to crates.io
 - [ ] Add Result-based error handling
 
 ### Medium-term
 
-- [ ] Async API variant
+- [x] Async API variant ✓ (Phase 10.3)
+- [x] SQLite persistence ✓ (Phase 10.2)
 - [ ] Configuration file support
 - [ ] CLI tool for standalone use
 - [ ] Web UI for graph exploration
@@ -404,4 +490,4 @@ Issues and feature requests: https://github.com/Clemens865/Phago_Project/issues
 
 ---
 
-*Last updated: Post-Ralph Loop optimization (v0.1.0)*
+*Last updated: Phase 10 Complete — Persistence & Scale (v0.1.0)*

@@ -356,6 +356,7 @@ mod tests {
             position: Position::new(0.0, 0.0),
             access_count: 0,
             created_tick: 0,
+            embedding: None,
         });
         let n2 = sub.add_node(NodeData {
             id: NodeId::new(),
@@ -364,6 +365,7 @@ mod tests {
             position: Position::new(1.0, 0.0),
             access_count: 0,
             created_tick: 0,
+            embedding: None,
         });
 
         sub.set_edge(n1, n2, EdgeData {

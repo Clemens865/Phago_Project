@@ -475,6 +475,47 @@ impl Agent for Synthesizer {
     }
 }
 
+// --- Serialization ---
+
+use crate::serialize::{
+    SerializableAgent, SerializedAgent,
+    SynthesizerState as SerializedSynthesizerState,
+};
+
+impl SerializableAgent for Synthesizer {
+    fn export_state(&self) -> SerializedAgent {
+        SerializedAgent::Synthesizer(SerializedSynthesizerState {
+            id: self.id,
+            position: self.position,
+            age_ticks: self.age_ticks,
+            idle_ticks: self.idle_ticks,
+            insights_produced: self.insights_produced,
+            sense_radius: self.sense_radius,
+            cooldown_ticks: self.cooldown_ticks,
+            max_idle_ticks: self.max_idle_ticks,
+        })
+    }
+
+    fn from_state(state: &SerializedAgent) -> Option<Self> {
+        match state {
+            SerializedAgent::Synthesizer(s) => Some(Synthesizer {
+                id: s.id,
+                position: s.position,
+                age_ticks: s.age_ticks,
+                state: SynthesizerState::Dormant,
+                insights_produced: s.insights_produced,
+                engulfed: None,
+                fragments: Vec::new(),
+                sense_radius: s.sense_radius,
+                cooldown_ticks: s.cooldown_ticks,
+                max_idle_ticks: s.max_idle_ticks,
+                idle_ticks: s.idle_ticks,
+            }),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

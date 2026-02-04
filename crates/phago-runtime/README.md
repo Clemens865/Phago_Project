@@ -11,6 +11,20 @@ This crate provides the execution environment for Phago agents:
 - **Topology**: Graph implementation with Hebbian wiring and synaptic pruning
 - **Session**: Save/restore colony state across sessions
 - **Metrics**: Quantitative measurement of colony behavior
+- **ColonyBuilder**: Builder pattern for colonies with optional SQLite persistence
+- **AsyncColony**: Async runtime for concurrent and timed simulation
+
+## Feature Flags
+
+| Feature | Description |
+|---------|-------------|
+| `sqlite` | SQLite-backed persistence via `ColonyBuilder` |
+| `async` | Async runtime with `AsyncColony`, `TickTimer`, `run_in_local` |
+
+Enable features:
+```toml
+phago-runtime = { version = "0.1", features = ["sqlite", "async"] }
+```
 
 ## Usage
 
@@ -34,6 +48,54 @@ colony.run(50);
 // Check stats
 let stats = colony.stats();
 println!("Nodes: {}, Edges: {}", stats.graph_nodes, stats.graph_edges);
+```
+
+### With SQLite Persistence
+
+```rust
+use phago_runtime::prelude::*;
+use phago_agents::digester::Digester;
+
+// Create colony with SQLite persistence
+let mut colony = ColonyBuilder::new()
+    .with_persistence("knowledge.db")
+    .auto_save(true)  // Save on drop
+    .build()?;
+
+// Use as normal
+colony.ingest_document("Bio", "Cell transport", Position::new(0.0, 0.0));
+colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0))));
+colony.run(100);
+colony.save()?;  // Explicit save
+
+// Later: reload from database
+let colony2 = ColonyBuilder::new()
+    .with_persistence("knowledge.db")
+    .build()?;
+```
+
+### With Async Runtime
+
+```rust
+use phago_runtime::prelude::*;
+use phago_runtime::async_runtime::{run_in_local, TickTimer};
+
+#[tokio::main]
+async fn main() {
+    let colony = Colony::new();
+
+    // Run async simulation
+    let events = run_in_local(colony, |ac| async move {
+        ac.run_async(50).await
+    }).await;
+
+    // Or with controlled tick rate
+    let colony2 = Colony::new();
+    run_in_local(colony2, |ac| async move {
+        let mut timer = TickTimer::new(100);  // 100ms per tick
+        timer.run_timed(&ac, 50).await;
+    }).await;
+}
 ```
 
 ## Colony Lifecycle (per tick)

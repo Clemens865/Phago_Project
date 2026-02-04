@@ -12,6 +12,11 @@ pub use crate::code_digester::{CodeElement, CodeElementKind, extract_code_elemen
 pub use crate::genome::AgentGenome;
 pub use crate::fitness::{AgentFitness, FitnessTracker};
 pub use crate::spawn::{SpawnPolicy, FitnessSpawnPolicy};
+pub use crate::serialize::{AgentType, SerializedAgent, SerializableAgent};
+
+// Semantic digester (requires "semantic" feature)
+#[cfg(feature = "semantic")]
+pub use crate::semantic_digester::{SemanticDigester, SemanticConcept, SemanticConfig};
 
 // Re-export from core
 pub use phago_core::prelude::*;

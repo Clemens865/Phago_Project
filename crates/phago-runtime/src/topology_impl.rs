@@ -478,6 +478,14 @@ impl TopologyGraph for PetTopologyGraph {
 
         components
     }
+
+    fn find_nodes_by_exact_label(&self, label: &str) -> Vec<NodeId> {
+        // Use O(1) index lookup
+        self.label_index
+            .get(&label.to_lowercase())
+            .map(|v| v.clone())
+            .unwrap_or_default()
+    }
 }
 
 #[cfg(test)]
@@ -492,6 +500,7 @@ mod tests {
             position: Position::new(0.0, 0.0),
             access_count: 0,
             created_tick: tick,
+            embedding: None,
         }
     }
 

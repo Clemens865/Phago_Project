@@ -69,6 +69,20 @@ pub trait TopologyGraph {
     /// Find nodes matching a label (substring match).
     fn find_nodes_by_label(&self, query: &str) -> Vec<NodeId>;
 
+    /// Find nodes with an exact label match (case-insensitive).
+    /// Default implementation falls back to find_nodes_by_label with filtering.
+    fn find_nodes_by_exact_label(&self, label: &str) -> Vec<NodeId> {
+        // Default: use find_nodes_by_label and filter for exact matches
+        let label_lower = label.to_lowercase();
+        self.find_nodes_by_label(label)
+            .into_iter()
+            .filter(|id| {
+                self.get_node(id)
+                    .map_or(false, |n| n.label.to_lowercase() == label_lower)
+            })
+            .collect()
+    }
+
     // --- Structural query types ---
 
     /// Find the shortest weighted path between two nodes.

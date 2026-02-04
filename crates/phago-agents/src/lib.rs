@@ -26,4 +26,8 @@ pub mod genome;
 pub mod fitness;
 pub mod spawn;
 pub mod code_digester;
+pub mod serialize;
 pub mod prelude;
+
+#[cfg(feature = "semantic")]
+pub mod semantic_digester;

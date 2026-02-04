@@ -32,3 +32,10 @@ pub use crate::topology::TopologyGraph;
 
 // Re-export error types
 pub use crate::error::{PhagoError, Result};
+
+// Re-export semantic utilities
+pub use crate::semantic::{
+    cosine_similarity, normalized_similarity, compute_semantic_weight,
+    l2_distance, dot_product, l2_normalize, l2_normalized,
+    SemanticWiringConfig,
+};

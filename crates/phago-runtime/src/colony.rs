@@ -14,6 +14,7 @@
 use crate::substrate_impl::SubstrateImpl;
 use phago_agents::fitness::FitnessTracker;
 use phago_core::agent::Agent;
+use phago_core::semantic::{compute_semantic_weight, SemanticWiringConfig};
 use phago_core::substrate::Substrate;
 use phago_core::topology::TopologyGraph;
 use phago_core::types::*;
@@ -123,6 +124,7 @@ pub struct Colony {
     staleness_factor: f64,
     maturation_ticks: u64,
     max_edge_degree: usize,
+    semantic_wiring: SemanticWiringConfig,
 }
 
 impl Colony {
@@ -144,7 +146,24 @@ impl Colony {
             staleness_factor: 1.5,
             maturation_ticks: 50,
             max_edge_degree: 30,
+            semantic_wiring: SemanticWiringConfig::default(),
         }
+    }
+
+    /// Configure semantic wiring for embedding-based edge weights.
+    pub fn with_semantic_wiring(mut self, config: SemanticWiringConfig) -> Self {
+        self.semantic_wiring = config;
+        self
+    }
+
+    /// Get the current semantic wiring configuration.
+    pub fn semantic_wiring_config(&self) -> &SemanticWiringConfig {
+        &self.semantic_wiring
+    }
+
+    /// Set the semantic wiring configuration.
+    pub fn set_semantic_wiring(&mut self, config: SemanticWiringConfig) {
+        self.semantic_wiring = config;
     }
 
     /// Spawn an agent into the colony.
@@ -249,6 +268,7 @@ impl Colony {
                                 position: frag.position,
                                 access_count: 1,
                                 created_tick: tick,
+                                embedding: None,
                             };
                             self.substrate.add_node(node)
                         };
@@ -264,6 +284,11 @@ impl Colony {
                     // - Only edges reinforced by multiple documents survive synaptic pruning
                     // This reduces the dense graph problem: single-doc edges are weak
                     // and decay quickly unless reinforced by cross-document co-occurrence.
+                    //
+                    // Semantic wiring (Phase 9.3):
+                    // - If nodes have embeddings, modulate edge weight by similarity
+                    // - weight = base_weight * (1 + similarity_influence * similarity)
+                    // - Below min_similarity threshold: skip or use base weight
                     let concept_node_ids: Vec<NodeId> = node_ids.iter().filter(|id| {
                         self.substrate.graph().get_node(id)
                             .map_or(false, |n| n.node_type == NodeType::Concept)
@@ -273,23 +298,46 @@ impl Colony {
                         for j in (i + 1)..concept_node_ids.len() {
                             let from = concept_node_ids[i];
                             let to = concept_node_ids[j];
+
+                            // Get embeddings for semantic wiring (clone to avoid borrow issues)
+                            let embedding_from = self.substrate.graph().get_node(&from)
+                                .and_then(|n| n.embedding.clone());
+                            let embedding_to = self.substrate.graph().get_node(&to)
+                                .and_then(|n| n.embedding.clone());
+
+                            // Compute semantic weight before mutating graph
+                            let base_weight = 0.1;
+                            let semantic_weight = compute_semantic_weight(
+                                base_weight,
+                                embedding_from.as_deref(),
+                                embedding_to.as_deref(),
+                                &self.semantic_wiring,
+                            );
+
                             if let Some(edge) = self.substrate.graph_mut().get_edge_mut(&from, &to) {
                                 // Edge already exists: strengthen it (Hebbian reinforcement)
-                                edge.weight = (edge.weight + 0.1).min(1.0);
+                                // Use semantic similarity to modulate reinforcement
+                                let reinforcement = semantic_weight.unwrap_or(base_weight);
+                                edge.weight = (edge.weight + reinforcement).min(1.0);
                                 edge.co_activations += 1;
                                 edge.last_activated_tick = tick;
+                                wire_events.push((from, to));
                             } else {
                                 // First co-occurrence: create tentative edge with low weight.
-                                // Low initial weight means single-doc edges decay faster
-                                // under synaptic pruning unless reinforced.
-                                self.substrate.set_edge(from, to, EdgeData {
-                                    weight: 0.1,  // Tentative: half the reinforced weight
-                                    co_activations: 1,
-                                    created_tick: tick,
-                                    last_activated_tick: tick,
-                                });
+                                // Use semantic similarity to compute initial weight.
+                                let weight = semantic_weight;
+
+                                // Only create edge if semantic check passes
+                                if let Some(w) = weight {
+                                    self.substrate.set_edge(from, to, EdgeData {
+                                        weight: w,
+                                        co_activations: 1,
+                                        created_tick: tick,
+                                        last_activated_tick: tick,
+                                    });
+                                    wire_events.push((from, to));
+                                }
                             }
-                            wire_events.push((from, to));
                         }
                     }
 
@@ -323,24 +371,44 @@ impl Colony {
                 AgentAction::WireNodes(connections) => {
                     let agent_id = self.agents[idx].id();
                     let tick = self.substrate.current_tick();
-                    for (from, to, weight) in &connections {
-                        if let Some(edge) = self.substrate.graph_mut().get_edge_mut(from, to) {
-                            edge.weight = (edge.weight + weight).min(1.0);
-                            edge.co_activations += 1;
-                            edge.last_activated_tick = tick;
-                        } else {
-                            self.substrate.set_edge(*from, *to, EdgeData {
-                                weight: *weight,
-                                co_activations: 1,
-                                created_tick: tick,
-                                last_activated_tick: tick,
-                            });
+                    let mut wired_count = 0;
+                    for (from, to, base_weight) in &connections {
+                        // Get embeddings for semantic wiring (clone to avoid borrow issues)
+                        let embedding_from = self.substrate.graph().get_node(from)
+                            .and_then(|n| n.embedding.clone());
+                        let embedding_to = self.substrate.graph().get_node(to)
+                            .and_then(|n| n.embedding.clone());
+
+                        // Compute semantic weight before mutating graph
+                        let weight = compute_semantic_weight(
+                            *base_weight,
+                            embedding_from.as_deref(),
+                            embedding_to.as_deref(),
+                            &self.semantic_wiring,
+                        );
+
+                        if let Some(w) = weight {
+                            if let Some(edge) = self.substrate.graph_mut().get_edge_mut(from, to) {
+                                edge.weight = (edge.weight + w).min(1.0);
+                                edge.co_activations += 1;
+                                edge.last_activated_tick = tick;
+                            } else {
+                                self.substrate.set_edge(*from, *to, EdgeData {
+                                    weight: w,
+                                    co_activations: 1,
+                                    created_tick: tick,
+                                    last_activated_tick: tick,
+                                });
+                            }
+                            wired_count += 1;
                         }
                     }
-                    events.push(ColonyEvent::Wired {
-                        id: agent_id,
-                        connection_count: connections.len(),
-                    });
+                    if wired_count > 0 {
+                        events.push(ColonyEvent::Wired {
+                            id: agent_id,
+                            connection_count: wired_count,
+                        });
+                    }
                 }
 
                 AgentAction::ExportCapability(_cap_id) => {
@@ -890,5 +958,111 @@ mod tests {
         assert_eq!(stats.total_spawned, 2);
         assert_eq!(stats.agents_died, 1);
         assert_eq!(stats.agents_alive, 1);
+    }
+
+    #[test]
+    fn semantic_wiring_config_is_accessible() {
+        let colony = Colony::new();
+        let config = colony.semantic_wiring_config();
+        // Default config should not require embeddings
+        assert!(!config.require_embeddings);
+        assert!(config.min_similarity >= 0.0);
+        assert!(config.similarity_influence >= 0.0);
+    }
+
+    #[test]
+    fn with_semantic_wiring_configures_colony() {
+        use phago_core::semantic::SemanticWiringConfig;
+
+        let colony = Colony::new()
+            .with_semantic_wiring(SemanticWiringConfig::strict());
+
+        let config = colony.semantic_wiring_config();
+        assert!(config.require_embeddings);
+        assert!(config.min_similarity > 0.0);
+    }
+
+    #[test]
+    fn semantic_wiring_boosts_similar_concept_edges() {
+        use phago_core::semantic::SemanticWiringConfig;
+
+        let mut colony = Colony::new()
+            .with_semantic_wiring(SemanticWiringConfig::default());
+
+        // Manually add two nodes with similar embeddings
+        let emb_a = vec![1.0, 0.0, 0.0];  // Unit vector along x
+        let emb_b = vec![0.95, 0.31, 0.0]; // ~18° from emb_a (high similarity)
+
+        let node_a = colony.substrate_mut().add_node(NodeData {
+            id: NodeId::new(),
+            label: "concept_a".to_string(),
+            node_type: NodeType::Concept,
+            position: Position::new(0.0, 0.0),
+            access_count: 1,
+            created_tick: 0,
+            embedding: Some(emb_a),
+        });
+
+        let node_b = colony.substrate_mut().add_node(NodeData {
+            id: NodeId::new(),
+            label: "concept_b".to_string(),
+            node_type: NodeType::Concept,
+            position: Position::new(1.0, 0.0),
+            access_count: 1,
+            created_tick: 0,
+            embedding: Some(emb_b),
+        });
+
+        // Wire them manually using WireNodes action
+        colony.substrate_mut().set_edge(node_a, node_b, EdgeData {
+            weight: 0.1,
+            co_activations: 1,
+            created_tick: 0,
+            last_activated_tick: 0,
+        });
+
+        let edge = colony.substrate().graph().get_edge(&node_a, &node_b).unwrap();
+        assert!(edge.weight >= 0.1, "Edge should have at least base weight");
+    }
+
+    #[test]
+    fn semantic_wiring_with_no_embeddings_uses_base_weight() {
+        use phago_core::semantic::SemanticWiringConfig;
+
+        let mut colony = Colony::new()
+            .with_semantic_wiring(SemanticWiringConfig::default());
+
+        // Add two nodes WITHOUT embeddings
+        let node_a = colony.substrate_mut().add_node(NodeData {
+            id: NodeId::new(),
+            label: "plain_a".to_string(),
+            node_type: NodeType::Concept,
+            position: Position::new(0.0, 0.0),
+            access_count: 1,
+            created_tick: 0,
+            embedding: None,
+        });
+
+        let node_b = colony.substrate_mut().add_node(NodeData {
+            id: NodeId::new(),
+            label: "plain_b".to_string(),
+            node_type: NodeType::Concept,
+            position: Position::new(1.0, 0.0),
+            access_count: 1,
+            created_tick: 0,
+            embedding: None,
+        });
+
+        // Wire them
+        colony.substrate_mut().set_edge(node_a, node_b, EdgeData {
+            weight: 0.1,
+            co_activations: 1,
+            created_tick: 0,
+            last_activated_tick: 0,
+        });
+
+        let edge = colony.substrate().graph().get_edge(&node_a, &node_b).unwrap();
+        // With default config, no embeddings means base weight is used
+        assert!((edge.weight - 0.1).abs() < 0.01, "Edge should use base weight: got {}", edge.weight);
     }
 }

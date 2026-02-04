@@ -17,5 +17,12 @@ uuid = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
+# Optional semantic embeddings support
+phago-embeddings = { workspace = true, optional = true }
+
+[features]
+default = []
+semantic = ["phago-embeddings"]
+
 [dev-dependencies]
 phago-runtime = { workspace = true }

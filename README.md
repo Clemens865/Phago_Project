@@ -87,8 +87,142 @@ See [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md) for complete exampl
 - **Single import**: `use phago::prelude::*` gives you everything
 - **Structured errors**: `Result<T, PhagoError>` with typed error categories
 - **Deterministic testing**: `Digester::with_seed(pos, seed)` for reproducible simulations
-- **Session persistence**: Save/restore colony state across sessions
+- **Session persistence**: Save/restore colony state across sessions (JSON or SQLite)
+- **SQLite persistence**: `ColonyBuilder` with auto-save for production deployments
+- **Async runtime**: `AsyncColony` with `TickTimer` for real-time visualization
 - **MCP adapter**: Ready for external LLM/agent integration
+- **Semantic embeddings**: Vector-based concept extraction (optional `semantic` feature)
+
+### SQLite Persistence (Phase 10)
+
+Enable durable storage with automatic save/load:
+
+```toml
+[dependencies]
+phago-runtime = { version = "0.1", features = ["sqlite"] }
+```
+
+```rust
+use phago_runtime::prelude::*;
+
+// Create colony with persistent storage
+let mut colony = ColonyBuilder::new()
+    .with_persistence("knowledge.db")  // SQLite file
+    .auto_save(true)                   // Save on drop
+    .build()?;
+
+// Use normally — persistence is automatic
+colony.ingest_document("title", "content", Position::new(0.0, 0.0));
+colony.run(100);
+colony.save()?;  // Explicit save (also happens on drop)
+
+// Later: reload with full state preserved
+let colony2 = ColonyBuilder::new()
+    .with_persistence("knowledge.db")
+    .build()?;
+```
+
+### Async Runtime (Phase 10)
+
+Enable controlled-rate simulation for visualization:
+
+```toml
+[dependencies]
+phago-runtime = { version = "0.1", features = ["async"] }
+```
+
+```rust
+use phago_runtime::prelude::*;
+use phago_runtime::async_runtime::{run_in_local, TickTimer};
+
+#[tokio::main]
+async fn main() {
+    let colony = Colony::new();
+
+    // Fast async simulation
+    run_in_local(colony, |ac| async move {
+        ac.run_async(100).await
+    }).await;
+
+    // Or controlled tick rate for visualization
+    let colony2 = Colony::new();
+    run_in_local(colony2, |ac| async move {
+        let mut timer = TickTimer::new(100);  // 100ms per tick
+        timer.run_timed(&ac, 50).await;
+    }).await;
+}
+```
+
+### Semantic Embeddings (Phase 9)
+
+Enable vector embeddings for semantic understanding:
+
+```toml
+[dependencies]
+phago = { version = "0.1", features = ["semantic"] }
+```
+
+```rust
+use phago::prelude::*;
+use std::sync::Arc;
+
+// Create an embedder (SimpleEmbedder or API-backed)
+let embedder: Arc<dyn Embedder> = Arc::new(SimpleEmbedder::new(256));
+
+// SemanticDigester uses embeddings for concept extraction
+let mut digester = SemanticDigester::new(Position::new(0.0, 0.0), embedder.clone());
+let concepts = digester.digest_text("The mitochondria is the powerhouse of the cell.".into());
+
+// Find semantically similar concepts
+let similar = digester.find_similar("cellular energy", 5);
+```
+
+The `semantic` feature adds:
+- **SimpleEmbedder** — Hash-based embeddings (no dependencies)
+- **SemanticDigester** — Embedding-backed agent for semantic concept extraction
+- **Chunker** — Document chunking with configurable overlap
+- **Similarity functions** — cosine_similarity, euclidean_distance, normalize_l2
+
+### LLM Integration (Phase 9.2)
+
+Enable LLM-backed concept extraction:
+
+```toml
+[dependencies]
+# Local LLM (Ollama)
+phago = { version = "0.1", features = ["llm-local"] }
+
+# Cloud APIs (Claude, OpenAI)
+phago = { version = "0.1", features = ["llm-api"] }
+
+# All backends
+phago = { version = "0.1", features = ["llm-full"] }
+```
+
+```rust,ignore
+use phago::prelude::*;
+
+// Local Ollama backend (no API key needed)
+let ollama = OllamaBackend::localhost().with_model("llama3.2");
+let concepts = ollama.extract_concepts("Cell membrane transport").await?;
+
+// Claude backend
+let claude = ClaudeBackend::new("sk-ant-...").sonnet();
+let concepts = claude.extract_concepts("Cell membrane transport").await?;
+
+// OpenAI backend
+let openai = OpenAiBackend::new("sk-...").gpt4o_mini();
+let concepts = openai.extract_concepts("Cell membrane transport").await?;
+```
+
+The `llm` features add:
+- **OllamaBackend** — Local LLM via Ollama (no API key needed)
+- **ClaudeBackend** — Anthropic Claude API
+- **OpenAiBackend** — OpenAI GPT API
+- **LlmBackend trait** — Common interface for all backends
+- **Concept extraction** — Extract structured concepts from text
+- **Relationship identification** — Find relationships between concepts
+- **Query expansion** — Expand queries for better recall
 
 ## The Ten Biological Primitives
 
@@ -218,9 +352,12 @@ External LLMs/agents can interact via typed request/response API:
 ```
 crates/
 ├── phago/            # Unified facade crate (use this!)
+├── phago-cli/        # Command-line interface (ingest, query, stats, session)
 ├── phago-core/       # Traits (10 primitives) + shared types + error handling
-├── phago-runtime/    # Colony, substrate, topology, corpus, sessions, export
-├── phago-agents/     # Digester, Sentinel, Synthesizer, genome, evolution
+├── phago-runtime/    # Colony, substrate, topology, corpus, sessions, SQLite, async
+├── phago-agents/     # Digester, Sentinel, Synthesizer, SemanticDigester, genome, evolution
+├── phago-embeddings/ # Vector embeddings (SimpleEmbedder, OnnxEmbedder, API providers)
+├── phago-llm/        # LLM integration (Ollama, Claude, OpenAI)
 ├── phago-rag/        # Query engine, scoring, baselines, hybrid, MCP adapter
 ├── phago-viz/        # Self-contained HTML visualization (D3.js)
 └── phago-wasm/       # WASM integration (future)
@@ -270,20 +407,30 @@ The POC also generates `output/phago-colony.html` — an interactive D3.js visua
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| 0 — Scaffold | Done | Workspace, 10 primitive traits, shared types |
-| 1 — First Cell | Done | Digester agent, apoptosis, colony lifecycle |
-| 2 — Self-Organization | Done | Chemotaxis, document ingestion, Hebbian wiring |
-| 3 — Emergence | Done | Synthesizer (quorum sensing), Sentinel (negative selection) |
-| 4 — Cooperation | Done | Transfer, Symbiosis, Dissolution |
-| 5 — Prove It Works | Done | Metrics, visualization, hardening tests, performance optimization |
-| 6 — Research Branches | Done | 4 branches with prototypes, benchmarks, papers |
-| 7 — Production Ready | Done | Facade crate, preludes, error types, deterministic testing |
+| 0 — Scaffold | ✅ Done | Workspace, 10 primitive traits, shared types |
+| 1 — First Cell | ✅ Done | Digester agent, apoptosis, colony lifecycle |
+| 2 — Self-Organization | ✅ Done | Chemotaxis, document ingestion, Hebbian wiring |
+| 3 — Emergence | ✅ Done | Synthesizer (quorum sensing), Sentinel (negative selection) |
+| 4 — Cooperation | ✅ Done | Transfer, Symbiosis, Dissolution |
+| 5 — Prove It Works | ✅ Done | Metrics, visualization, hardening tests, performance optimization |
+| 6 — Research Branches | ✅ Done | 4 branches with prototypes, benchmarks, papers |
+| 7 — Production Ready | ✅ Done | Facade crate, preludes, error types, deterministic testing |
+| 8 — Distribution | ✅ Done | Published to crates.io, CLI tool with all commands |
+| 9.1 — Embeddings | ✅ Done | phago-embeddings crate, SemanticDigester agent |
+| 9.2 — LLM Integration | ✅ Done | phago-llm crate (Ollama, Claude, OpenAI) |
+| 9.3 — Vector Wiring | ✅ Done | SemanticWiringConfig, similarity-based edge weights |
+| 10.1 — Agent Serialization | ✅ Done | SerializableAgent trait, session persistence with agents |
+| 10.2 — SQLite Persistence | ✅ Done | ColonyBuilder, auto-save, WAL mode, full roundtrip |
+| 10.3 — Async Runtime | ✅ Done | AsyncColony, TickTimer, run_in_local, spawn_simulation_local |
 
 ## Tests
 
 ```bash
 # All tests
 cargo test --workspace
+
+# With all features (sqlite + async)
+cargo test --workspace --features "sqlite,async"
 
 # By category
 cargo test --test transfer_tests       # Vocabulary export/import
@@ -292,7 +439,20 @@ cargo test --test dissolution_tests    # Boundary modulation
 cargo test --test phase4_integration   # Full colony integration
 cargo test -p phago-runtime metrics    # Quantitative metrics
 cargo test -p phago-viz                # HTML visualization
+
+# Benchmarks (with features)
+cargo test --release --features "sqlite,async" -p phago-runtime --test benchmarks -- --nocapture
 ```
+
+### Phase 10 Benchmark Results
+
+| Category | Metric | Result |
+|----------|--------|--------|
+| **Throughput** | Ticks/sec (small colony) | 733 |
+| **SQLite** | Save/load time | <1ms |
+| **Async** | Overhead vs sync | <5% |
+| **Serialization** | 200 agents | 8µs |
+| **Semantic wiring** | Overhead | ~11% |
 
 ## Documentation
 

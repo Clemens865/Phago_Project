@@ -123,6 +123,12 @@ pub use phago_runtime as runtime;
 pub use phago_agents as agents;
 pub use phago_rag as rag;
 
+#[cfg(feature = "semantic")]
+pub use phago_embeddings as embeddings;
+
+#[cfg(feature = "llm")]
+pub use phago_llm as llm;
+
 /// Prelude module for convenient imports.
 ///
 /// ```rust
@@ -178,6 +184,31 @@ pub mod prelude {
         RecallRequest, RecallResponse,
         ExploreRequest, ExploreResponse,
     };
+
+    // Semantic embeddings (requires "semantic" feature)
+    #[cfg(feature = "semantic")]
+    pub use phago_agents::semantic_digester::{SemanticDigester, SemanticConcept, SemanticConfig};
+
+    #[cfg(feature = "semantic")]
+    pub use phago_embeddings::{
+        Embedder, EmbeddingError, EmbeddingResult,
+        SimpleEmbedder, Chunker, ChunkConfig,
+        cosine_similarity, euclidean_distance, normalize_l2,
+    };
+
+    // LLM integration (requires "llm" feature)
+    #[cfg(feature = "llm")]
+    pub use phago_llm::{
+        LlmBackend, LlmError, LlmResult,
+        Concept, Relationship, ConceptType, RelationType,
+        PromptTemplate,
+    };
+
+    #[cfg(feature = "llm-local")]
+    pub use phago_llm::OllamaBackend;
+
+    #[cfg(feature = "llm-api")]
+    pub use phago_llm::{ClaudeBackend, OpenAiBackend};
 }
 
 /// Version information.

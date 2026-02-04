@@ -385,6 +385,9 @@ pub struct NodeData {
     /// Number of times this node has been accessed/reinforced.
     pub access_count: u64,
     pub created_tick: u64,
+    /// Optional vector embedding for semantic similarity.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub embedding: Option<Vec<f32>>,
 }
 
 /// Types of nodes in the knowledge graph.
