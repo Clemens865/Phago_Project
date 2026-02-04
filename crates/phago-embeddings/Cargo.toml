@@ -1,0 +1,34 @@
+[package]
+name = "phago-embeddings"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Embedding backends for Phago semantic intelligence"
+documentation = "https://docs.rs/phago-embeddings"
+readme = "README.md"
+
+[dependencies]
+phago-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = "1"
+thiserror = "1"
+
+# Local embeddings (optional)
+ort = { version = "2.0.0-rc.11", optional = true }
+ndarray = { version = "0.16", optional = true }
+tokenizers = { version = "0.21", optional = true }
+
+# API embeddings (optional)
+reqwest = { version = "0.12", features = ["json"], optional = true }
+tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+
+[features]
+default = []
+local = ["ort", "ndarray", "tokenizers"]
+api = ["reqwest", "tokio"]
+full = ["local", "api"]
