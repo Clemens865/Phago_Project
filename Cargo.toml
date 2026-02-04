@@ -13,6 +13,7 @@ members = [
     "crates/phago-llm",
     "crates/phago-web",
     "crates/phago-python",
+    "crates/phago-vectors",
     "poc/knowledge-ecosystem",
     "poc/bio-rag-demo",
     "poc/agent-evolution-demo",
@@ -33,6 +34,7 @@ default-members = [
     "crates/phago-embeddings",
     "crates/phago-llm",
     "crates/phago-web",
+    "crates/phago-vectors",
 ]
 
 [workspace.package]
@@ -55,6 +57,7 @@ phago-viz = { version = "0.6.0", path = "crates/phago-viz" }
 phago-rag = { version = "0.6.0", path = "crates/phago-rag" }
 phago-embeddings = { version = "0.6.0", path = "crates/phago-embeddings" }
 phago-llm = { version = "0.6.0", path = "crates/phago-llm" }
+phago-vectors = { version = "0.6.0", path = "crates/phago-vectors" }
 
 uuid = { version = "1", features = ["v4", "serde"] }
 serde = { version = "1", features = ["derive"] }

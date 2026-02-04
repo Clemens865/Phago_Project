@@ -1,0 +1,42 @@
+[package]
+name = "phago-vectors"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["vector-database", "embeddings", "qdrant", "pinecone", "weaviate"]
+categories = ["database", "science"]
+description = "Vector database adapters for Phago biological computing framework"
+documentation = "https://docs.rs/phago-vectors"
+readme = "README.md"
+
+[dependencies]
+# Core dependencies
+async-trait = "0.1"
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+thiserror = "1"
+
+# Async runtime
+tokio = { version = "1", features = ["rt-multi-thread", "sync"] }
+
+# HTTP client for API-based backends
+reqwest = { version = "0.12", features = ["json"], optional = true }
+
+# Qdrant client
+qdrant-client = { version = "1.10", optional = true }
+
+# In-memory vector search (always available for testing)
+# Uses simple brute-force search
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+
+[features]
+default = []
+qdrant = ["qdrant-client"]
+pinecone = ["reqwest"]
+weaviate = ["reqwest"]
+all = ["qdrant", "pinecone", "weaviate"]
