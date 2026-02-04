@@ -103,4 +103,24 @@ pub trait TopologyGraph {
 
     /// Count connected components in the graph.
     fn connected_components(&self) -> usize;
+
+    // --- Community detection ---
+
+    /// Detect communities using the Louvain algorithm.
+    ///
+    /// The Louvain algorithm is a greedy optimization method that maximizes
+    /// modularity through iterative local moving and graph aggregation.
+    ///
+    /// Returns a `LouvainResult` containing:
+    /// - `communities`: Vec of communities, each a Vec of NodeIds
+    /// - `modularity`: Final modularity score (0.0-1.0, higher = better structure)
+    /// - `passes`: Number of Louvain passes performed
+    ///
+    /// # Example
+    /// ```ignore
+    /// let result = graph.louvain_communities();
+    /// println!("Found {} communities with modularity {:.3}",
+    ///          result.communities.len(), result.modularity);
+    /// ```
+    fn louvain_communities(&self) -> crate::louvain::LouvainResult;
 }

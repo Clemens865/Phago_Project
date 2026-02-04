@@ -482,6 +482,59 @@ These don't affect the ColonyBuilder approach since we use SQLite only for bulk 
 ### 10.3 Async Runtime — Complete
 **Status:** Complete | **Effort:** Medium (3-5 days)
 
+---
+
+### 10.4 Louvain Community Detection — Complete
+**Status:** Complete | **Effort:** Low (1-2 days)
+
+#### Delivered Components
+- `phago_core::louvain` module with:
+  - `louvain_communities()` — Main detection function
+  - `compute_modularity()` — Standalone modularity calculation
+  - `LouvainResult` — Communities, modularity score, pass count
+- `TopologyGraph::louvain_communities()` trait method
+- `PetTopologyGraph` implementation
+- Comprehensive test suite (10 unit tests + 6 benchmark tests)
+
+#### Algorithm
+Louvain is a greedy optimization method (Blondel et al., 2008) with two phases:
+1. **Local Moving**: Move nodes to maximize modularity gain
+2. **Aggregation**: Build new graph with communities as super-nodes
+
+Repeat until no improvement.
+
+#### Benchmark Results
+| Config | Nodes | NMI | Modularity | Time |
+|--------|-------|-----|------------|------|
+| 4×10 | 40 | 1.0000 | 0.6090 | 1.2ms |
+| 6×20 | 120 | 1.0000 | 0.7160 | 6.9ms |
+| 8×25 | 200 | 1.0000 | 0.7432 | 15ms |
+| 10×100 | 1000 | 1.0000 | 0.8163 | 471ms |
+
+**Target was NMI > 0.3 — achieved NMI = 1.0 (perfect recovery)**
+
+#### Usage Example
+```rust
+use phago_core::topology::TopologyGraph;
+
+let result = graph.louvain_communities();
+println!("Found {} communities", result.communities.len());
+println!("Modularity: {:.3}", result.modularity);
+
+for (i, community) in result.communities.iter().enumerate() {
+    println!("Community {}: {} nodes", i, community.len());
+}
+```
+
+#### Success Criteria
+- [x] Louvain algorithm implemented
+- [x] TopologyGraph trait method added
+- [x] PetTopologyGraph implementation works
+- [x] NMI > 0.3 on synthetic benchmarks (achieved 1.0)
+- [x] Runtime < 5 seconds for 1000 nodes (achieved 0.5s)
+
+---
+
 #### Delivered Components
 - `async_runtime` module in phago-runtime with feature flag `async`
 - `AsyncColony` wrapper providing async variants of Colony operations

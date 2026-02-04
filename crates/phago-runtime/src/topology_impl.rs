@@ -6,6 +6,7 @@
 
 use petgraph::graph::{Graph, NodeIndex};
 use petgraph::visit::EdgeRef;
+use phago_core::louvain::{self, LouvainResult};
 use phago_core::topology::TopologyGraph;
 use phago_core::types::*;
 use std::cmp::Ordering;
@@ -486,6 +487,43 @@ impl TopologyGraph for PetTopologyGraph {
             .map(|v| v.clone())
             .unwrap_or_default()
     }
+
+    fn louvain_communities(&self) -> LouvainResult {
+        // Collect node IDs and create index mapping
+        let node_ids: Vec<NodeId> = self.all_nodes();
+        if node_ids.is_empty() {
+            return LouvainResult {
+                communities: Vec::new(),
+                modularity: 0.0,
+                passes: 0,
+            };
+        }
+
+        // Create NodeId -> index mapping
+        let id_to_idx: std::collections::HashMap<NodeId, usize> = node_ids
+            .iter()
+            .enumerate()
+            .map(|(i, &id)| (id, i))
+            .collect();
+
+        // Collect edges as (from_idx, to_idx, weight)
+        let edges: Vec<(usize, usize, f64)> = self
+            .all_edges()
+            .iter()
+            .filter_map(|(from, to, edge)| {
+                let from_idx = id_to_idx.get(from)?;
+                let to_idx = id_to_idx.get(to)?;
+                // Only include each undirected edge once
+                if from_idx < to_idx {
+                    Some((*from_idx, *to_idx, edge.weight))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        louvain::louvain_communities(&node_ids, &edges)
+    }
 }
 
 #[cfg(test)]
@@ -739,6 +777,56 @@ mod tests {
             clique.edge_count(),
             n_nodes * max_k
         );
+    }
+
+    #[test]
+    fn louvain_detects_communities() {
+        let mut graph = PetTopologyGraph::new();
+
+        // Create two clusters with weak inter-cluster connection
+        // Cluster 1: a, b, c (fully connected)
+        let a = make_node("a", 0);
+        let b = make_node("b", 0);
+        let c = make_node("c", 0);
+        let id_a = a.id;
+        let id_b = b.id;
+        let id_c = c.id;
+        graph.add_node(a);
+        graph.add_node(b);
+        graph.add_node(c);
+        graph.set_edge(id_a, id_b, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
+        graph.set_edge(id_b, id_c, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
+        graph.set_edge(id_a, id_c, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
+
+        // Cluster 2: d, e, f (fully connected)
+        let d = make_node("d", 0);
+        let e = make_node("e", 0);
+        let f = make_node("f", 0);
+        let id_d = d.id;
+        let id_e = e.id;
+        let id_f = f.id;
+        graph.add_node(d);
+        graph.add_node(e);
+        graph.add_node(f);
+        graph.set_edge(id_d, id_e, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
+        graph.set_edge(id_e, id_f, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
+        graph.set_edge(id_d, id_f, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
+
+        // Weak inter-cluster connection
+        graph.set_edge(id_c, id_d, EdgeData { weight: 0.1, co_activations: 1, created_tick: 0, last_activated_tick: 0 });
+
+        let result = graph.louvain_communities();
+
+        // Should find 2 communities
+        assert_eq!(result.communities.len(), 2, "Expected 2 communities, found {}", result.communities.len());
+
+        // Modularity should be positive
+        assert!(result.modularity > 0.0, "Modularity should be positive, got {}", result.modularity);
+
+        // Each community should have 3 nodes
+        let sizes: Vec<usize> = result.communities.iter().map(|c| c.len()).collect();
+        assert!(sizes.contains(&3), "One community should have 3 nodes");
+        assert_eq!(sizes.iter().sum::<usize>(), 6, "Total nodes should be 6");
     }
 
     #[test]
