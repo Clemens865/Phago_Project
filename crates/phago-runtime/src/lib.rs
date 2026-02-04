@@ -45,3 +45,6 @@ pub mod sqlite_topology;
 
 #[cfg(feature = "async")]
 pub mod async_runtime;
+
+#[cfg(feature = "streaming")]
+pub mod streaming;

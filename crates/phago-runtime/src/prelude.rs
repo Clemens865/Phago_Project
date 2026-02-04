@@ -33,6 +33,14 @@ pub use crate::async_runtime::{
     spawn_simulation_local, batch_ingest, run_in_local,
 };
 
+// Re-export streaming when feature is enabled
+#[cfg(feature = "streaming")]
+pub use crate::streaming::{
+    StreamingColony, StreamingConfig, StreamingMetrics,
+    IngestDocument, DocumentChannel, FileWatcher, WatchEvent,
+    watch_directory_to_channel, streaming_from_directory,
+};
+
 // Re-export from agents
 pub use phago_agents::prelude::*;
 
