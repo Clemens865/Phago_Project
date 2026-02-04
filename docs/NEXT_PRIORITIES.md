@@ -1,8 +1,9 @@
 # Phago Next Priorities — Ralph Loop Development Plan
 
 **Created:** 2026-02-04
-**Status:** Planning
-**Version:** 0.2.0 → 0.3.0+
+**Updated:** 2026-02-04
+**Status:** In Progress
+**Version:** 0.5.0
 
 ---
 
@@ -16,18 +17,20 @@ This document outlines the next development priorities for Phago, each structure
 
 ---
 
-## Priority 1: Web Dashboard
+## ✅ Priority 1: Web Dashboard — COMPLETE
 
 ### Goal
 Real-time browser UI for colony monitoring, graph exploration, and query interface.
 
 ### Success Criteria
-- [ ] Live colony stats (nodes, edges, agents, tick)
-- [ ] Interactive force-directed graph visualization
-- [ ] Query interface with hybrid scoring
-- [ ] Document ingestion via drag-and-drop
-- [ ] Agent inspection panel
-- [ ] Works with SQLite persistence
+- [x] Live colony stats (nodes, edges, agents, tick)
+- [x] Interactive force-directed graph visualization
+- [x] Query interface with hybrid scoring
+- [x] Document ingestion via drag-and-drop
+- [x] Agent inspection panel
+- [x] Works with SQLite persistence
+
+**Completed:** v0.4.0 — `crates/phago-web/` with Axum + D3.js
 
 ### Tech Stack
 - **Backend:** Axum + Tower (Rust)
@@ -104,17 +107,19 @@ Iteration 10: Integration test
 
 ---
 
-## Priority 2: LangChain/LlamaIndex Integration
+## ✅ Priority 2: LangChain/LlamaIndex Integration — COMPLETE
 
 ### Goal
 Python adapters for popular AI frameworks, making Phago a drop-in memory layer.
 
 ### Success Criteria
-- [ ] `pip install phago-langchain` works
-- [ ] LangChain Memory class that uses Phago
-- [ ] LlamaIndex KnowledgeStore that uses Phago
-- [ ] Examples in documentation
-- [ ] Published to PyPI
+- [x] `pip install phago` works (via maturin)
+- [x] LangChain Memory class that uses Phago
+- [x] LlamaIndex KnowledgeStore that uses Phago
+- [x] Examples in documentation
+- [ ] Published to PyPI (pending)
+
+**Completed:** v0.5.0 — `crates/phago-python/` with PyO3 + LangChain + LlamaIndex
 
 ### Tech Stack
 - **Bindings:** PyO3 (Rust → Python)
@@ -178,16 +183,18 @@ Iteration 8: Integration tests
 
 ---
 
-## Priority 3: Louvain Community Detection
+## ✅ Priority 3: Louvain Community Detection — COMPLETE
 
 ### Goal
 Replace label propagation with Louvain algorithm for better topic clustering.
 
 ### Success Criteria
-- [ ] `graph.louvain_communities()` method
-- [ ] NMI > 0.3 on test corpus (vs current 0.17)
-- [ ] Modularity score exposed
-- [ ] Visualization colors by community
+- [x] `graph.louvain_communities()` method
+- [x] NMI > 0.3 on test corpus (achieved NMI=1.0!)
+- [x] Modularity score exposed
+- [ ] Visualization colors by community (pending dashboard integration)
+
+**Completed:** v0.5.0 — `crates/phago-core/src/louvain.rs` with benchmark suite
 
 ### Ralph Loop Plan
 
@@ -230,17 +237,19 @@ Iteration 5: Documentation
 
 ---
 
-## Priority 4: Configuration File Support
+## ✅ Priority 4: Configuration File Support — COMPLETE
 
 ### Goal
 `phago.toml` for colony settings without recompilation.
 
 ### Success Criteria
-- [ ] Parse phago.toml from current directory
-- [ ] All colony parameters configurable
-- [ ] CLI respects config file
-- [ ] ColonyBuilder loads from config
-- [ ] Validation with clear errors
+- [x] Parse phago.toml from current directory
+- [x] All colony parameters configurable (DecayConfig, SemanticConfig)
+- [x] CLI respects config file
+- [x] ColonyBuilder loads from config (`with_config()`)
+- [x] Validation with clear errors
+
+**Completed:** v0.3.0 — `crates/phago-cli/src/config.rs` + `Colony::from_config()`
 
 ### Configuration Schema
 
@@ -555,18 +564,18 @@ Iteration 6: Configuration and docs
 
 ## Execution Order
 
-### Phase A: Foundation (Weeks 1-2)
-1. **Priority 3: Louvain** (2-3 days) — Quick win, improves quality
-2. **Priority 4: Config** (2-3 days) — Developer experience
+### ✅ Phase A: Foundation — COMPLETE
+1. ~~**Priority 3: Louvain** (2-3 days) — Quick win, improves quality~~ ✅
+2. ~~**Priority 4: Config** (2-3 days) — Developer experience~~ ✅
 
-### Phase B: User Interface (Weeks 3-4)
-3. **Priority 1: Web Dashboard** (5-8 days) — Major visibility
+### ✅ Phase B: User Interface — COMPLETE
+3. ~~**Priority 1: Web Dashboard** (5-8 days) — Major visibility~~ ✅
 
-### Phase C: Ecosystem (Weeks 5-6)
-4. **Priority 2: Python Integrations** (5-7 days) — Adoption driver
-5. **Priority 5: Streaming** (4-6 days) — Production feature
+### ✅ Phase C: Ecosystem — PARTIAL
+4. ~~**Priority 2: Python Integrations** (5-7 days) — Adoption driver~~ ✅
+5. **Priority 5: Streaming** (4-6 days) — Production feature ← **NEXT**
 
-### Phase D: Scale (Weeks 7-10)
+### Phase D: Scale (Remaining)
 6. **Priority 6: Distributed** (15-25 days) — Enterprise feature
 7. **Priority 7: Vector DBs** (5-7 days) — Performance at scale
 
@@ -592,12 +601,14 @@ cd /Users/clemenshoenig/Documents/My-Coding-Programs/Phago-Experimental
 
 ## Version Milestones
 
-| Version | Priorities Included | Target |
+| Version | Priorities Included | Status |
 |---------|---------------------|--------|
-| **0.3.0** | Louvain, Config | Week 2 |
-| **0.4.0** | Web Dashboard | Week 4 |
-| **0.5.0** | Python Integrations | Week 6 |
-| **0.6.0** | Streaming Ingestion | Week 7 |
+| **0.3.0** | Config | ✅ Complete |
+| **0.4.0** | Web Dashboard | ✅ Complete |
+| **0.5.0** | Python Integrations, Louvain | ✅ Complete (current) |
+| **0.6.0** | Streaming Ingestion | 🔜 Next |
+| **0.7.0** | Vector DB Integration | Planned |
+| **1.0.0** | Distributed Colony | Planned |
 | **1.0.0** | Distributed Colony | Week 10 |
 
 ---
