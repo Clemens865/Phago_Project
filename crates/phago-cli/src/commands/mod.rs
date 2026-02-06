@@ -8,3 +8,6 @@ pub mod explore;
 pub mod export;
 pub mod session;
 pub mod stats;
+
+#[cfg(feature = "distributed")]
+pub mod cluster;

@@ -15,6 +15,8 @@ path = "src/main.rs"
 
 [dependencies]
 phago = { workspace = true }
+phago-distributed = { workspace = true, optional = true }
+phago-runtime = { workspace = true, optional = true }
 clap = { version = "4", features = ["derive"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -23,3 +25,9 @@ colored = "2"
 indicatif = "0.17"
 anyhow = "1"
 dirs = "5"
+tokio = { version = "1", features = ["full"], optional = true }
+tarpc = { version = "0.34", features = ["tokio1", "serde-transport", "tcp", "serde-transport-bincode"], optional = true }
+
+[features]
+default = []
+distributed = ["phago-distributed", "phago/distributed", "phago-runtime", "tokio", "tarpc"]

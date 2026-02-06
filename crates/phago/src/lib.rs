@@ -129,6 +129,9 @@ pub use phago_embeddings as embeddings;
 #[cfg(feature = "llm")]
 pub use phago_llm as llm;
 
+#[cfg(feature = "distributed")]
+pub use phago_distributed as distributed;
+
 /// Prelude module for convenient imports.
 ///
 /// ```rust
@@ -209,6 +212,16 @@ pub mod prelude {
 
     #[cfg(feature = "llm-api")]
     pub use phago_llm::{ClaudeBackend, OpenAiBackend};
+
+    // Distributed colony (requires "distributed" feature)
+    #[cfg(feature = "distributed")]
+    pub use phago_distributed::{
+        Coordinator, ShardedColony, ConsistentHashRing,
+        DistributedQueryEngine, DistributedHybridConfig,
+        DistributedRunner, RunnerConfig,
+        ShardId, DistributedConfig, DistributedError, DistributedResult,
+        TickPhase, CrossShardEdge, GhostNode, ShardInfo,
+    };
 }
 
 /// Version information.

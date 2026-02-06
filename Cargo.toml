@@ -14,6 +14,7 @@ members = [
     "crates/phago-web",
     "crates/phago-python",
     "crates/phago-vectors",
+    "crates/phago-distributed",
     "poc/knowledge-ecosystem",
     "poc/bio-rag-demo",
     "poc/agent-evolution-demo",
@@ -35,10 +36,11 @@ default-members = [
     "crates/phago-llm",
     "crates/phago-web",
     "crates/phago-vectors",
+    "crates/phago-distributed",
 ]
 
 [workspace.package]
-version = "0.7.0"
+version = "1.0.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/Clemens865/Phago_Project"
@@ -48,16 +50,17 @@ keywords = ["knowledge-graph", "hebbian-learning", "rag", "agents", "biological-
 categories = ["science", "data-structures", "algorithms"]
 
 [workspace.dependencies]
-phago = { version = "0.7.0", path = "crates/phago" }
-phago-core = { version = "0.7.0", path = "crates/phago-core" }
-phago-runtime = { version = "0.7.0", path = "crates/phago-runtime" }
-phago-wasm = { version = "0.7.0", path = "crates/phago-wasm" }
-phago-agents = { version = "0.7.0", path = "crates/phago-agents" }
-phago-viz = { version = "0.7.0", path = "crates/phago-viz" }
-phago-rag = { version = "0.7.0", path = "crates/phago-rag" }
-phago-embeddings = { version = "0.7.0", path = "crates/phago-embeddings" }
-phago-llm = { version = "0.7.0", path = "crates/phago-llm" }
-phago-vectors = { version = "0.7.0", path = "crates/phago-vectors" }
+phago = { version = "1.0.0", path = "crates/phago" }
+phago-core = { version = "1.0.0", path = "crates/phago-core" }
+phago-runtime = { version = "1.0.0", path = "crates/phago-runtime" }
+phago-wasm = { version = "1.0.0", path = "crates/phago-wasm" }
+phago-agents = { version = "1.0.0", path = "crates/phago-agents" }
+phago-viz = { version = "1.0.0", path = "crates/phago-viz" }
+phago-rag = { version = "1.0.0", path = "crates/phago-rag" }
+phago-embeddings = { version = "1.0.0", path = "crates/phago-embeddings" }
+phago-llm = { version = "1.0.0", path = "crates/phago-llm" }
+phago-vectors = { version = "1.0.0", path = "crates/phago-vectors" }
+phago-distributed = { version = "1.0.0", path = "crates/phago-distributed" }
 
 uuid = { version = "1", features = ["v4", "serde"] }
 serde = { version = "1", features = ["derive"] }

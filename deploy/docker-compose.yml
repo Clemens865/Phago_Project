@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  coordinator:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    container_name: phago-coordinator
+    environment:
+      - RUST_LOG=info
+      - COORDINATOR_PORT=9000
+      - NUM_SHARDS=3
+    ports:
+      - "9000:9000"
+    networks:
+      - phago-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: ["./phago-coordinator"]
+
+  shard-0:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    container_name: phago-shard-0
+    environment:
+      - RUST_LOG=info
+      - SHARD_ID=0
+      - SHARD_PORT=9001
+      - COORDINATOR_ADDR=coordinator:9000
+    ports:
+      - "9001:9001"
+    depends_on:
+      - coordinator
+    networks:
+      - phago-net
+    command: ["./phago-shard"]
+
+  shard-1:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    container_name: phago-shard-1
+    environment:
+      - RUST_LOG=info
+      - SHARD_ID=1
+      - SHARD_PORT=9001
+      - COORDINATOR_ADDR=coordinator:9000
+    ports:
+      - "9002:9001"
+    depends_on:
+      - coordinator
+    networks:
+      - phago-net
+    command: ["./phago-shard"]
+
+  shard-2:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    container_name: phago-shard-2
+    environment:
+      - RUST_LOG=info
+      - SHARD_ID=2
+      - SHARD_PORT=9001
+      - COORDINATOR_ADDR=coordinator:9000
+    ports:
+      - "9003:9001"
+    depends_on:
+      - coordinator
+    networks:
+      - phago-net
+    command: ["./phago-shard"]
+
+networks:
+  phago-net:
+    driver: bridge
+
+volumes:
+  phago-data:

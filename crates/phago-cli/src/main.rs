@@ -86,6 +86,13 @@ enum Commands {
 
     /// Show colony statistics
     Stats,
+
+    /// Distributed cluster management
+    #[cfg(feature = "distributed")]
+    Cluster {
+        #[command(subcommand)]
+        command: ClusterCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -114,6 +121,50 @@ enum ExploreCommands {
 
     /// Count connected components
     Components,
+}
+
+#[cfg(feature = "distributed")]
+#[derive(Subcommand)]
+enum ClusterCommands {
+    /// Start a coordinator node
+    StartCoordinator {
+        /// Port to listen on
+        #[arg(short, long, default_value = "9000")]
+        port: u16,
+
+        /// Number of shards in the cluster
+        #[arg(short, long, default_value = "3")]
+        num_shards: u32,
+    },
+
+    /// Start a shard node
+    StartShard {
+        /// Port for this shard to listen on
+        #[arg(short, long)]
+        port: u16,
+
+        /// Coordinator address (host:port)
+        #[arg(short, long, default_value = "127.0.0.1:9000")]
+        coordinator: String,
+
+        /// Shard ID
+        #[arg(short, long)]
+        id: u32,
+    },
+
+    /// Show cluster status
+    Status {
+        /// Coordinator address (host:port)
+        #[arg(short, long, default_value = "127.0.0.1:9000")]
+        coordinator: String,
+    },
+
+    /// Run distributed benchmarks
+    Bench {
+        /// Benchmark mode: quick, full, or scaling
+        #[arg(default_value = "quick")]
+        mode: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -159,5 +210,21 @@ fn main() -> Result<()> {
             SessionCommands::List => commands::session::list(),
         },
         Commands::Stats => commands::stats::run(),
+
+        #[cfg(feature = "distributed")]
+        Commands::Cluster { command } => match command {
+            ClusterCommands::StartCoordinator { port, num_shards } => {
+                commands::cluster::start_coordinator(port, num_shards)
+            }
+            ClusterCommands::StartShard {
+                port,
+                coordinator,
+                id,
+            } => commands::cluster::start_shard(port, &coordinator, id),
+            ClusterCommands::Status { coordinator } => {
+                commands::cluster::status(&coordinator)
+            }
+            ClusterCommands::Bench { mode } => commands::cluster::bench(&mode),
+        },
     }
 }
