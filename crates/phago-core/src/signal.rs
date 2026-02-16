@@ -4,7 +4,13 @@ use crate::types::*;
 
 impl Signal {
     /// Create a new signal.
-    pub fn new(signal_type: SignalType, intensity: f64, position: Position, emitter: AgentId, tick: Tick) -> Self {
+    pub fn new(
+        signal_type: SignalType,
+        intensity: f64,
+        position: Position,
+        emitter: AgentId,
+        tick: Tick,
+    ) -> Self {
         Self {
             signal_type,
             intensity,

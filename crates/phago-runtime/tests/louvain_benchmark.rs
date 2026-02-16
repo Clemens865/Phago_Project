@@ -2,17 +2,14 @@
 //!
 //! Tests the quality of Louvain community detection against known ground truth.
 
-use phago_core::louvain::{louvain_communities, compute_modularity, LouvainResult};
+use phago_core::louvain::{compute_modularity, louvain_communities, LouvainResult};
 use phago_core::types::NodeId;
 use std::collections::HashMap;
 use std::time::Instant;
 
 /// Compute Normalized Mutual Information between two partitions.
 /// NMI ranges from 0 (no correlation) to 1 (perfect match).
-fn normalized_mutual_information(
-    ground_truth: &[usize],
-    predicted: &[usize],
-) -> f64 {
+fn normalized_mutual_information(ground_truth: &[usize], predicted: &[usize]) -> f64 {
     let n = ground_truth.len();
     if n == 0 || predicted.len() != n {
         return 0.0;
@@ -26,7 +23,9 @@ fn normalized_mutual_information(
     for i in 0..n {
         *gt_counts.entry(ground_truth[i]).or_insert(0) += 1;
         *pred_counts.entry(predicted[i]).or_insert(0) += 1;
-        *joint_counts.entry((ground_truth[i], predicted[i])).or_insert(0) += 1;
+        *joint_counts
+            .entry((ground_truth[i], predicted[i]))
+            .or_insert(0) += 1;
     }
 
     let n_f = n as f64;
@@ -36,7 +35,11 @@ fn normalized_mutual_information(
         .values()
         .map(|&c| {
             let p = c as f64 / n_f;
-            if p > 0.0 { -p * p.log2() } else { 0.0 }
+            if p > 0.0 {
+                -p * p.log2()
+            } else {
+                0.0
+            }
         })
         .sum();
 
@@ -45,7 +48,11 @@ fn normalized_mutual_information(
         .values()
         .map(|&c| {
             let p = c as f64 / n_f;
-            if p > 0.0 { -p * p.log2() } else { 0.0 }
+            if p > 0.0 {
+                -p * p.log2()
+            } else {
+                0.0
+            }
         })
         .sum();
 
@@ -104,9 +111,7 @@ fn generate_planted_partition(
     }
 
     // Ground truth: node i belongs to community i / nodes_per_community
-    let ground_truth: Vec<usize> = (0..total_nodes)
-        .map(|i| i / nodes_per_community)
-        .collect();
+    let ground_truth: Vec<usize> = (0..total_nodes).map(|i| i / nodes_per_community).collect();
 
     (node_ids, edges, ground_truth)
 }
@@ -235,9 +240,7 @@ fn benchmark_weighted_edges() {
         }
     }
 
-    let ground_truth: Vec<usize> = (0..total_nodes)
-        .map(|i| i / nodes_per_community)
-        .collect();
+    let ground_truth: Vec<usize> = (0..total_nodes).map(|i| i / nodes_per_community).collect();
 
     let start = Instant::now();
     let result = louvain_communities(&node_ids, &edges);
@@ -263,18 +266,18 @@ fn benchmark_modularity_quality() {
 
     // Two disconnected cliques - modularity should be ~0.5
     let n = 10;
-    let node_ids: Vec<NodeId> = (0..2*n).map(|i| NodeId::from_seed(i as u64)).collect();
+    let node_ids: Vec<NodeId> = (0..2 * n).map(|i| NodeId::from_seed(i as u64)).collect();
     let mut edges = Vec::new();
 
     // Clique 1: nodes 0..n
     for i in 0..n {
-        for j in (i+1)..n {
+        for j in (i + 1)..n {
             edges.push((i, j, 1.0));
         }
     }
     // Clique 2: nodes n..2n
-    for i in n..2*n {
-        for j in (i+1)..2*n {
+    for i in n..2 * n {
+        for j in (i + 1)..2 * n {
             edges.push((i, j, 1.0));
         }
     }
@@ -285,23 +288,32 @@ fn benchmark_modularity_quality() {
     println!("Detected communities: {}", result.communities.len());
     println!("Modularity: {:.4}", result.modularity);
 
-    assert_eq!(result.communities.len(), 2, "Should detect exactly 2 communities");
-    assert!(result.modularity > 0.4, "Modularity should be > 0.4 for disconnected cliques");
+    assert_eq!(
+        result.communities.len(),
+        2,
+        "Should detect exactly 2 communities"
+    );
+    assert!(
+        result.modularity > 0.4,
+        "Modularity should be > 0.4 for disconnected cliques"
+    );
 }
 
 #[test]
 fn benchmark_summary() {
     // Run multiple tests and compute average metrics
     let configs = vec![
-        (4, 10, 0.7, 0.05),   // Small, well-separated
-        (6, 20, 0.6, 0.03),   // Medium
-        (8, 25, 0.5, 0.02),   // Larger
-        (10, 30, 0.4, 0.01),  // Large, harder
+        (4, 10, 0.7, 0.05),  // Small, well-separated
+        (6, 20, 0.6, 0.03),  // Medium
+        (8, 25, 0.5, 0.02),  // Larger
+        (10, 30, 0.4, 0.01), // Large, harder
     ];
 
     println!("\n=== Louvain Benchmark Summary ===");
-    println!("{:<20} {:>12} {:>12} {:>12} {:>12}",
-             "Config", "Nodes", "NMI", "Modularity", "Time (ms)");
+    println!(
+        "{:<20} {:>12} {:>12} {:>12} {:>12}",
+        "Config", "Nodes", "NMI", "Modularity", "Time (ms)"
+    );
     println!("{}", "-".repeat(70));
 
     let mut total_nmi = 0.0;
@@ -309,7 +321,11 @@ fn benchmark_summary() {
 
     for (seed_offset, (num_comm, nodes_per, p_in, p_out)) in configs.iter().enumerate() {
         let (node_ids, edges, ground_truth) = generate_planted_partition(
-            *num_comm, *nodes_per, *p_in, *p_out, (seed_offset * 1000) as u64
+            *num_comm,
+            *nodes_per,
+            *p_in,
+            *p_out,
+            (seed_offset * 1000) as u64,
         );
 
         let total_nodes = num_comm * nodes_per;
@@ -320,12 +336,14 @@ fn benchmark_summary() {
         let predicted = result_to_partition(&result, &node_ids);
         let nmi = normalized_mutual_information(&ground_truth, &predicted);
 
-        println!("{:<20} {:>12} {:>12.4} {:>12.4} {:>12.2}",
-                 format!("{}x{}", num_comm, nodes_per),
-                 total_nodes,
-                 nmi,
-                 result.modularity,
-                 elapsed.as_secs_f64() * 1000.0);
+        println!(
+            "{:<20} {:>12} {:>12.4} {:>12.4} {:>12.2}",
+            format!("{}x{}", num_comm, nodes_per),
+            total_nodes,
+            nmi,
+            result.modularity,
+            elapsed.as_secs_f64() * 1000.0
+        );
 
         total_nmi += nmi;
         count += 1;

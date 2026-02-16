@@ -46,17 +46,20 @@ impl FitnessTracker {
 
     /// Register a new agent with its generation.
     pub fn register(&mut self, agent_id: AgentId, generation: u32) {
-        self.data.insert(agent_id, AgentFitness {
+        self.data.insert(
             agent_id,
-            concepts_added: 0,
-            edges_contributed: 0,
-            ticks_alive: 0,
-            fitness: 0.0,
-            generation,
-            novel_concepts: 0,
-            bridge_edges: 0,
-            strong_edges: 0,
-        });
+            AgentFitness {
+                agent_id,
+                concepts_added: 0,
+                edges_contributed: 0,
+                ticks_alive: 0,
+                fitness: 0.0,
+                generation,
+                novel_concepts: 0,
+                bridge_edges: 0,
+                strong_edges: 0,
+            },
+        );
     }
 
     /// Record that an agent added concepts to the graph.
@@ -121,8 +124,8 @@ impl FitnessTracker {
             return;
         }
 
-        let productivity = (f.concepts_added as f64 + f.edges_contributed as f64)
-            / f.ticks_alive as f64;
+        let productivity =
+            (f.concepts_added as f64 + f.edges_contributed as f64) / f.ticks_alive as f64;
 
         let novelty = if f.concepts_added > 0 {
             f.novel_concepts as f64 / f.concepts_added as f64
@@ -147,9 +150,14 @@ impl FitnessTracker {
 
     /// Get the fittest living agent.
     pub fn fittest(&self, alive_ids: &[AgentId]) -> Option<&AgentFitness> {
-        alive_ids.iter()
+        alive_ids
+            .iter()
             .filter_map(|id| self.data.get(id))
-            .max_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|a, b| {
+                a.fitness
+                    .partial_cmp(&b.fitness)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
     }
 
     /// Get fitness data for an agent.
@@ -164,7 +172,8 @@ impl FitnessTracker {
 
     /// Mean fitness of living agents.
     pub fn mean_fitness(&self, alive_ids: &[AgentId]) -> f64 {
-        let fitnesses: Vec<f64> = alive_ids.iter()
+        let fitnesses: Vec<f64> = alive_ids
+            .iter()
             .filter_map(|id| self.data.get(id))
             .map(|f| f.fitness)
             .collect();

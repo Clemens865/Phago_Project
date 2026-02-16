@@ -35,12 +35,15 @@ fn main() {
 
     // --- Load corpus and queries ---
     let corpus = Corpus::from_embedded();
-    println!("Corpus: {} documents, {} categories",
-        corpus.len(), corpus.categories().len());
+    println!(
+        "Corpus: {} documents, {} categories",
+        corpus.len(),
+        corpus.categories().len()
+    );
 
     let queries_json = include_str!("../data/queries.json");
-    let queries: Vec<QueryDef> = serde_json::from_str(queries_json)
-        .expect("Failed to parse queries.json");
+    let queries: Vec<QueryDef> =
+        serde_json::from_str(queries_json).expect("Failed to parse queries.json");
     println!("Queries: {} with ground-truth relevance", queries.len());
     println!();
 
@@ -65,15 +68,18 @@ fn main() {
     let digestion_run = bench::run_benchmark(&mut colony, &config);
 
     let stats = colony.stats();
-    println!("  Nodes: {}, Edges: {}, Docs digested: {}/{}",
-        stats.graph_nodes, stats.graph_edges,
-        stats.documents_digested, stats.documents_total);
+    println!(
+        "  Nodes: {}, Edges: {}, Docs digested: {}/{}",
+        stats.graph_nodes, stats.graph_edges, stats.documents_digested, stats.documents_total
+    );
     println!("  Wall time: {}ms", digestion_run.wall_time_ms);
     println!();
 
     // --- Phase 2: Reinforced queries (5 rounds) ---
-    println!("── Phase 2: Reinforced Retrieval (5 rounds × {} queries) ──",
-        queries.len());
+    println!(
+        "── Phase 2: Reinforced Retrieval (5 rounds × {} queries) ──",
+        queries.len()
+    );
 
     let num_rounds = 10;
     let mut round_scores: Vec<AggregateScores> = Vec::new();
@@ -92,9 +98,14 @@ fn main() {
         }
 
         let agg = scoring::aggregate(&scores_this_round);
-        println!("  Round {}: P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
-            round, agg.mean_precision_at_5, agg.mean_precision_at_10,
-            agg.mean_mrr, agg.mean_ndcg_at_10);
+        println!(
+            "  Round {}: P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
+            round,
+            agg.mean_precision_at_5,
+            agg.mean_precision_at_10,
+            agg.mean_mrr,
+            agg.mean_ndcg_at_10
+        );
         round_scores.push(agg);
     }
     println!();
@@ -112,9 +123,14 @@ fn main() {
         }
         let agg = scoring::aggregate(&scores_this_round);
         if round == 1 || round == num_rounds {
-            println!("  Round {}: P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
-                round, agg.mean_precision_at_5, agg.mean_precision_at_10,
-                agg.mean_mrr, agg.mean_ndcg_at_10);
+            println!(
+                "  Round {}: P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
+                round,
+                agg.mean_precision_at_5,
+                agg.mean_precision_at_10,
+                agg.mean_mrr,
+                agg.mean_ndcg_at_10
+            );
         }
         static_scores_all.push(agg);
     }
@@ -130,9 +146,13 @@ fn main() {
         tfidf_scores.push(score);
     }
     let tfidf_agg = scoring::aggregate(&tfidf_scores);
-    println!("  TF-IDF: P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
-        tfidf_agg.mean_precision_at_5, tfidf_agg.mean_precision_at_10,
-        tfidf_agg.mean_mrr, tfidf_agg.mean_ndcg_at_10);
+    println!(
+        "  TF-IDF: P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
+        tfidf_agg.mean_precision_at_5,
+        tfidf_agg.mean_precision_at_10,
+        tfidf_agg.mean_mrr,
+        tfidf_agg.mean_ndcg_at_10
+    );
     println!();
 
     // --- Phase 5: Hybrid scoring (TF-IDF + graph re-ranking) ---
@@ -154,15 +174,25 @@ fn main() {
             hybrid_scores.push(score);
         }
         let agg = scoring::aggregate(&hybrid_scores);
-        println!("  Hybrid (α={:.1}): P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
-            alpha, agg.mean_precision_at_5, agg.mean_precision_at_10,
-            agg.mean_mrr, agg.mean_ndcg_at_10);
-        if best_hybrid_agg.as_ref().map_or(true, |(_, best)| agg.mean_precision_at_5 > best.mean_precision_at_5) {
+        println!(
+            "  Hybrid (α={:.1}): P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
+            alpha,
+            agg.mean_precision_at_5,
+            agg.mean_precision_at_10,
+            agg.mean_mrr,
+            agg.mean_ndcg_at_10
+        );
+        if best_hybrid_agg.as_ref().map_or(true, |(_, best)| {
+            agg.mean_precision_at_5 > best.mean_precision_at_5
+        }) {
             best_hybrid_agg = Some((*alpha, agg));
         }
     }
     let (best_alpha, hybrid_agg) = best_hybrid_agg.unwrap();
-    println!("  Best: α={:.1} P@5={:.3}", best_alpha, hybrid_agg.mean_precision_at_5);
+    println!(
+        "  Best: α={:.1} P@5={:.3}",
+        best_alpha, hybrid_agg.mean_precision_at_5
+    );
     println!();
 
     // --- Phase 6: Random baseline ---
@@ -175,9 +205,13 @@ fn main() {
         random_scores.push(score);
     }
     let random_agg = scoring::aggregate(&random_scores);
-    println!("  Random: P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
-        random_agg.mean_precision_at_5, random_agg.mean_precision_at_10,
-        random_agg.mean_mrr, random_agg.mean_ndcg_at_10);
+    println!(
+        "  Random: P@5={:.3} P@10={:.3} MRR={:.3} NDCG@10={:.3}",
+        random_agg.mean_precision_at_5,
+        random_agg.mean_precision_at_10,
+        random_agg.mean_mrr,
+        random_agg.mean_ndcg_at_10
+    );
     println!();
 
     // --- Summary ---
@@ -186,12 +220,23 @@ fn main() {
     println!("  Round-over-round P@5:");
     for (i, agg) in round_scores.iter().enumerate() {
         let bar = "#".repeat((agg.mean_precision_at_5 * 40.0) as usize);
-        println!("    Round {}: {:.3} {}", i + 1, agg.mean_precision_at_5, bar);
+        println!(
+            "    Round {}: {:.3} {}",
+            i + 1,
+            agg.mean_precision_at_5,
+            bar
+        );
     }
     println!();
 
-    let r1_p5 = round_scores.first().map(|a| a.mean_precision_at_5).unwrap_or(0.0);
-    let r5_p5 = round_scores.last().map(|a| a.mean_precision_at_5).unwrap_or(0.0);
+    let r1_p5 = round_scores
+        .first()
+        .map(|a| a.mean_precision_at_5)
+        .unwrap_or(0.0);
+    let r5_p5 = round_scores
+        .last()
+        .map(|a| a.mean_precision_at_5)
+        .unwrap_or(0.0);
     let improvement = if r1_p5 > 0.0 {
         ((r5_p5 - r1_p5) / r1_p5) * 100.0
     } else if r5_p5 > 0.0 {
@@ -200,17 +245,35 @@ fn main() {
         0.0
     };
 
-    let static_r1 = static_scores_all.first().map(|a| a.mean_precision_at_5).unwrap_or(0.0);
-    let static_r5 = static_scores_all.last().map(|a| a.mean_precision_at_5).unwrap_or(0.0);
+    let static_r1 = static_scores_all
+        .first()
+        .map(|a| a.mean_precision_at_5)
+        .unwrap_or(0.0);
+    let static_r5 = static_scores_all
+        .last()
+        .map(|a| a.mean_precision_at_5)
+        .unwrap_or(0.0);
 
-    println!("  Reinforced: P@5 round1={:.3} → round5={:.3} ({:+.1}%)",
-        r1_p5, r5_p5, improvement);
-    println!("  Static:     P@5 round1={:.3} → round5={:.3} (flat)",
-        static_r1, static_r5);
-    println!("  TF-IDF:     P@5={:.3} (fixed)", tfidf_agg.mean_precision_at_5);
-    println!("  Hybrid:     P@5={:.3} (α={:.1}, TF-IDF+Graph)",
-        hybrid_agg.mean_precision_at_5, best_alpha);
-    println!("  Random:     P@5={:.3} (baseline)", random_agg.mean_precision_at_5);
+    println!(
+        "  Reinforced: P@5 round1={:.3} → round5={:.3} ({:+.1}%)",
+        r1_p5, r5_p5, improvement
+    );
+    println!(
+        "  Static:     P@5 round1={:.3} → round5={:.3} (flat)",
+        static_r1, static_r5
+    );
+    println!(
+        "  TF-IDF:     P@5={:.3} (fixed)",
+        tfidf_agg.mean_precision_at_5
+    );
+    println!(
+        "  Hybrid:     P@5={:.3} (α={:.1}, TF-IDF+Graph)",
+        hybrid_agg.mean_precision_at_5, best_alpha
+    );
+    println!(
+        "  Random:     P@5={:.3} (baseline)",
+        random_agg.mean_precision_at_5
+    );
     println!();
 
     let best_method_p5 = r5_p5.max(hybrid_agg.mean_precision_at_5);
@@ -234,32 +297,54 @@ fn main() {
     let mut csv = String::new();
     csv.push_str("round,condition,precision_at_5,precision_at_10,mrr,ndcg_at_10\n");
     for (i, agg) in round_scores.iter().enumerate() {
-        csv.push_str(&format!("{},reinforced,{:.4},{:.4},{:.4},{:.4}\n",
-            i + 1, agg.mean_precision_at_5, agg.mean_precision_at_10,
-            agg.mean_mrr, agg.mean_ndcg_at_10));
+        csv.push_str(&format!(
+            "{},reinforced,{:.4},{:.4},{:.4},{:.4}\n",
+            i + 1,
+            agg.mean_precision_at_5,
+            agg.mean_precision_at_10,
+            agg.mean_mrr,
+            agg.mean_ndcg_at_10
+        ));
     }
     for (i, agg) in static_scores_all.iter().enumerate() {
-        csv.push_str(&format!("{},static,{:.4},{:.4},{:.4},{:.4}\n",
-            i + 1, agg.mean_precision_at_5, agg.mean_precision_at_10,
-            agg.mean_mrr, agg.mean_ndcg_at_10));
+        csv.push_str(&format!(
+            "{},static,{:.4},{:.4},{:.4},{:.4}\n",
+            i + 1,
+            agg.mean_precision_at_5,
+            agg.mean_precision_at_10,
+            agg.mean_mrr,
+            agg.mean_ndcg_at_10
+        ));
     }
-    csv.push_str(&format!("1,tfidf,{:.4},{:.4},{:.4},{:.4}\n",
-        tfidf_agg.mean_precision_at_5, tfidf_agg.mean_precision_at_10,
-        tfidf_agg.mean_mrr, tfidf_agg.mean_ndcg_at_10));
-    csv.push_str(&format!("1,hybrid_{:.1},{:.4},{:.4},{:.4},{:.4}\n",
-        best_alpha, hybrid_agg.mean_precision_at_5, hybrid_agg.mean_precision_at_10,
-        hybrid_agg.mean_mrr, hybrid_agg.mean_ndcg_at_10));
-    csv.push_str(&format!("1,random,{:.4},{:.4},{:.4},{:.4}\n",
-        random_agg.mean_precision_at_5, random_agg.mean_precision_at_10,
-        random_agg.mean_mrr, random_agg.mean_ndcg_at_10));
+    csv.push_str(&format!(
+        "1,tfidf,{:.4},{:.4},{:.4},{:.4}\n",
+        tfidf_agg.mean_precision_at_5,
+        tfidf_agg.mean_precision_at_10,
+        tfidf_agg.mean_mrr,
+        tfidf_agg.mean_ndcg_at_10
+    ));
+    csv.push_str(&format!(
+        "1,hybrid_{:.1},{:.4},{:.4},{:.4},{:.4}\n",
+        best_alpha,
+        hybrid_agg.mean_precision_at_5,
+        hybrid_agg.mean_precision_at_10,
+        hybrid_agg.mean_mrr,
+        hybrid_agg.mean_ndcg_at_10
+    ));
+    csv.push_str(&format!(
+        "1,random,{:.4},{:.4},{:.4},{:.4}\n",
+        random_agg.mean_precision_at_5,
+        random_agg.mean_precision_at_10,
+        random_agg.mean_mrr,
+        random_agg.mean_ndcg_at_10
+    ));
     std::fs::write("poc/bio-rag-demo/output/bio-rag-benchmark.csv", &csv)
         .expect("Failed to write CSV");
     println!("  Benchmark CSV: poc/bio-rag-demo/output/bio-rag-benchmark.csv");
 
     // HTML visualization
     let html = phago_viz::generate_html(&digestion_run.snapshots, colony.event_history());
-    std::fs::write("poc/bio-rag-demo/output/bio-rag.html", &html)
-        .expect("Failed to write HTML");
+    std::fs::write("poc/bio-rag-demo/output/bio-rag.html", &html).expect("Failed to write HTML");
     println!("  Visualization: poc/bio-rag-demo/output/bio-rag.html");
 
     println!();

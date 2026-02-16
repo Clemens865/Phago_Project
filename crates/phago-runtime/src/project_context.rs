@@ -41,7 +41,8 @@ fn scan_recursive(root: &Path, dir: &Path, files: &mut Vec<SourceFile>) {
         if path.is_dir() {
             scan_recursive(root, &path, files);
         } else if path.extension().map_or(false, |ext| ext == "rs") {
-            let relative = path.strip_prefix(root)
+            let relative = path
+                .strip_prefix(root)
                 .unwrap_or(&path)
                 .to_string_lossy()
                 .to_string();

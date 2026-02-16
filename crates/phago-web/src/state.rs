@@ -4,8 +4,8 @@
 //! trait objects that are not Send+Sync.
 
 use anyhow::Result;
-use phago_runtime::colony::{Colony, ColonyConfig, ColonyEvent, ColonySnapshot, ColonyStats};
 use phago_core::types::Position;
+use phago_runtime::colony::{Colony, ColonyConfig, ColonyEvent, ColonySnapshot, ColonyStats};
 use std::sync::mpsc;
 use std::thread;
 use tokio::sync::{broadcast, oneshot};
@@ -90,7 +90,13 @@ impl AppState {
                         }
                         let _ = response.send(all_events);
                     }
-                    ColonyCommand::Ingest { title, content, position, ticks, response } => {
+                    ColonyCommand::Ingest {
+                        title,
+                        content,
+                        position,
+                        ticks,
+                        response,
+                    } => {
                         use phago::prelude::Digester;
 
                         let before_nodes = colony.stats().graph_nodes;
@@ -116,7 +122,12 @@ impl AppState {
                             tick: colony.stats().tick,
                         });
                     }
-                    ColonyCommand::Query { query, max_results, alpha, response } => {
+                    ColonyCommand::Query {
+                        query,
+                        max_results,
+                        alpha,
+                        response,
+                    } => {
                         use phago::rag::{hybrid_query, HybridConfig};
 
                         let config = HybridConfig {
@@ -196,7 +207,13 @@ impl AppState {
     }
 
     /// Ingest a document.
-    pub async fn ingest(&self, title: String, content: String, position: Position, ticks: u64) -> IngestResult {
+    pub async fn ingest(
+        &self,
+        title: String,
+        content: String,
+        position: Position,
+        ticks: u64,
+    ) -> IngestResult {
         let (tx, rx) = oneshot::channel();
         let _ = self.cmd_tx.send(ColonyCommand::Ingest {
             title,

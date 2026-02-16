@@ -64,7 +64,11 @@ impl SimpleEmbedder {
         let mut hasher = DefaultHasher::new();
         (seed + 1000).hash(&mut hasher);
         word.hash(&mut hasher);
-        if hasher.finish() % 2 == 0 { 1.0 } else { -1.0 }
+        if hasher.finish() % 2 == 0 {
+            1.0
+        } else {
+            -1.0
+        }
     }
 }
 

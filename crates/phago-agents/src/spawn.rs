@@ -142,7 +142,12 @@ mod tests {
         let mut policy = FitnessSpawnPolicy::new(5, 0.1);
         let genome = AgentGenome::default_genome();
 
-        let result = policy.on_death(AgentId::new(), 5, Some(&genome), Some(Position::new(0.0, 0.0)));
+        let result = policy.on_death(
+            AgentId::new(),
+            5,
+            Some(&genome),
+            Some(Position::new(0.0, 0.0)),
+        );
         assert!(result.is_none());
     }
 
@@ -150,7 +155,12 @@ mod tests {
     fn no_spawn_never_spawns() {
         let mut policy = NoSpawnPolicy;
         let genome = AgentGenome::default_genome();
-        let result = policy.on_death(AgentId::new(), 1, Some(&genome), Some(Position::new(0.0, 0.0)));
+        let result = policy.on_death(
+            AgentId::new(),
+            1,
+            Some(&genome),
+            Some(Position::new(0.0, 0.0)),
+        );
         assert!(result.is_none());
     }
 }

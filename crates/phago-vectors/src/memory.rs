@@ -3,9 +3,7 @@
 //! This module provides a simple in-memory vector store that uses brute-force
 //! search. It's useful for testing and small-scale applications.
 
-use crate::{
-    DistanceMetric, SearchResult, VectorError, VectorRecord, VectorResult, VectorStore,
-};
+use crate::{DistanceMetric, SearchResult, VectorError, VectorRecord, VectorResult, VectorStore};
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::RwLock;
@@ -96,9 +94,10 @@ impl VectorStore for InMemoryStore {
     }
 
     async fn upsert(&self, records: Vec<VectorRecord>) -> VectorResult<()> {
-        let mut store = self.records.write().map_err(|e| {
-            VectorError::Connection(format!("Failed to acquire write lock: {}", e))
-        })?;
+        let mut store = self
+            .records
+            .write()
+            .map_err(|e| VectorError::Connection(format!("Failed to acquire write lock: {}", e)))?;
 
         for record in records {
             if record.vector.len() != self.dimension {
@@ -121,9 +120,10 @@ impl VectorStore for InMemoryStore {
             });
         }
 
-        let store = self.records.read().map_err(|e| {
-            VectorError::Connection(format!("Failed to acquire read lock: {}", e))
-        })?;
+        let store = self
+            .records
+            .read()
+            .map_err(|e| VectorError::Connection(format!("Failed to acquire read lock: {}", e)))?;
 
         // Compute scores for all records
         let mut scored: Vec<_> = store
@@ -165,18 +165,19 @@ impl VectorStore for InMemoryStore {
             });
         }
 
-        let store = self.records.read().map_err(|e| {
-            VectorError::Connection(format!("Failed to acquire read lock: {}", e))
-        })?;
+        let store = self
+            .records
+            .read()
+            .map_err(|e| VectorError::Connection(format!("Failed to acquire read lock: {}", e)))?;
 
         // Filter and compute scores
         let mut scored: Vec<_> = store
             .values()
             .filter(|record| {
                 // Check if all filter conditions match
-                filter.iter().all(|(key, value)| {
-                    record.metadata.get(key).map_or(false, |v| v == value)
-                })
+                filter
+                    .iter()
+                    .all(|(key, value)| record.metadata.get(key).map_or(false, |v| v == value))
             })
             .map(|record| {
                 let score = self.compute_score(vector, &record.vector);
@@ -203,17 +204,19 @@ impl VectorStore for InMemoryStore {
     }
 
     async fn get(&self, id: &str) -> VectorResult<Option<VectorRecord>> {
-        let store = self.records.read().map_err(|e| {
-            VectorError::Connection(format!("Failed to acquire read lock: {}", e))
-        })?;
+        let store = self
+            .records
+            .read()
+            .map_err(|e| VectorError::Connection(format!("Failed to acquire read lock: {}", e)))?;
 
         Ok(store.get(id).cloned())
     }
 
     async fn get_batch(&self, ids: &[&str]) -> VectorResult<Vec<VectorRecord>> {
-        let store = self.records.read().map_err(|e| {
-            VectorError::Connection(format!("Failed to acquire read lock: {}", e))
-        })?;
+        let store = self
+            .records
+            .read()
+            .map_err(|e| VectorError::Connection(format!("Failed to acquire read lock: {}", e)))?;
 
         let records: Vec<_> = ids
             .iter()
@@ -224,18 +227,20 @@ impl VectorStore for InMemoryStore {
     }
 
     async fn delete(&self, id: &str) -> VectorResult<()> {
-        let mut store = self.records.write().map_err(|e| {
-            VectorError::Connection(format!("Failed to acquire write lock: {}", e))
-        })?;
+        let mut store = self
+            .records
+            .write()
+            .map_err(|e| VectorError::Connection(format!("Failed to acquire write lock: {}", e)))?;
 
         store.remove(id);
         Ok(())
     }
 
     async fn delete_batch(&self, ids: &[&str]) -> VectorResult<()> {
-        let mut store = self.records.write().map_err(|e| {
-            VectorError::Connection(format!("Failed to acquire write lock: {}", e))
-        })?;
+        let mut store = self
+            .records
+            .write()
+            .map_err(|e| VectorError::Connection(format!("Failed to acquire write lock: {}", e)))?;
 
         for id in ids {
             store.remove(*id);
@@ -245,17 +250,19 @@ impl VectorStore for InMemoryStore {
     }
 
     async fn count(&self) -> VectorResult<usize> {
-        let store = self.records.read().map_err(|e| {
-            VectorError::Connection(format!("Failed to acquire read lock: {}", e))
-        })?;
+        let store = self
+            .records
+            .read()
+            .map_err(|e| VectorError::Connection(format!("Failed to acquire read lock: {}", e)))?;
 
         Ok(store.len())
     }
 
     async fn clear(&self) -> VectorResult<()> {
-        let mut store = self.records.write().map_err(|e| {
-            VectorError::Connection(format!("Failed to acquire write lock: {}", e))
-        })?;
+        let mut store = self
+            .records
+            .write()
+            .map_err(|e| VectorError::Connection(format!("Failed to acquire write lock: {}", e)))?;
 
         store.clear();
         Ok(())
@@ -271,11 +278,14 @@ mod tests {
         let store = InMemoryStore::new(3);
 
         // Insert records
-        store.upsert(vec![
-            VectorRecord::new("a", vec![1.0, 0.0, 0.0]),
-            VectorRecord::new("b", vec![0.0, 1.0, 0.0]),
-            VectorRecord::new("c", vec![0.7, 0.7, 0.0]),
-        ]).await.unwrap();
+        store
+            .upsert(vec![
+                VectorRecord::new("a", vec![1.0, 0.0, 0.0]),
+                VectorRecord::new("b", vec![0.0, 1.0, 0.0]),
+                VectorRecord::new("c", vec![0.7, 0.7, 0.0]),
+            ])
+            .await
+            .unwrap();
 
         // Search for vector close to 'a'
         let results = store.search(&[1.0, 0.0, 0.0], 2).await.unwrap();
@@ -288,9 +298,10 @@ mod tests {
     async fn test_get_and_delete() {
         let store = InMemoryStore::new(2);
 
-        store.upsert(vec![
-            VectorRecord::new("x", vec![1.0, 0.0]),
-        ]).await.unwrap();
+        store
+            .upsert(vec![VectorRecord::new("x", vec![1.0, 0.0])])
+            .await
+            .unwrap();
 
         // Get
         let record = store.get("x").await.unwrap();
@@ -309,16 +320,22 @@ mod tests {
     async fn test_search_with_filter() {
         let store = InMemoryStore::new(2);
 
-        store.upsert(vec![
-            VectorRecord::new("a", vec![1.0, 0.0]).with_metadata("type", "doc"),
-            VectorRecord::new("b", vec![1.0, 0.0]).with_metadata("type", "query"),
-            VectorRecord::new("c", vec![1.0, 0.0]).with_metadata("type", "doc"),
-        ]).await.unwrap();
+        store
+            .upsert(vec![
+                VectorRecord::new("a", vec![1.0, 0.0]).with_metadata("type", "doc"),
+                VectorRecord::new("b", vec![1.0, 0.0]).with_metadata("type", "query"),
+                VectorRecord::new("c", vec![1.0, 0.0]).with_metadata("type", "doc"),
+            ])
+            .await
+            .unwrap();
 
         let mut filter = HashMap::new();
         filter.insert("type".to_string(), serde_json::json!("doc"));
 
-        let results = store.search_with_filter(&[1.0, 0.0], 10, &filter).await.unwrap();
+        let results = store
+            .search_with_filter(&[1.0, 0.0], 10, &filter)
+            .await
+            .unwrap();
         assert_eq!(results.len(), 2);
         assert!(results.iter().all(|r| r.id != "b"));
     }
@@ -327,10 +344,13 @@ mod tests {
     async fn test_count_and_clear() {
         let store = InMemoryStore::new(2);
 
-        store.upsert(vec![
-            VectorRecord::new("a", vec![1.0, 0.0]),
-            VectorRecord::new("b", vec![0.0, 1.0]),
-        ]).await.unwrap();
+        store
+            .upsert(vec![
+                VectorRecord::new("a", vec![1.0, 0.0]),
+                VectorRecord::new("b", vec![0.0, 1.0]),
+            ])
+            .await
+            .unwrap();
 
         assert_eq!(store.count().await.unwrap(), 2);
 
@@ -342,9 +362,11 @@ mod tests {
     async fn test_dimension_mismatch() {
         let store = InMemoryStore::new(3);
 
-        let result = store.upsert(vec![
-            VectorRecord::new("a", vec![1.0, 0.0]), // Wrong dimension
-        ]).await;
+        let result = store
+            .upsert(vec![
+                VectorRecord::new("a", vec![1.0, 0.0]), // Wrong dimension
+            ])
+            .await;
 
         assert!(matches!(result, Err(VectorError::DimensionMismatch { .. })));
     }
@@ -353,10 +375,13 @@ mod tests {
     async fn test_euclidean_metric() {
         let store = InMemoryStore::with_config(2, DistanceMetric::Euclidean);
 
-        store.upsert(vec![
-            VectorRecord::new("close", vec![0.1, 0.0]),
-            VectorRecord::new("far", vec![10.0, 0.0]),
-        ]).await.unwrap();
+        store
+            .upsert(vec![
+                VectorRecord::new("close", vec![0.1, 0.0]),
+                VectorRecord::new("far", vec![10.0, 0.0]),
+            ])
+            .await
+            .unwrap();
 
         let results = store.search(&[0.0, 0.0], 2).await.unwrap();
         assert_eq!(results[0].id, "close"); // Closer vector should rank first

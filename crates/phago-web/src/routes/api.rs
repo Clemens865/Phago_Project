@@ -1,13 +1,11 @@
 //! REST API endpoints for colony interaction.
 
 use crate::state::AppState;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, Json};
 use phago_core::types::Position;
-use phago_runtime::colony::{AgentSnapshot, ColonySnapshot, ColonyStats, EdgeSnapshot, NodeSnapshot};
+use phago_runtime::colony::{
+    AgentSnapshot, ColonySnapshot, ColonyStats, EdgeSnapshot, NodeSnapshot,
+};
 use serde::{Deserialize, Serialize};
 
 /// Get colony statistics.
@@ -48,8 +46,12 @@ pub struct QueryRequest {
     pub alpha: f64,
 }
 
-fn default_max_results() -> usize { 10 }
-fn default_alpha() -> f64 { 0.5 }
+fn default_max_results() -> usize {
+    10
+}
+fn default_alpha() -> f64 {
+    0.5
+}
 
 /// Query result.
 #[derive(Debug, Serialize)]
@@ -76,12 +78,16 @@ pub async fn query(
     let result = state.query(req.query, req.max_results, req.alpha).await;
 
     Json(QueryResponse {
-        results: result.results.into_iter().map(|r| QueryResultItem {
-            label: r.label,
-            score: r.score,
-            tfidf_score: r.tfidf_score,
-            graph_score: r.graph_score,
-        }).collect(),
+        results: result
+            .results
+            .into_iter()
+            .map(|r| QueryResultItem {
+                label: r.label,
+                score: r.score,
+                tfidf_score: r.tfidf_score,
+                graph_score: r.graph_score,
+            })
+            .collect(),
         total_nodes: result.total_nodes,
         total_edges: result.total_edges,
     })
@@ -98,7 +104,9 @@ pub struct IngestRequest {
     pub ticks: u64,
 }
 
-fn default_ticks() -> u64 { 15 }
+fn default_ticks() -> u64 {
+    15
+}
 
 /// Ingest response.
 #[derive(Debug, Serialize)]
@@ -114,7 +122,9 @@ pub async fn ingest(
     State(state): State<AppState>,
     Json(req): Json<IngestRequest>,
 ) -> Result<Json<IngestResponse>, StatusCode> {
-    let pos = req.position.map(|(x, y)| Position::new(x, y))
+    let pos = req
+        .position
+        .map(|(x, y)| Position::new(x, y))
         .unwrap_or_else(|| Position::new(0.0, 0.0));
 
     let result = state.ingest(req.title, req.content, pos, req.ticks).await;
@@ -134,7 +144,9 @@ pub struct TickRequest {
     pub count: u64,
 }
 
-fn default_tick_count() -> u64 { 1 }
+fn default_tick_count() -> u64 {
+    1
+}
 
 /// Run tick(s).
 pub async fn tick(
@@ -152,10 +164,7 @@ pub struct RunRequest {
 }
 
 /// Run multiple ticks.
-pub async fn run(
-    State(state): State<AppState>,
-    Json(req): Json<RunRequest>,
-) -> Json<ColonyStats> {
+pub async fn run(State(state): State<AppState>, Json(req): Json<RunRequest>) -> Json<ColonyStats> {
     state.run(req.ticks).await;
     Json(state.stats().await)
 }

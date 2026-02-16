@@ -9,11 +9,11 @@
 //! 4. Graph scaling (node/edge counts)
 //! 5. Semantic wiring overhead
 
-use phago_runtime::prelude::*;
-use phago_runtime::corpus::Corpus;
-use phago_runtime::bench::{BenchmarkConfig, BenchmarkSuite, run_benchmark};
 use phago_agents::digester::Digester;
 use phago_core::types::Position;
+use phago_runtime::bench::{run_benchmark, BenchmarkConfig, BenchmarkSuite};
+use phago_runtime::corpus::Corpus;
+use phago_runtime::prelude::*;
 use std::time::Instant;
 
 /// Helper to create a colony with documents and agents.
@@ -62,7 +62,10 @@ fn bench_simulation_throughput() {
         ("Large (50 docs, 10 agents)", 50, 10, 100),
     ];
 
-    println!("{:<30} {:>10} {:>12} {:>15}", "Configuration", "Ticks", "Time (ms)", "Ticks/sec");
+    println!(
+        "{:<30} {:>10} {:>12} {:>15}",
+        "Configuration", "Ticks", "Time (ms)", "Ticks/sec"
+    );
     println!("{:-<70}", "");
 
     for (name, docs, agents, ticks) in configs {
@@ -101,8 +104,10 @@ fn bench_graph_scaling() {
         ("100 docs", 100, 10, 50),
     ];
 
-    println!("{:<15} {:>8} {:>8} {:>10} {:>12} {:>10}",
-             "Config", "Nodes", "Edges", "Density", "Time (ms)", "Nodes/ms");
+    println!(
+        "{:<15} {:>8} {:>8} {:>10} {:>12} {:>10}",
+        "Config", "Nodes", "Edges", "Density", "Time (ms)", "Nodes/ms"
+    );
     println!("{:-<70}", "");
 
     for (name, docs, agents, ticks) in configs {
@@ -114,7 +119,8 @@ fn bench_graph_scaling() {
 
         let stats = colony.stats();
         let density = if stats.graph_nodes > 1 {
-            (2.0 * stats.graph_edges as f64) / (stats.graph_nodes as f64 * (stats.graph_nodes as f64 - 1.0))
+            (2.0 * stats.graph_edges as f64)
+                / (stats.graph_nodes as f64 * (stats.graph_nodes as f64 - 1.0))
         } else {
             0.0
         };
@@ -152,8 +158,10 @@ fn bench_sqlite_persistence() {
         ("Large graph", 100, 10, 50),
     ];
 
-    println!("{:<15} {:>8} {:>8} {:>12} {:>12} {:>12}",
-             "Config", "Nodes", "Edges", "Save (ms)", "Load (ms)", "Total (ms)");
+    println!(
+        "{:<15} {:>8} {:>8} {:>12} {:>12} {:>12}",
+        "Config", "Nodes", "Edges", "Save (ms)", "Load (ms)", "Total (ms)"
+    );
     println!("{:-<75}", "");
 
     for (name, docs, agents, ticks) in configs {
@@ -238,8 +246,10 @@ async fn bench_async_runtime() {
         ("Large (50 docs)", 50, 8, 50),
     ];
 
-    println!("{:<20} {:>12} {:>12} {:>12}",
-             "Config", "Sync (ms)", "Async (ms)", "Ratio");
+    println!(
+        "{:<20} {:>12} {:>12} {:>12}",
+        "Config", "Sync (ms)", "Async (ms)", "Ratio"
+    );
     println!("{:-<60}", "");
 
     for (name, docs, agents, ticks) in configs {
@@ -252,9 +262,7 @@ async fn bench_async_runtime() {
         // Async benchmark
         let async_colony = setup_colony(docs, agents);
         let async_start = Instant::now();
-        run_in_local(async_colony, |ac| async move {
-            ac.run_async(ticks).await
-        }).await;
+        run_in_local(async_colony, |ac| async move { ac.run_async(ticks).await }).await;
         let async_time = async_start.elapsed();
 
         let ratio = async_time.as_secs_f64() / sync_time.as_secs_f64();
@@ -268,7 +276,9 @@ async fn bench_async_runtime() {
         );
     }
 
-    println!("\n(Ratio > 1 means sync is faster; async adds yield overhead but enables concurrency)\n");
+    println!(
+        "\n(Ratio > 1 means sync is faster; async adds yield overhead but enables concurrency)\n"
+    );
 }
 
 // ============================================================================
@@ -277,16 +287,18 @@ async fn bench_async_runtime() {
 
 #[test]
 fn bench_agent_serialization() {
+    use phago_agents::sentinel::Sentinel;
     use phago_agents::serialize::SerializableAgent;
     use phago_agents::synthesizer::Synthesizer;
-    use phago_agents::sentinel::Sentinel;
 
     println!("\n=== BENCHMARK: Agent Serialization ===\n");
 
     let agent_counts = [10, 50, 100, 200];
 
-    println!("{:<15} {:>12} {:>12} {:>12}",
-             "Agent Count", "Export (µs)", "Import (µs)", "Total (µs)");
+    println!(
+        "{:<15} {:>12} {:>12} {:>12}",
+        "Agent Count", "Export (µs)", "Import (µs)", "Total (µs)"
+    );
     println!("{:-<55}", "");
 
     for count in agent_counts {
@@ -365,8 +377,10 @@ fn bench_semantic_wiring() {
         ("Strict semantic", SemanticWiringConfig::strict()),
     ];
 
-    println!("{:<25} {:>12} {:>10} {:>10} {:>12}",
-             "Config", "Time (ms)", "Nodes", "Edges", "Edges/Node");
+    println!(
+        "{:<25} {:>12} {:>10} {:>10} {:>12}",
+        "Config", "Time (ms)", "Nodes", "Edges", "Edges/Node"
+    );
     println!("{:-<75}", "");
 
     for (name, semantic_config) in configs {
@@ -413,7 +427,9 @@ fn bench_full_suite() {
     // Configuration 1: Minimal agents
     let mut colony1 = Colony::new();
     corpus.ingest_into(&mut colony1);
-    colony1.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(100)));
+    colony1.spawn(Box::new(
+        Digester::new(Position::new(0.0, 0.0)).with_max_idle(100),
+    ));
     let run1 = run_benchmark(&mut colony1, &BenchmarkConfig::new("1 agent", 100));
     suite.add_run(run1);
 
@@ -422,7 +438,7 @@ fn bench_full_suite() {
     corpus.ingest_into(&mut colony2);
     for i in 0..5 {
         colony2.spawn(Box::new(
-            Digester::new(Position::new((i * 10) as f64, 0.0)).with_max_idle(100)
+            Digester::new(Position::new((i * 10) as f64, 0.0)).with_max_idle(100),
         ));
     }
     let run2 = run_benchmark(&mut colony2, &BenchmarkConfig::new("5 agents", 100));
@@ -433,7 +449,7 @@ fn bench_full_suite() {
     corpus.ingest_into(&mut colony3);
     for i in 0..10 {
         colony3.spawn(Box::new(
-            Digester::new(Position::new((i % 5 * 5) as f64, (i / 5 * 5) as f64)).with_max_idle(100)
+            Digester::new(Position::new((i % 5 * 5) as f64, (i / 5 * 5) as f64)).with_max_idle(100),
         ));
     }
     let run3 = run_benchmark(&mut colony3, &BenchmarkConfig::new("10 agents dense", 100));

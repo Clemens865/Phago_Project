@@ -25,7 +25,8 @@ impl Curriculum {
 
     /// Get all triples in curriculum order.
     pub fn ordered(&self) -> Vec<&WeightedTriple> {
-        self.foundation.iter()
+        self.foundation
+            .iter()
             .chain(self.bridges.iter())
             .chain(self.periphery.iter())
             .collect()
@@ -37,10 +38,7 @@ impl Curriculum {
 /// - Foundation: both nodes in the same community, weight > median
 /// - Bridge: nodes in different communities
 /// - Periphery: same community but weight ≤ median
-pub fn build_curriculum(
-    triples: &[WeightedTriple],
-    communities: &CommunityResult,
-) -> Curriculum {
+pub fn build_curriculum(triples: &[WeightedTriple], communities: &CommunityResult) -> Curriculum {
     if triples.is_empty() {
         return Curriculum {
             foundation: Vec::new(),
@@ -77,9 +75,21 @@ pub fn build_curriculum(
     }
 
     // Sort each section by weight descending
-    foundation.sort_by(|a, b| b.weight.partial_cmp(&a.weight).unwrap_or(std::cmp::Ordering::Equal));
-    bridges.sort_by(|a, b| b.weight.partial_cmp(&a.weight).unwrap_or(std::cmp::Ordering::Equal));
-    periphery.sort_by(|a, b| b.weight.partial_cmp(&a.weight).unwrap_or(std::cmp::Ordering::Equal));
+    foundation.sort_by(|a, b| {
+        b.weight
+            .partial_cmp(&a.weight)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    bridges.sort_by(|a, b| {
+        b.weight
+            .partial_cmp(&a.weight)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    periphery.sort_by(|a, b| {
+        b.weight
+            .partial_cmp(&a.weight)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     Curriculum {
         foundation,

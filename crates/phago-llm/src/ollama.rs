@@ -4,7 +4,7 @@
 
 use crate::backend::{LlmBackend, LlmConfig, LlmError, LlmResult};
 use crate::prompt::{parse_concepts_json, ConceptPrompt, PromptTemplate, RelationshipPrompt};
-use crate::types::{Concept, Relationship, RelationType};
+use crate::types::{Concept, RelationType, Relationship};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -162,12 +162,13 @@ impl LlmBackend for OllamaBackend {
             .with_descriptions();
 
         let system = prompt.system_prompt();
-        let response = self
-            .request(&prompt.generate(), system.as_deref())
-            .await?;
+        let response = self.request(&prompt.generate(), system.as_deref()).await?;
 
         parse_concepts_json(&response).map_err(|e| {
-            LlmError::ParseError(format!("Failed to parse concepts: {}. Response: {}", e, response))
+            LlmError::ParseError(format!(
+                "Failed to parse concepts: {}. Response: {}",
+                e, response
+            ))
         })
     }
 
@@ -180,9 +181,7 @@ impl LlmBackend for OllamaBackend {
         let prompt = RelationshipPrompt::new(text, concept_labels);
 
         let system = prompt.system_prompt();
-        let response = self
-            .request(&prompt.generate(), system.as_deref())
-            .await?;
+        let response = self.request(&prompt.generate(), system.as_deref()).await?;
 
         parse_relationships_json(&response).map_err(|e| {
             LlmError::ParseError(format!(
@@ -222,8 +221,14 @@ pub(crate) fn parse_relationships_json(json: &str) -> Result<Vec<Relationship>, 
     Ok(raw
         .into_iter()
         .map(|r| {
-            let relation_type = r.relation.as_deref().map(parse_relation_type).unwrap_or_default();
-            let label = r.label.unwrap_or_else(|| format!("{} -> {}", r.source, r.target));
+            let relation_type = r
+                .relation
+                .as_deref()
+                .map(parse_relation_type)
+                .unwrap_or_default();
+            let label = r
+                .label
+                .unwrap_or_else(|| format!("{} -> {}", r.source, r.target));
 
             Relationship::new(r.source, r.target, label).with_type(relation_type)
         })

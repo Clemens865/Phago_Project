@@ -7,8 +7,8 @@
 //! - APOPTOSE: the ability to self-assess and gracefully die
 //! - SENSE: the ability to detect environmental signals
 
-use crate::primitives::{Apoptose, Digest, Sense};
 use crate::primitives::symbiose::AgentProfile;
+use crate::primitives::{Apoptose, Digest, Sense};
 use crate::substrate::Substrate;
 use crate::types::*;
 

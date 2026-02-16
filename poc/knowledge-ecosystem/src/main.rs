@@ -24,43 +24,65 @@ fn main() {
     println!();
 
     let docs = vec![
-        ("Cell Biology", "The cell membrane is a lipid bilayer that controls \
+        (
+            "Cell Biology",
+            "The cell membrane is a lipid bilayer that controls \
          the transport of molecules. Proteins embedded in the membrane serve \
          as channels and receptors. The cytoskeleton provides structural \
-         support within the cell.", Position::new(0.0, 0.0)),
-
-        ("Molecular Transport", "Active transport across the cell membrane \
+         support within the cell.",
+            Position::new(0.0, 0.0),
+        ),
+        (
+            "Molecular Transport",
+            "Active transport across the cell membrane \
          requires ATP energy produced by mitochondria. Channel proteins \
          facilitate passive transport of ions and small molecules across \
-         the lipid bilayer.", Position::new(5.0, 0.0)),
-
-        ("Cell Signaling", "Signal transduction begins when a ligand binds \
+         the lipid bilayer.",
+            Position::new(5.0, 0.0),
+        ),
+        (
+            "Cell Signaling",
+            "Signal transduction begins when a ligand binds \
          to a receptor protein on the cell membrane. This triggers a cascade \
          of intracellular events involving kinase enzymes and secondary \
-         messengers.", Position::new(0.0, 5.0)),
-
-        ("Energy Metabolism", "Mitochondria produce ATP through oxidative \
+         messengers.",
+            Position::new(0.0, 5.0),
+        ),
+        (
+            "Energy Metabolism",
+            "Mitochondria produce ATP through oxidative \
          phosphorylation. The electron transport chain in the inner membrane \
          creates a proton gradient that drives ATP synthase. Glucose is first \
-         broken down through glycolysis in the cytoplasm.", Position::new(5.0, 5.0)),
-
-        ("Genetics", "DNA replication occurs in the nucleus before cell \
+         broken down through glycolysis in the cytoplasm.",
+            Position::new(5.0, 5.0),
+        ),
+        (
+            "Genetics",
+            "DNA replication occurs in the nucleus before cell \
          division. RNA polymerase transcribes DNA into messenger RNA. \
          Ribosomes translate mRNA into proteins using transfer RNA and \
-         amino acids.", Position::new(10.0, 0.0)),
-
+         amino acids.",
+            Position::new(10.0, 0.0),
+        ),
         // Anomalous document — unrelated to biology
-        ("Quantum Computing", "Quantum bits exploit superposition and \
+        (
+            "Quantum Computing",
+            "Quantum bits exploit superposition and \
          entanglement to perform parallel computations. Error correction \
          in quantum circuits requires topological qubits and surface codes. \
          Shor's algorithm factors large integers exponentially faster than \
-         classical methods.", Position::new(15.0, 15.0)),
-
+         classical methods.",
+            Position::new(15.0, 15.0),
+        ),
         // Cross-domain document — bridges biology and computing
-        ("Biocomputing", "Biological computing uses DNA molecules and protein \
+        (
+            "Biocomputing",
+            "Biological computing uses DNA molecules and protein \
          enzymes to perform logical operations. The cell membrane acts as a \
          natural computational boundary. Enzyme cascades implement signal \
-         processing similar to electronic circuits.", Position::new(7.5, 7.5)),
+         processing similar to electronic circuits.",
+            Position::new(7.5, 7.5),
+        ),
     ];
 
     for (title, content, pos) in &docs {
@@ -85,27 +107,33 @@ fn main() {
     ];
 
     for (i, pos) in digester_positions.iter().enumerate() {
-        colony.spawn(Box::new(
-            Digester::new(*pos).with_max_idle(80),
-        ));
+        colony.spawn(Box::new(Digester::new(*pos).with_max_idle(80)));
         println!("  [digester  {}] at ({:.1}, {:.1})", i + 1, pos.x, pos.y);
     }
 
     // Synthesizers — positioned centrally to survey the whole substrate
-    for (i, pos) in [Position::new(5.0, 2.5), Position::new(7.5, 5.0)].iter().enumerate() {
+    for (i, pos) in [Position::new(5.0, 2.5), Position::new(7.5, 5.0)]
+        .iter()
+        .enumerate()
+    {
         colony.spawn(Box::new(Synthesizer::new(*pos)));
         println!("  [synthesizer {}] at ({:.1}, {:.1})", i + 1, pos.x, pos.y);
     }
 
     // Sentinels — positioned to observe different regions
-    for (i, pos) in [Position::new(2.5, 2.5), Position::new(12.0, 10.0)].iter().enumerate() {
+    for (i, pos) in [Position::new(2.5, 2.5), Position::new(12.0, 10.0)]
+        .iter()
+        .enumerate()
+    {
         colony.spawn(Box::new(Sentinel::new(*pos)));
         println!("  [sentinel  {}] at ({:.1}, {:.1})", i + 1, pos.x, pos.y);
     }
 
     println!();
-    println!("  Total agents: {} digesters, 2 synthesizers, 2 sentinels",
-        digester_positions.len());
+    println!(
+        "  Total agents: {} digesters, 2 synthesizers, 2 sentinels",
+        digester_positions.len()
+    );
     println!();
 
     // --- Run simulation ---
@@ -134,7 +162,9 @@ fn main() {
                         document.0.to_string()
                     );
                 }
-                ColonyEvent::Presented { id, fragment_count, .. } => {
+                ColonyEvent::Presented {
+                    id, fragment_count, ..
+                } => {
                     println!(
                         "  [tick {:>3}] PRESENT: Agent {:.8} → {} concepts added to graph",
                         tick_num,
@@ -142,7 +172,10 @@ fn main() {
                         fragment_count,
                     );
                 }
-                ColonyEvent::Wired { id, connection_count } => {
+                ColonyEvent::Wired {
+                    id,
+                    connection_count,
+                } => {
                     println!(
                         "  [tick {:>3}] WIRE: Agent {:.8} → {} connections strengthened",
                         tick_num,
@@ -166,7 +199,10 @@ fn main() {
                         signal.useful_outputs
                     );
                 }
-                ColonyEvent::CapabilityExported { agent_id, terms_count } => {
+                ColonyEvent::CapabilityExported {
+                    agent_id,
+                    terms_count,
+                } => {
                     println!(
                         "  [tick {:>3}] TRANSFER: Agent {:.8} exported {} vocabulary terms",
                         tick_num,
@@ -175,7 +211,11 @@ fn main() {
                     );
                     total_transfers += 1;
                 }
-                ColonyEvent::CapabilityIntegrated { agent_id, from_agent, terms_count } => {
+                ColonyEvent::CapabilityIntegrated {
+                    agent_id,
+                    from_agent,
+                    terms_count,
+                } => {
                     println!(
                         "  [tick {:>3}] INTEGRATE: Agent {:.8} absorbed {} terms from {:.8}",
                         tick_num,
@@ -185,7 +225,12 @@ fn main() {
                     );
                     total_integrations += 1;
                 }
-                ColonyEvent::Symbiosis { host, absorbed, host_type, absorbed_type } => {
+                ColonyEvent::Symbiosis {
+                    host,
+                    absorbed,
+                    host_type,
+                    absorbed_type,
+                } => {
                     println!(
                         "  [tick {:>3}] SYMBIOSIS: {} {:.8} absorbed {} {:.8}",
                         tick_num,
@@ -196,7 +241,11 @@ fn main() {
                     );
                     total_symbioses += 1;
                 }
-                ColonyEvent::Dissolved { agent_id, permeability, terms_externalized } => {
+                ColonyEvent::Dissolved {
+                    agent_id,
+                    permeability,
+                    terms_externalized,
+                } => {
                     println!(
                         "  [tick {:>3}] DISSOLVE: Agent {:.8} permeability={:.2}, {} terms reinforced",
                         tick_num,
@@ -224,8 +273,10 @@ fn main() {
     let stats = colony.stats();
     println!("  Colony:");
     println!("    Ticks elapsed:      {}", stats.tick);
-    println!("    Agents alive:       {} / {} spawned ({} died)",
-        stats.agents_alive, stats.total_spawned, stats.agents_died);
+    println!(
+        "    Agents alive:       {} / {} spawned ({} died)",
+        stats.agents_alive, stats.total_spawned, stats.agents_died
+    );
     println!();
     println!("  Documents:");
     println!("    Total:              {}", stats.documents_total);
@@ -268,16 +319,31 @@ fn main() {
     println!();
 
     // Show strongest connections
-    let mut edges: Vec<_> = graph.all_edges().iter().map(|(from, to, data)| {
-        let from_label = graph.get_node(from).map(|n| n.label.as_str()).unwrap_or("?");
-        let to_label = graph.get_node(to).map(|n| n.label.as_str()).unwrap_or("?");
-        (from_label.to_string(), to_label.to_string(), data.weight, data.co_activations)
-    }).collect();
+    let mut edges: Vec<_> = graph
+        .all_edges()
+        .iter()
+        .map(|(from, to, data)| {
+            let from_label = graph
+                .get_node(from)
+                .map(|n| n.label.as_str())
+                .unwrap_or("?");
+            let to_label = graph.get_node(to).map(|n| n.label.as_str()).unwrap_or("?");
+            (
+                from_label.to_string(),
+                to_label.to_string(),
+                data.weight,
+                data.co_activations,
+            )
+        })
+        .collect();
     edges.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
 
     println!("  Strongest Connections:");
     for (from, to, weight, co_act) in edges.iter().take(10) {
-        println!("    {} <-> {} (weight: {:.3}, co-activations: {})", from, to, weight, co_act);
+        println!(
+            "    {} <-> {} (weight: {:.3}, co-activations: {})",
+            from, to, weight, co_act
+        );
     }
 
     // --- Phase 3 output ---
@@ -308,7 +374,10 @@ fn main() {
     println!();
     println!("── Transfer, Symbiosis & Dissolution ────────────────");
     println!();
-    println!("  Vocabulary Transfers:     {} exports, {} integrations", total_transfers, total_integrations);
+    println!(
+        "  Vocabulary Transfers:     {} exports, {} integrations",
+        total_transfers, total_integrations
+    );
     println!("  Symbiosis Events:         {}", total_symbioses);
     println!("  Dissolution Events:       {}", total_dissolutions);
 
@@ -330,11 +399,21 @@ fn main() {
     println!();
     println!("══════════════════════════════════════════════════════");
     println!("  Phase 5 complete. The colony is provably correct.");
-    println!("  {} documents → {} concepts, {} insights, {} anomalies",
-        stats.documents_digested, concept_nodes.len(), total_insights, total_anomalies);
-    println!("  {} transfers, {} integrations, {} symbioses, {} dissolutions",
-        total_transfers, total_integrations, total_symbioses, total_dissolutions);
-    println!("  by {} agents ({} digesters, 2 synthesizers, 2 sentinels).",
-        stats.total_spawned, digester_positions.len());
+    println!(
+        "  {} documents → {} concepts, {} insights, {} anomalies",
+        stats.documents_digested,
+        concept_nodes.len(),
+        total_insights,
+        total_anomalies
+    );
+    println!(
+        "  {} transfers, {} integrations, {} symbioses, {} dissolutions",
+        total_transfers, total_integrations, total_symbioses, total_dissolutions
+    );
+    println!(
+        "  by {} agents ({} digesters, 2 synthesizers, 2 sentinels).",
+        stats.total_spawned,
+        digester_positions.len()
+    );
     println!("══════════════════════════════════════════════════════");
 }

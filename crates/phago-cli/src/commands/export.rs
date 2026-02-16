@@ -42,10 +42,7 @@ pub fn run(output: &str, format: &str) -> Result<()> {
     let session_path = current_session_path()?;
 
     if !session_path.exists() {
-        bail!(
-            "No session found. Run {} first.",
-            "phago ingest".cyan()
-        );
+        bail!("No session found. Run {} first.", "phago ingest".cyan());
     }
 
     // Load session
@@ -118,8 +115,6 @@ pub fn run(output: &str, format: &str) -> Result<()> {
 fn chrono_now() -> String {
     // Simple timestamp without chrono dependency
     use std::time::{SystemTime, UNIX_EPOCH};
-    let duration = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap();
+    let duration = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     format!("{}", duration.as_secs())
 }

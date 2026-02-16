@@ -88,8 +88,10 @@ impl SqliteTopologyGraph {
     /// Get database statistics.
     pub fn stats(&self) -> SqlResult<(usize, usize)> {
         let conn = self.conn.lock().unwrap();
-        let node_count: usize = conn.query_row("SELECT COUNT(*) FROM nodes", [], |row| row.get(0))?;
-        let edge_count: usize = conn.query_row("SELECT COUNT(*) FROM edges", [], |row| row.get(0))?;
+        let node_count: usize =
+            conn.query_row("SELECT COUNT(*) FROM nodes", [], |row| row.get(0))?;
+        let edge_count: usize =
+            conn.query_row("SELECT COUNT(*) FROM edges", [], |row| row.get(0))?;
         Ok((node_count, edge_count))
     }
 
@@ -178,11 +180,9 @@ impl SqliteTopologyGraph {
     }
 
     fn serialize_embedding(embedding: &Option<Vec<f32>>) -> Option<Vec<u8>> {
-        embedding.as_ref().map(|e| {
-            e.iter()
-                .flat_map(|f| f.to_le_bytes())
-                .collect()
-        })
+        embedding
+            .as_ref()
+            .map(|e| e.iter().flat_map(|f| f.to_le_bytes()).collect())
     }
 
     fn deserialize_embedding(bytes: Option<Vec<u8>>) -> Option<Vec<f32>> {
@@ -320,14 +320,17 @@ impl TopologyGraph for SqliteTopologyGraph {
         conn.execute(
             "DELETE FROM edges WHERE from_id = ?1 AND to_id = ?2",
             params![from.0.to_string(), to.0.to_string()],
-        ).ok();
+        )
+        .ok();
 
         edge
     }
 
     fn all_nodes(&self) -> Vec<NodeId> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT id FROM nodes").expect("Failed to prepare statement");
+        let mut stmt = conn
+            .prepare("SELECT id FROM nodes")
+            .expect("Failed to prepare statement");
         let nodes: Vec<NodeId> = stmt
             .query_map([], |row| {
                 let id_str: String = row.get(0)?;
@@ -363,7 +366,8 @@ impl TopologyGraph for SqliteTopologyGraph {
         conn.execute(
             "UPDATE edges SET weight = weight * (1.0 - ?1)",
             params![rate],
-        ).expect("Failed to decay edges");
+        )
+        .expect("Failed to decay edges");
 
         // Get edges below threshold
         let mut stmt = conn
@@ -388,7 +392,8 @@ impl TopologyGraph for SqliteTopologyGraph {
         conn.execute(
             "DELETE FROM edges WHERE weight < ?1",
             params![prune_threshold],
-        ).expect("Failed to delete pruned edges");
+        )
+        .expect("Failed to delete pruned edges");
 
         pruned
     }
@@ -454,12 +459,14 @@ impl TopologyGraph for SqliteTopologyGraph {
                 conn.execute(
                     "DELETE FROM edges WHERE from_id = ?1 AND to_id = ?2",
                     params![from_str, to_str],
-                ).ok();
+                )
+                .ok();
             } else {
                 conn.execute(
                     "UPDATE edges SET weight = ?1 WHERE from_id = ?2 AND to_id = ?3",
                     params![new_weight, from_str, to_str],
-                ).ok();
+                )
+                .ok();
             }
         }
 
@@ -507,7 +514,8 @@ impl TopologyGraph for SqliteTopologyGraph {
                     conn.execute(
                         "DELETE FROM edges WHERE from_id = ?1 AND to_id = ?2",
                         params![from_str, to_str],
-                    ).ok();
+                    )
+                    .ok();
                 }
             }
         }
@@ -622,12 +630,16 @@ mod tests {
             embedding: None,
         });
 
-        graph.set_edge(n1, n2, EdgeData {
-            weight: 0.5,
-            co_activations: 1,
-            created_tick: 0,
-            last_activated_tick: 0,
-        });
+        graph.set_edge(
+            n1,
+            n2,
+            EdgeData {
+                weight: 0.5,
+                co_activations: 1,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
 
         assert_eq!(graph.edge_count(), 1);
     }
@@ -688,12 +700,16 @@ mod tests {
         });
 
         // Add a weak edge
-        graph.set_edge(n1, n2, EdgeData {
-            weight: 0.1,
-            co_activations: 1,
-            created_tick: 0,
-            last_activated_tick: 0,
-        });
+        graph.set_edge(
+            n1,
+            n2,
+            EdgeData {
+                weight: 0.1,
+                co_activations: 1,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
 
         assert_eq!(graph.edge_count(), 1);
 

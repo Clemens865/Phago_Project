@@ -18,8 +18,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tarpc::context::Context;
 use tarpc::server::{self, Channel};
-use tokio_serde::formats::Bincode;
 use tokio::sync::RwLock;
+use tokio_serde::formats::Bincode;
 use tracing::{debug, error, info, instrument};
 
 /// Server implementation for a shard.
@@ -79,9 +79,7 @@ impl ShardServer {
             .map(server::BaseChannel::with_defaults)
             .for_each_concurrent(10, |channel| {
                 let server = self.clone();
-                async move {
-                    channel.execute(server.serve()).for_each(|_| async {}).await
-                }
+                async move { channel.execute(server.serve()).for_each(|_| async {}).await }
             })
             .await;
 
@@ -277,9 +275,7 @@ impl CoordinatorServer {
             .map(server::BaseChannel::with_defaults)
             .for_each_concurrent(10, |channel| {
                 let server = self.clone();
-                async move {
-                    channel.execute(server.serve()).for_each(|_| async {}).await
-                }
+                async move { channel.execute(server.serve()).for_each(|_| async {}).await }
             })
             .await;
 
@@ -372,7 +368,10 @@ impl CoordinatorService for CoordinatorServer {
         // ShardClientPool. This endpoint exists for future use cases where a
         // client might want pre-computed global DF from the coordinator.
         let global_df = HashMap::new();
-        debug!("Returning {} global DF entries (scatter-gather handled by query engine)", global_df.len());
+        debug!(
+            "Returning {} global DF entries (scatter-gather handled by query engine)",
+            global_df.len()
+        );
         Ok(global_df)
     }
 

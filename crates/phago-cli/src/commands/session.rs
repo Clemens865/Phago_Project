@@ -10,10 +10,7 @@ pub fn save(name: &str) -> Result<()> {
     let current_path = current_session_path()?;
 
     if !current_path.exists() {
-        bail!(
-            "No active session. Run {} first.",
-            "phago ingest".cyan()
-        );
+        bail!("No active session. Run {} first.", "phago ingest".cyan());
     }
 
     // Ensure sessions directory exists
@@ -25,11 +22,7 @@ pub fn save(name: &str) -> Result<()> {
     std::fs::copy(&current_path, &session_path)
         .with_context(|| format!("Failed to save session: {}", name))?;
 
-    println!(
-        "{} Session saved: {}",
-        "✓".green().bold(),
-        name.cyan()
-    );
+    println!("{} Session saved: {}", "✓".green().bold(), name.cyan());
 
     Ok(())
 }
@@ -55,11 +48,7 @@ pub fn load(name: &str) -> Result<()> {
     restore_into_colony(&mut colony, &state);
     let stats = colony.stats();
 
-    println!(
-        "{} Session loaded: {}",
-        "✓".green().bold(),
-        name.cyan()
-    );
+    println!("{} Session loaded: {}", "✓".green().bold(), name.cyan());
     println!("  Nodes: {}", stats.graph_nodes.to_string().cyan());
     println!("  Edges: {}", stats.graph_edges.to_string().cyan());
 

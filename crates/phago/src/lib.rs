@@ -118,10 +118,10 @@
 //! ```
 
 // Re-export all subcrates
-pub use phago_core as core;
-pub use phago_runtime as runtime;
 pub use phago_agents as agents;
+pub use phago_core as core;
 pub use phago_rag as rag;
+pub use phago_runtime as runtime;
 
 #[cfg(feature = "semantic")]
 pub use phago_embeddings as embeddings;
@@ -140,19 +140,10 @@ pub use phago_distributed as distributed;
 pub mod prelude {
     // Core types
     pub use phago_core::types::{
-        AgentId, NodeId, DocumentId,
-        Position, Document,
-        Signal, SignalType, Gradient,
-        Trace, TraceType,
-        CellHealth, DeathSignal, DeathCause,
-        NodeData, NodeType, EdgeData,
-        AgentAction, FragmentPresentation,
-        DigestionResult,
-        SymbiosisEval, SymbiontInfo,
-        Classification,
-        BoundaryContext,
-        Orientation,
-        Tick,
+        AgentAction, AgentId, BoundaryContext, CellHealth, Classification, DeathCause, DeathSignal,
+        DigestionResult, Document, DocumentId, EdgeData, FragmentPresentation, Gradient, NodeData,
+        NodeId, NodeType, Orientation, Position, Signal, SignalType, SymbiontInfo, SymbiosisEval,
+        Tick, Trace, TraceType,
     };
 
     // Core traits
@@ -165,46 +156,41 @@ pub mod prelude {
 
     // Agents
     pub use phago_agents::digester::Digester;
+    pub use phago_agents::fitness::{AgentFitness, FitnessTracker};
+    pub use phago_agents::genome::AgentGenome;
     pub use phago_agents::sentinel::Sentinel;
     pub use phago_agents::synthesizer::Synthesizer;
-    pub use phago_agents::genome::AgentGenome;
-    pub use phago_agents::fitness::{AgentFitness, FitnessTracker};
 
     // Runtime
     pub use phago_runtime::colony::{Colony, ColonyEvent, ColonyStats};
-    pub use phago_runtime::session::{
-        save_session, load_session, restore_into_colony,
-        GraphState, SessionMetadata,
-    };
     pub use phago_runtime::metrics::ColonyMetrics;
+    pub use phago_runtime::session::{
+        load_session, restore_into_colony, save_session, GraphState, SessionMetadata,
+    };
 
     // RAG
-    pub use phago_rag::{hybrid_query, HybridConfig, HybridResult};
-    pub use phago_rag::query::{Query, QueryResult};
     pub use phago_rag::mcp::{
-        phago_remember, phago_recall, phago_explore,
-        RememberRequest, RememberResponse,
-        RecallRequest, RecallResponse,
-        ExploreRequest, ExploreResponse,
+        phago_explore, phago_recall, phago_remember, ExploreRequest, ExploreResponse,
+        RecallRequest, RecallResponse, RememberRequest, RememberResponse,
     };
+    pub use phago_rag::query::{Query, QueryResult};
+    pub use phago_rag::{hybrid_query, HybridConfig, HybridResult};
 
     // Semantic embeddings (requires "semantic" feature)
     #[cfg(feature = "semantic")]
-    pub use phago_agents::semantic_digester::{SemanticDigester, SemanticConcept, SemanticConfig};
+    pub use phago_agents::semantic_digester::{SemanticConcept, SemanticConfig, SemanticDigester};
 
     #[cfg(feature = "semantic")]
     pub use phago_embeddings::{
-        Embedder, EmbeddingError, EmbeddingResult,
-        SimpleEmbedder, Chunker, ChunkConfig,
-        cosine_similarity, euclidean_distance, normalize_l2,
+        cosine_similarity, euclidean_distance, normalize_l2, ChunkConfig, Chunker, Embedder,
+        EmbeddingError, EmbeddingResult, SimpleEmbedder,
     };
 
     // LLM integration (requires "llm" feature)
     #[cfg(feature = "llm")]
     pub use phago_llm::{
-        LlmBackend, LlmError, LlmResult,
-        Concept, Relationship, ConceptType, RelationType,
-        PromptTemplate,
+        Concept, ConceptType, LlmBackend, LlmError, LlmResult, PromptTemplate, RelationType,
+        Relationship,
     };
 
     #[cfg(feature = "llm-local")]
@@ -216,11 +202,9 @@ pub mod prelude {
     // Distributed colony (requires "distributed" feature)
     #[cfg(feature = "distributed")]
     pub use phago_distributed::{
-        Coordinator, ShardedColony, ConsistentHashRing,
-        DistributedQueryEngine, DistributedHybridConfig,
-        DistributedRunner, RunnerConfig,
-        ShardId, DistributedConfig, DistributedError, DistributedResult,
-        TickPhase, CrossShardEdge, GhostNode, ShardInfo,
+        ConsistentHashRing, Coordinator, CrossShardEdge, DistributedConfig, DistributedError,
+        DistributedHybridConfig, DistributedQueryEngine, DistributedResult, DistributedRunner,
+        GhostNode, RunnerConfig, ShardId, ShardInfo, ShardedColony, TickPhase,
     };
 }
 

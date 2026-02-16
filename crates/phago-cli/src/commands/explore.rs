@@ -10,10 +10,7 @@ fn load_colony() -> Result<Colony> {
     let session_path = current_session_path()?;
 
     if !session_path.exists() {
-        bail!(
-            "No session found. Run {} first.",
-            "phago ingest".cyan()
-        );
+        bail!("No session found. Run {} first.", "phago ingest".cyan());
     }
 
     let state = load_session(&session_path)?;
@@ -26,7 +23,11 @@ pub fn centrality(top: usize) -> Result<()> {
     let colony = load_colony()?;
     let graph = colony.substrate().graph();
 
-    println!("{} Top {} central concepts:", "→".blue(), top.to_string().cyan());
+    println!(
+        "{} Top {} central concepts:",
+        "→".blue(),
+        top.to_string().cyan()
+    );
     println!();
 
     let centrality = graph.betweenness_centrality(100);
@@ -102,7 +103,10 @@ pub fn path(from: &str, to: &str) -> Result<()> {
 
     match graph.shortest_path(from_id, to_id) {
         Some((path, weight)) => {
-            println!("  Path length: {} hops", (path.len() - 1).to_string().green());
+            println!(
+                "  Path length: {} hops",
+                (path.len() - 1).to_string().green()
+            );
             println!("  Total weight: {:.4}", weight);
             println!();
             println!("  Path:");
@@ -133,7 +137,11 @@ pub fn components() -> Result<()> {
 
     let count = graph.connected_components();
 
-    println!("{} Connected components: {}", "→".blue(), count.to_string().cyan().bold());
+    println!(
+        "{} Connected components: {}",
+        "→".blue(),
+        count.to_string().cyan().bold()
+    );
 
     if count == 1 {
         println!("  The graph is fully connected.");

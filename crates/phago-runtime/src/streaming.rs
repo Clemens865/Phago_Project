@@ -178,16 +178,15 @@ impl StreamingColony {
             Position::new(count as f64 * self.config.auto_layout_spacing, 0.0)
         });
 
-        let doc_id = self.colony.borrow_mut().ingest_document(
-            &doc.title,
-            &doc.content,
-            position,
-        );
+        let doc_id = self
+            .colony
+            .borrow_mut()
+            .ingest_document(&doc.title, &doc.content, position);
 
         // Spawn a digester for the document
-        self.colony.borrow_mut().spawn(Box::new(
-            Digester::new(position).with_max_idle(30),
-        ));
+        self.colony
+            .borrow_mut()
+            .spawn(Box::new(Digester::new(position).with_max_idle(30)));
 
         // Update metrics
         {
@@ -234,10 +233,7 @@ impl StreamingColony {
     }
 
     /// Process documents from a channel until it's empty.
-    pub async fn process_channel(
-        &self,
-        mut rx: tokio::sync::mpsc::Receiver<IngestDocument>,
-    ) {
+    pub async fn process_channel(&self, mut rx: tokio::sync::mpsc::Receiver<IngestDocument>) {
         while let Some(doc) = rx.recv().await {
             self.ingest_async(doc).await;
         }
@@ -285,10 +281,7 @@ impl FileWatcher {
     }
 
     /// Create a file watcher with custom extensions.
-    pub fn with_extensions<P: AsRef<Path>>(
-        path: P,
-        extensions: Vec<&str>,
-    ) -> Result<Self, String> {
+    pub fn with_extensions<P: AsRef<Path>>(path: P, extensions: Vec<&str>) -> Result<Self, String> {
         use notify::{RecursiveMode, Watcher};
 
         let path = path.as_ref().to_path_buf();
@@ -297,35 +290,38 @@ impl FileWatcher {
         let (tx, rx) = mpsc::channel();
         let ext_clone = extensions.clone();
 
-        let mut watcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
-            match res {
-                Ok(event) => {
-                    for path in event.paths {
-                        // Filter by extension
-                        if let Some(ext) = path.extension() {
-                            let ext_str = ext.to_string_lossy().to_string();
-                            if ext_clone.contains(&ext_str) {
-                                match event.kind {
-                                    notify::EventKind::Create(_) |
-                                    notify::EventKind::Modify(_) => {
-                                        let _ = tx.send(WatchEvent::FileChanged(path.clone()));
+        let mut watcher =
+            notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
+                match res {
+                    Ok(event) => {
+                        for path in event.paths {
+                            // Filter by extension
+                            if let Some(ext) = path.extension() {
+                                let ext_str = ext.to_string_lossy().to_string();
+                                if ext_clone.contains(&ext_str) {
+                                    match event.kind {
+                                        notify::EventKind::Create(_)
+                                        | notify::EventKind::Modify(_) => {
+                                            let _ = tx.send(WatchEvent::FileChanged(path.clone()));
+                                        }
+                                        notify::EventKind::Remove(_) => {
+                                            let _ = tx.send(WatchEvent::FileRemoved(path.clone()));
+                                        }
+                                        _ => {}
                                     }
-                                    notify::EventKind::Remove(_) => {
-                                        let _ = tx.send(WatchEvent::FileRemoved(path.clone()));
-                                    }
-                                    _ => {}
                                 }
                             }
                         }
                     }
+                    Err(e) => {
+                        let _ = tx.send(WatchEvent::Error(e.to_string()));
+                    }
                 }
-                Err(e) => {
-                    let _ = tx.send(WatchEvent::Error(e.to_string()));
-                }
-            }
-        }).map_err(|e| format!("Failed to create watcher: {}", e))?;
+            })
+            .map_err(|e| format!("Failed to create watcher: {}", e))?;
 
-        watcher.watch(&path, RecursiveMode::Recursive)
+        watcher
+            .watch(&path, RecursiveMode::Recursive)
             .map_err(|e| format!("Failed to watch path: {}", e))?;
 
         Ok(Self {
@@ -404,7 +400,9 @@ impl DocumentChannel {
 
     /// Send a document, waiting if the channel is full.
     pub async fn send(&self, doc: IngestDocument) -> Result<(), String> {
-        self.tx.send(doc).await
+        self.tx
+            .send(doc)
+            .await
             .map_err(|e| format!("Channel closed: {}", e))
     }
 }
@@ -425,12 +423,12 @@ pub fn watch_directory_to_channel(
                 Some(WatchEvent::FileChanged(path)) => {
                     // Read the file content
                     if let Ok(content) = std::fs::read_to_string(&path) {
-                        let title = path.file_name()
+                        let title = path
+                            .file_name()
                             .map(|s| s.to_string_lossy().to_string())
                             .unwrap_or_else(|| "Untitled".to_string());
 
-                        let doc = IngestDocument::new(title, content)
-                            .with_source(path);
+                        let doc = IngestDocument::new(title, content).with_source(path);
 
                         // Try to send, drop if channel is full (backpressure)
                         if tx.blocking_send(doc).is_err() {
@@ -464,7 +462,9 @@ pub fn streaming_from_directory<P: AsRef<Path>>(
 ) -> Result<(StreamingColony, std::thread::JoinHandle<()>), String> {
     let watcher = FileWatcher::new(path)?;
     let mut channel = DocumentChannel::new(config.queue_capacity);
-    let _rx = channel.take_receiver().ok_or("Channel receiver already taken")?;
+    let _rx = channel
+        .take_receiver()
+        .ok_or("Channel receiver already taken")?;
 
     let streaming = StreamingColony::new(colony, config);
 
@@ -479,8 +479,8 @@ pub fn streaming_from_directory<P: AsRef<Path>>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
     use std::fs;
+    use tempfile::TempDir;
 
     #[test]
     fn ingest_document_basic() {
@@ -530,7 +530,9 @@ mod tests {
         let channel = DocumentChannel::new(10);
         let tx = channel.sender();
 
-        tx.send(IngestDocument::new("Test", "Content")).await.unwrap();
+        tx.send(IngestDocument::new("Test", "Content"))
+            .await
+            .unwrap();
     }
 
     #[test]

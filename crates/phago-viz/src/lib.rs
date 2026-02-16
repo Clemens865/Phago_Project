@@ -8,17 +8,14 @@
 //! - Event timeline
 //! - Metrics dashboard with tick slider
 
-use phago_runtime::colony::{ColonySnapshot, ColonyEvent};
 use phago_core::types::Tick;
+use phago_runtime::colony::{ColonyEvent, ColonySnapshot};
 
 /// Generate a self-contained HTML file with D3.js visualization.
 ///
 /// The HTML embeds all data as JSON constants and loads D3.js from CDN.
 /// No server, no npm — just open the file in a browser.
-pub fn generate_html(
-    snapshots: &[ColonySnapshot],
-    events: &[(Tick, ColonyEvent)],
-) -> String {
+pub fn generate_html(snapshots: &[ColonySnapshot], events: &[(Tick, ColonyEvent)]) -> String {
     let snapshots_json = serde_json::to_string(snapshots).unwrap_or_else(|_| "[]".to_string());
     let events_json = serde_json::to_string(events).unwrap_or_else(|_| "[]".to_string());
 
@@ -410,8 +407,8 @@ update(SNAPSHOTS.length - 1);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use phago_runtime::colony::{ColonySnapshot, ColonyStats, AgentSnapshot, NodeSnapshot};
     use phago_core::types::*;
+    use phago_runtime::colony::{AgentSnapshot, ColonySnapshot, ColonyStats, NodeSnapshot};
 
     #[test]
     fn html_contains_required_elements() {
@@ -457,6 +454,9 @@ mod tests {
     #[test]
     fn html_empty_data_does_not_panic() {
         let html = generate_html(&[], &[]);
-        assert!(html.contains("<html"), "should produce valid html even with empty data");
+        assert!(
+            html.contains("<html"),
+            "should produce valid html even with empty data"
+        );
     }
 }

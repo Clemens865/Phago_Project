@@ -61,7 +61,9 @@ impl ConceptPrompt {
 
 impl PromptTemplate for ConceptPrompt {
     fn system_prompt(&self) -> Option<String> {
-        let domain_hint = self.domain.as_ref()
+        let domain_hint = self
+            .domain
+            .as_ref()
             .map(|d| format!(" in the domain of {}", d))
             .unwrap_or_default();
 
@@ -96,10 +98,7 @@ Respond with a JSON array like:
 [{{"label": "<concept>"{}{}, "confidence": <0.0-1.0>}}]
 
 JSON:"#,
-            self.max_concepts,
-            self.text,
-            type_instruction,
-            desc_instruction
+            self.max_concepts, self.text, type_instruction, desc_instruction
         )
     }
 }
@@ -137,7 +136,8 @@ impl PromptTemplate for RelationshipPrompt {
         Some(
             "You are an expert at identifying relationships between concepts. \
              Identify meaningful relationships from the given text and concepts. \
-             Respond ONLY with a JSON array, no explanation.".to_string()
+             Respond ONLY with a JSON array, no explanation."
+                .to_string(),
         )
     }
 
@@ -158,9 +158,7 @@ Find up to {} relationships. Respond with a JSON array like:
 [{{"source": "<concept>", "target": "<concept>", "relation": "<is_a|part_of|causes|enables|requires|produces|regulates|interacts_with|located_in|related_to>", "label": "<human readable relationship>"}}]
 
 JSON:"#,
-            self.text,
-            concepts_list,
-            self.max_relationships
+            self.text, concepts_list, self.max_relationships
         )
     }
 }
@@ -194,7 +192,8 @@ impl PromptTemplate for QueryExpansionPrompt {
     fn system_prompt(&self) -> Option<String> {
         Some(
             "You are a search query expansion expert. Generate alternative queries \
-             that capture the same intent but use different terminology.".to_string()
+             that capture the same intent but use different terminology."
+                .to_string(),
         )
     }
 
@@ -208,8 +207,7 @@ Respond with a JSON array of strings:
 ["<query1>", "<query2>", ...]
 
 JSON:"#,
-            self.num_expansions,
-            self.query
+            self.num_expansions, self.query
         )
     }
 }

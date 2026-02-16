@@ -4,22 +4,19 @@
 //! ingest documents, run distributed ticks, execute queries, and
 //! verify ghost node resolution.
 
+use phago_core::types::{DocumentId, Position};
 use phago_distributed::coordinator::Coordinator;
 use phago_distributed::hashing::ConsistentHashRing;
 use phago_distributed::query::{DistributedHybridConfig, DistributedQueryEngine};
 use phago_distributed::runner::{DistributedRunner, RunnerConfig};
 use phago_distributed::shard::ShardedColony;
 use phago_distributed::types::*;
-use phago_core::types::{DocumentId, Position};
 use phago_runtime::colony::ColonyConfig;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 /// Helper: tick all shards and advance coordinator (without barrier sync).
-async fn tick_cluster(
-    coordinator: &Coordinator,
-    shards: &[Arc<RwLock<ShardedColony>>],
-) {
+async fn tick_cluster(coordinator: &Coordinator, shards: &[Arc<RwLock<ShardedColony>>]) {
     for shard in shards {
         let mut s = shard.write().await;
         s.tick();
@@ -28,9 +25,7 @@ async fn tick_cluster(
 }
 
 /// Helper: create an in-process cluster with N shards.
-fn create_cluster(
-    num_shards: u32,
-) -> (Arc<Coordinator>, Vec<Arc<RwLock<ShardedColony>>>) {
+fn create_cluster(num_shards: u32) -> (Arc<Coordinator>, Vec<Arc<RwLock<ShardedColony>>>) {
     let coordinator = Arc::new(Coordinator::new(num_shards));
     let hash_ring = Arc::new(RwLock::new(ConsistentHashRing::new(num_shards)));
 
@@ -48,15 +43,9 @@ fn create_cluster(
 }
 
 /// Helper: register all shards with coordinator.
-async fn register_shards(
-    coordinator: &Coordinator,
-    shards: &[Arc<RwLock<ShardedColony>>],
-) {
+async fn register_shards(coordinator: &Coordinator, shards: &[Arc<RwLock<ShardedColony>>]) {
     for (i, _) in shards.iter().enumerate() {
-        let info = ShardInfo::new(
-            ShardId::new(i as u32),
-            format!("127.0.0.1:{}", 9000 + i),
-        );
+        let info = ShardInfo::new(ShardId::new(i as u32), format!("127.0.0.1:{}", 9000 + i));
         coordinator.register_shard(info).await.unwrap();
     }
 }
@@ -100,23 +89,25 @@ async fn test_full_lifecycle() {
     // 2. Ingest documents across shards via routing
     let docs = [
         ("Cell Membrane", "cell membrane protein transport biology"),
-        ("DNA Replication", "DNA replication enzyme helicase polymerase"),
-        ("Neuroscience", "neuron synapse action potential neurotransmitter"),
+        (
+            "DNA Replication",
+            "DNA replication enzyme helicase polymerase",
+        ),
+        (
+            "Neuroscience",
+            "neuron synapse action potential neurotransmitter",
+        ),
         ("Immunology", "antibody antigen immune response lymphocyte"),
-        ("Ecology", "ecosystem biodiversity species population habitat"),
+        (
+            "Ecology",
+            "ecosystem biodiversity species population habitat",
+        ),
         ("Genetics", "chromosome gene mutation inheritance phenotype"),
     ];
 
     let mut shard_doc_counts = [0usize; 3];
     for (i, (title, content)) in docs.iter().enumerate() {
-        let (target, _) = route_and_ingest(
-            &coordinator,
-            &shards,
-            i as u64,
-            title,
-            content,
-        )
-        .await;
+        let (target, _) = route_and_ingest(&coordinator, &shards, i as u64, title, content).await;
         shard_doc_counts[target.as_u32() as usize] += 1;
     }
 
@@ -143,10 +134,8 @@ async fn test_full_lifecycle() {
     });
 
     let query_results = {
-        let guards: Vec<_> = futures::future::join_all(
-            shards.iter().map(|s| async { s.read().await }),
-        )
-        .await;
+        let guards: Vec<_> =
+            futures::future::join_all(shards.iter().map(|s| async { s.read().await })).await;
         let refs: Vec<&ShardedColony> = guards.iter().map(|g| &**g).collect();
         engine.distributed_query(&refs, "cell membrane")
         // guards (read locks) are dropped here at end of block
@@ -167,9 +156,9 @@ async fn test_full_lifecycle() {
         assert_eq!(s0.ghost_cache().len(), 1);
 
         // Verify we can look up the ghost node
-        let cached = s0.ghost_cache_mut().get(
-            &phago_core::types::NodeId::from_seed(999),
-        );
+        let cached = s0
+            .ghost_cache_mut()
+            .get(&phago_core::types::NodeId::from_seed(999));
         assert!(cached.is_some());
         assert_eq!(cached.unwrap().label, "remote_concept");
         assert_eq!(cached.unwrap().shard_id, ShardId::new(1));
@@ -226,18 +215,11 @@ async fn test_single_shard_cluster() {
     // Ingest and run
     {
         let mut s = shards[0].write().await;
-        s.ingest_document_direct(
-            "Test",
-            "cell membrane biology",
-            Position::new(0.0, 0.0),
-        );
+        s.ingest_document_direct("Test", "cell membrane biology", Position::new(0.0, 0.0));
     }
 
-    let runner = DistributedRunner::new(
-        coordinator.clone(),
-        shards.clone(),
-        RunnerConfig::default(),
-    );
+    let runner =
+        DistributedRunner::new(coordinator.clone(), shards.clone(), RunnerConfig::default());
     let results = runner.run(5).await.unwrap();
     assert_eq!(results.len(), 5);
     assert_eq!(coordinator.current_tick(), 5);
@@ -264,11 +246,7 @@ async fn test_cluster_stats_after_ingestion() {
     for shard in &shards {
         let s = shard.read().await;
         coordinator
-            .update_shard_metrics(
-                s.shard_id(),
-                s.document_count(),
-                0,
-            )
+            .update_shard_metrics(s.shard_id(), s.document_count(), 0)
             .await;
     }
 
@@ -346,10 +324,8 @@ async fn test_distributed_query_empty_cluster() {
 
     let engine = DistributedQueryEngine::with_defaults();
 
-    let guards: Vec<_> = futures::future::join_all(
-        shards.iter().map(|s| async { s.read().await }),
-    )
-    .await;
+    let guards: Vec<_> =
+        futures::future::join_all(shards.iter().map(|s| async { s.read().await })).await;
     let refs: Vec<&ShardedColony> = guards.iter().map(|g| &**g).collect();
 
     // Query on empty cluster should return empty results

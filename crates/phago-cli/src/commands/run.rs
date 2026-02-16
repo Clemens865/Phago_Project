@@ -11,10 +11,7 @@ pub fn run(ticks: u64, verbose: bool) -> Result<()> {
     let session_path = current_session_path()?;
 
     if !session_path.exists() {
-        bail!(
-            "No session found. Run {} first.",
-            "phago ingest".cyan()
-        );
+        bail!("No session found. Run {} first.", "phago ingest".cyan());
     }
 
     // Load session

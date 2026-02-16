@@ -134,7 +134,8 @@ impl QueryEngine {
             visited.insert(*nid);
             if let Some(node) = graph.get_node(nid) {
                 // Seeds that match query terms get a high base score
-                let term_overlap = terms.iter()
+                let term_overlap = terms
+                    .iter()
                     .filter(|t| node.label.to_lowercase().contains(t.as_str()))
                     .count() as f64;
                 results.push(QueryResult {
@@ -176,8 +177,10 @@ impl QueryEngine {
                 if let Some(node) = graph.get_node(nid) {
                     // Additive scoring: edge weight decays per hop, term overlap dominates
                     let hop_decay = 0.5_f64.powi((depth + 1) as i32);
-                    let graph_score = edge.weight * hop_decay * (1.0 + edge.co_activations as f64 * 0.1);
-                    let term_overlap = terms.iter()
+                    let graph_score =
+                        edge.weight * hop_decay * (1.0 + edge.co_activations as f64 * 0.1);
+                    let term_overlap = terms
+                        .iter()
                         .filter(|t| node.label.to_lowercase().contains(t.as_str()))
                         .count() as f64;
                     let term_bonus = term_overlap * 5.0;
@@ -201,7 +204,11 @@ impl QueryEngine {
         }
 
         // Phase 3: Rank by score
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(q.max_results);
 
         // Phase 4: Reinforce traversed paths (the graph learns from queries)
@@ -244,7 +251,9 @@ impl QueryEngine {
 
                 // Strengthen all seed↔result edges
                 for seed_id in &seed_ids {
-                    if seed_id == result_id { continue; }
+                    if seed_id == result_id {
+                        continue;
+                    }
                     if let Some(edge) = graph_mut.get_edge_mut(seed_id, result_id) {
                         let boost = 0.05 * multi_seed_bonus;
                         edge.weight = (edge.weight + boost).min(1.0);
@@ -261,18 +270,19 @@ impl QueryEngine {
 /// Simple tokenizer — lowercase, split on whitespace, filter stopwords and short words.
 fn tokenize(text: &str) -> Vec<String> {
     let stopwords: std::collections::HashSet<&str> = [
-        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "do", "does", "did", "will", "would", "could",
-        "should", "may", "might", "shall", "can", "need", "dare", "ought",
-        "used", "to", "of", "in", "for", "on", "with", "at", "by", "from",
-        "as", "into", "through", "during", "before", "after", "above", "below",
-        "between", "out", "off", "over", "under", "again", "further", "then",
-        "once", "here", "there", "when", "where", "why", "how", "all", "each",
-        "every", "both", "few", "more", "most", "other", "some", "such", "no",
-        "nor", "not", "only", "own", "same", "so", "than", "too", "very",
-        "and", "but", "or", "if", "while", "what", "which", "who", "this",
-        "that", "these", "those", "it", "its",
-    ].iter().cloned().collect();
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+        "do", "does", "did", "will", "would", "could", "should", "may", "might", "shall", "can",
+        "need", "dare", "ought", "used", "to", "of", "in", "for", "on", "with", "at", "by", "from",
+        "as", "into", "through", "during", "before", "after", "above", "below", "between", "out",
+        "off", "over", "under", "again", "further", "then", "once", "here", "there", "when",
+        "where", "why", "how", "all", "each", "every", "both", "few", "more", "most", "other",
+        "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very",
+        "and", "but", "or", "if", "while", "what", "which", "who", "this", "that", "these",
+        "those", "it", "its",
+    ]
+    .iter()
+    .cloned()
+    .collect();
 
     text.to_lowercase()
         .split_whitespace()
@@ -296,14 +306,19 @@ mod tests {
              and receptors for signaling cascades in the cellular environment.",
             Position::new(0.0, 0.0),
         );
-        colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(80)));
+        colony.spawn(Box::new(
+            Digester::new(Position::new(0.0, 0.0)).with_max_idle(80),
+        ));
         colony.run(15);
 
         let q = Query::new("cell membrane").without_reinforcement();
         let results = QueryEngine::query(&mut colony, &q);
 
         assert!(!results.is_empty(), "query should return results");
-        assert!(results[0].score > 0.0, "results should have positive scores");
+        assert!(
+            results[0].score > 0.0,
+            "results should have positive scores"
+        );
     }
 
     #[test]
@@ -314,7 +329,9 @@ mod tests {
             "The cell membrane controls transport of molecules. Proteins serve as channels.",
             Position::new(0.0, 0.0),
         );
-        colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(80)));
+        colony.spawn(Box::new(
+            Digester::new(Position::new(0.0, 0.0)).with_max_idle(80),
+        ));
         colony.run(15);
 
         // Get initial access count
@@ -331,7 +348,10 @@ mod tests {
         let results_after = QueryEngine::query(&mut colony, &q);
         let after_access = results_after.first().map(|r| r.access_count).unwrap_or(0);
 
-        assert!(after_access > initial_access, "reinforcement should increase access count");
+        assert!(
+            after_access > initial_access,
+            "reinforcement should increase access count"
+        );
     }
 
     #[test]

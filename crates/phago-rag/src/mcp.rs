@@ -73,8 +73,12 @@ pub struct RecallRequest {
     pub alpha: f64,
 }
 
-fn default_max_results() -> usize { 10 }
-fn default_alpha() -> f64 { 0.5 }
+fn default_max_results() -> usize {
+    10
+}
+fn default_alpha() -> f64 {
+    0.5
+}
 
 #[derive(Debug, Serialize)]
 pub struct RecallResult {
@@ -139,7 +143,9 @@ pub enum ExploreRequest {
     Stats,
 }
 
-fn default_top_k() -> usize { 10 }
+fn default_top_k() -> usize {
+    10
+}
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
@@ -151,13 +157,9 @@ pub enum ExploreResponse {
         cost: f64,
     },
     #[serde(rename = "centrality")]
-    Centrality {
-        nodes: Vec<CentralityEntry>,
-    },
+    Centrality { nodes: Vec<CentralityEntry> },
     #[serde(rename = "bridges")]
-    Bridges {
-        nodes: Vec<BridgeEntry>,
-    },
+    Bridges { nodes: Vec<BridgeEntry> },
     #[serde(rename = "stats")]
     Stats {
         total_nodes: usize,
@@ -274,33 +276,45 @@ mod tests {
     #[test]
     fn recall_returns_results() {
         let mut colony = Colony::new();
-        let _ = phago_remember(&mut colony, &RememberRequest {
-            title: "Bio".into(),
-            content: "cell membrane protein transport channel receptor".into(),
-            ticks: Some(15),
-        });
-        let _ = phago_remember(&mut colony, &RememberRequest {
-            title: "Bio2".into(),
-            content: "cell membrane protein signaling pathway cascade".into(),
-            ticks: Some(15),
-        });
+        let _ = phago_remember(
+            &mut colony,
+            &RememberRequest {
+                title: "Bio".into(),
+                content: "cell membrane protein transport channel receptor".into(),
+                ticks: Some(15),
+            },
+        );
+        let _ = phago_remember(
+            &mut colony,
+            &RememberRequest {
+                title: "Bio2".into(),
+                content: "cell membrane protein signaling pathway cascade".into(),
+                ticks: Some(15),
+            },
+        );
 
-        let resp = phago_recall(&colony, &RecallRequest {
-            query: "cell membrane".into(),
-            max_results: 5,
-            alpha: 0.5,
-        });
+        let resp = phago_recall(
+            &colony,
+            &RecallRequest {
+                query: "cell membrane".into(),
+                max_results: 5,
+                alpha: 0.5,
+            },
+        );
         assert!(!resp.results.is_empty(), "should return results");
     }
 
     #[test]
     fn explore_stats_works() {
         let mut colony = Colony::new();
-        let _ = phago_remember(&mut colony, &RememberRequest {
-            title: "Bio".into(),
-            content: "cell membrane protein".into(),
-            ticks: Some(15),
-        });
+        let _ = phago_remember(
+            &mut colony,
+            &RememberRequest {
+                title: "Bio".into(),
+                content: "cell membrane protein".into(),
+                ticks: Some(15),
+            },
+        );
 
         let resp = phago_explore(&colony, &ExploreRequest::Stats);
         match resp {

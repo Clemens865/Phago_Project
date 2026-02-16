@@ -9,8 +9,8 @@
 //! material, and presents antigen fragments on its surface.
 
 use phago_core::agent::Agent;
-use phago_core::primitives::{Apoptose, Digest, Sense};
 use phago_core::primitives::symbiose::AgentProfile;
+use phago_core::primitives::{Apoptose, Digest, Sense};
 use phago_core::signal::compute_gradient;
 use phago_core::substrate::Substrate;
 use phago_core::types::*;
@@ -166,19 +166,16 @@ impl Digester {
 /// Words in `known_vocabulary` receive a +3 frequency boost (Transfer effect).
 fn extract_keywords(text: &str, known_vocabulary: Option<&HashSet<String>>) -> Vec<String> {
     let stopwords: std::collections::HashSet<&str> = [
-        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "do", "does", "did", "will", "would", "shall",
-        "should", "may", "might", "must", "can", "could", "of", "in", "to",
-        "for", "with", "on", "at", "from", "by", "about", "as", "into",
-        "through", "during", "before", "after", "above", "below", "between",
-        "out", "off", "over", "under", "again", "further", "then", "once",
-        "here", "there", "when", "where", "why", "how", "all", "each",
-        "every", "both", "few", "more", "most", "other", "some", "such",
-        "no", "nor", "not", "only", "own", "same", "so", "than", "too",
-        "very", "just", "because", "but", "and", "or", "if", "while",
-        "that", "this", "these", "those", "it", "its", "they", "them",
-        "their", "we", "our", "you", "your", "he", "she", "his", "her",
-        "which", "what", "who", "whom",
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+        "do", "does", "did", "will", "would", "shall", "should", "may", "might", "must", "can",
+        "could", "of", "in", "to", "for", "with", "on", "at", "from", "by", "about", "as", "into",
+        "through", "during", "before", "after", "above", "below", "between", "out", "off", "over",
+        "under", "again", "further", "then", "once", "here", "there", "when", "where", "why",
+        "how", "all", "each", "every", "both", "few", "more", "most", "other", "some", "such",
+        "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "just", "because",
+        "but", "and", "or", "if", "while", "that", "this", "these", "those", "it", "its", "they",
+        "them", "their", "we", "our", "you", "your", "he", "she", "his", "her", "which", "what",
+        "who", "whom",
     ]
     .into_iter()
     .collect();
@@ -309,7 +306,11 @@ impl Sense for Digester {
         let strongest = gradients
             .iter()
             .filter(|g| matches!(g.signal_type, SignalType::Input))
-            .max_by(|a, b| a.magnitude.partial_cmp(&b.magnitude).unwrap_or(std::cmp::Ordering::Equal));
+            .max_by(|a, b| {
+                a.magnitude
+                    .partial_cmp(&b.magnitude)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
 
         match strongest {
             Some(g) => Orientation::Toward(Position::new(
@@ -371,9 +372,9 @@ impl Agent for Digester {
 
                 // Look for nearby undigested documents
                 let docs = substrate.undigested_documents();
-                let nearby_doc = docs.iter().find(|d| {
-                    d.position.distance_to(&self.position) <= self.sense_radius
-                });
+                let nearby_doc = docs
+                    .iter()
+                    .find(|d| d.position.distance_to(&self.position) <= self.sense_radius);
 
                 if let Some(doc) = nearby_doc {
                     // Found a document — move toward it and request engulf
@@ -404,10 +405,7 @@ impl Agent for Digester {
                             + (self.id.0.as_u128() % 100) as f64 * 0.1;
                         let dx = angle.cos() * 2.0;
                         let dy = angle.sin() * 2.0;
-                        AgentAction::Move(Position::new(
-                            self.position.x + dx,
-                            self.position.y + dy,
-                        ))
+                        AgentAction::Move(Position::new(self.position.x + dx, self.position.y + dy))
                     }
                 }
             }
@@ -455,9 +453,10 @@ impl Agent for Digester {
                     self.has_exported = true;
                     self.state = DigesterState::Seeking;
                     self.current_document = None;
-                    return AgentAction::ExportCapability(CapabilityId(
-                        format!("vocab-{}", self.id.0),
-                    ));
+                    return AgentAction::ExportCapability(CapabilityId(format!(
+                        "vocab-{}",
+                        self.id.0
+                    )));
                 }
 
                 // Deposit a trace at our location marking successful digestion
@@ -470,10 +469,7 @@ impl Agent for Digester {
                     tick: self.age_ticks,
                     payload: Vec::new(),
                 };
-                AgentAction::Deposit(
-                    SubstrateLocation::Spatial(self.position),
-                    trace,
-                )
+                AgentAction::Deposit(SubstrateLocation::Spatial(self.position), trace)
             }
         }
     }
@@ -590,8 +586,8 @@ impl Agent for Digester {
 // --- Serialization ---
 
 use crate::serialize::{
-    hashset_to_vec, vec_to_hashset, DigesterState as SerializedDigesterState,
-    SerializableAgent, SerializedAgent,
+    hashset_to_vec, vec_to_hashset, DigesterState as SerializedDigesterState, SerializableAgent,
+    SerializedAgent,
 };
 
 impl SerializableAgent for Digester {
@@ -660,15 +656,27 @@ mod tests {
     #[test]
     fn engulf_rejects_empty_input() {
         let mut digester = Digester::new(Position::new(0.0, 0.0));
-        assert_eq!(digester.engulf("".to_string()), DigestionResult::Indigestible);
-        assert_eq!(digester.engulf("   ".to_string()), DigestionResult::Indigestible);
+        assert_eq!(
+            digester.engulf("".to_string()),
+            DigestionResult::Indigestible
+        );
+        assert_eq!(
+            digester.engulf("   ".to_string()),
+            DigestionResult::Indigestible
+        );
     }
 
     #[test]
     fn engulf_rejects_when_busy() {
         let mut digester = Digester::new(Position::new(0.0, 0.0));
-        assert_eq!(digester.engulf("hello world foo".to_string()), DigestionResult::Engulfed);
-        assert_eq!(digester.engulf("another input".to_string()), DigestionResult::Busy);
+        assert_eq!(
+            digester.engulf("hello world foo".to_string()),
+            DigestionResult::Engulfed
+        );
+        assert_eq!(
+            digester.engulf("another input".to_string()),
+            DigestionResult::Busy
+        );
     }
 
     #[test]

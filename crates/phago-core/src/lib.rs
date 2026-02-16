@@ -28,13 +28,13 @@
 //! let id = AgentId::from_seed(42);
 //! ```
 
-pub mod primitives;
-pub mod types;
 pub mod agent;
-pub mod substrate;
-pub mod signal;
-pub mod topology;
 pub mod error;
-pub mod semantic;
 pub mod louvain;
 pub mod prelude;
+pub mod primitives;
+pub mod semantic;
+pub mod signal;
+pub mod substrate;
+pub mod topology;
+pub mod types;

@@ -16,15 +16,15 @@
 //! | No anomaly detection | Sentinels flag what doesn't fit |
 //! | Flat retrieval | Structured, weighted paths |
 
-pub mod query;
-pub mod scoring;
 pub mod baseline;
 pub mod code_query;
+pub mod counterfactual;
 pub mod hybrid;
 pub mod mcp;
-pub mod counterfactual;
 pub mod prelude;
+pub mod query;
+pub mod scoring;
 
-pub use query::{Query, QueryResult, QueryEngine};
 pub use hybrid::{hybrid_query, HybridConfig, HybridResult};
-pub use mcp::{phago_remember, phago_recall, phago_explore};
+pub use mcp::{phago_explore, phago_recall, phago_remember};
+pub use query::{Query, QueryEngine, QueryResult};

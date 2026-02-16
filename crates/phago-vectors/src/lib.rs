@@ -114,7 +114,11 @@ impl VectorRecord {
     }
 
     /// Add metadata to the record.
-    pub fn with_metadata(mut self, key: impl Into<String>, value: impl Into<serde_json::Value>) -> Self {
+    pub fn with_metadata(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<serde_json::Value>,
+    ) -> Self {
         self.metadata.insert(key.into(), value.into());
         self
     }
@@ -269,12 +273,10 @@ pub trait VectorStore: Send + Sync {
 /// Create a vector store from configuration.
 pub async fn create_store(config: VectorStoreConfig) -> VectorResult<Box<dyn VectorStore>> {
     match config.backend {
-        BackendConfig::InMemory => {
-            Ok(Box::new(memory::InMemoryStore::with_config(
-                config.dimension,
-                config.metric,
-            )))
-        }
+        BackendConfig::InMemory => Ok(Box::new(memory::InMemoryStore::with_config(
+            config.dimension,
+            config.metric,
+        ))),
 
         #[cfg(feature = "qdrant")]
         BackendConfig::Qdrant { url, api_key } => {
@@ -284,29 +286,36 @@ pub async fn create_store(config: VectorStoreConfig) -> VectorResult<Box<dyn Vec
                 &config.collection,
                 config.dimension,
                 config.metric,
-            ).await?;
+            )
+            .await?;
             Ok(Box::new(store))
         }
 
         #[cfg(feature = "pinecone")]
-        BackendConfig::Pinecone { api_key, environment, index } => {
-            let store = pinecone::PineconeStore::connect(
-                &api_key,
-                &environment,
-                &index,
-                config.dimension,
-            ).await?;
+        BackendConfig::Pinecone {
+            api_key,
+            environment,
+            index,
+        } => {
+            let store =
+                pinecone::PineconeStore::connect(&api_key, &environment, &index, config.dimension)
+                    .await?;
             Ok(Box::new(store))
         }
 
         #[cfg(feature = "weaviate")]
-        BackendConfig::Weaviate { url, api_key, class_name } => {
+        BackendConfig::Weaviate {
+            url,
+            api_key,
+            class_name,
+        } => {
             let store = weaviate::WeaviateStore::connect(
                 &url,
                 api_key.as_deref(),
                 &class_name,
                 config.dimension,
-            ).await?;
+            )
+            .await?;
             Ok(Box::new(store))
         }
     }

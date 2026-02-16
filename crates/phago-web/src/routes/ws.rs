@@ -96,9 +96,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
 #[serde(tag = "cmd")]
 enum ClientCommand {
     #[serde(rename = "tick")]
-    Tick {
-        count: Option<u64>,
-    },
+    Tick { count: Option<u64> },
     #[serde(rename = "snapshot")]
     Snapshot,
 }

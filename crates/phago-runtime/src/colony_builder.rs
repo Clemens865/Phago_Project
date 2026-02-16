@@ -32,13 +32,15 @@
 //! ```
 
 use crate::colony::{Colony, ColonyConfig};
-use crate::topology_impl::PetTopologyGraph;
-use phago_core::topology::TopologyGraph;
 use phago_core::types::*;
 use std::path::{Path, PathBuf};
 
 #[cfg(feature = "sqlite")]
 use crate::sqlite_topology::SqliteTopologyGraph;
+#[cfg(feature = "sqlite")]
+use crate::topology_impl::PetTopologyGraph;
+#[cfg(feature = "sqlite")]
+use phago_core::topology::TopologyGraph;
 
 /// Error type for colony builder operations.
 #[derive(Debug)]
@@ -55,7 +57,10 @@ impl std::fmt::Display for BuilderError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BuilderError::SqliteNotEnabled => {
-                write!(f, "SQLite feature not enabled. Add features = [\"sqlite\"] to Cargo.toml")
+                write!(
+                    f,
+                    "SQLite feature not enabled. Add features = [\"sqlite\"] to Cargo.toml"
+                )
             }
             BuilderError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
             BuilderError::PersistenceError(msg) => write!(f, "Persistence error: {}", msg),
@@ -270,7 +275,12 @@ impl PersistentColony {
     }
 
     /// Ingest a document.
-    pub fn ingest_document(&mut self, title: &str, content: &str, position: Position) -> DocumentId {
+    pub fn ingest_document(
+        &mut self,
+        title: &str,
+        content: &str,
+        position: Position,
+    ) -> DocumentId {
         self.colony.ingest_document(title, content, position)
     }
 
@@ -287,7 +297,13 @@ impl PersistentColony {
     /// Spawn an agent.
     pub fn spawn(
         &mut self,
-        agent: Box<dyn phago_core::agent::Agent<Input = String, Fragment = String, Presentation = Vec<String>>>,
+        agent: Box<
+            dyn phago_core::agent::Agent<
+                Input = String,
+                Fragment = String,
+                Presentation = Vec<String>,
+            >,
+        >,
     ) -> AgentId {
         self.colony.spawn(agent)
     }
@@ -304,7 +320,10 @@ impl Drop for PersistentColony {
         if let Some(ref state) = self.persistence {
             if state.auto_save {
                 // Best-effort save on drop
-                let _ = save_to_sqlite(self.colony.substrate().graph(), &mut self.persistence.as_mut().unwrap().db);
+                let _ = save_to_sqlite(
+                    self.colony.substrate().graph(),
+                    &mut self.persistence.as_mut().unwrap().db,
+                );
             }
         }
     }
@@ -383,10 +402,7 @@ mod tests {
         let tmp = std::env::temp_dir().join("phago_builder_test.db");
         let _ = std::fs::remove_file(&tmp); // Clean up from previous runs
 
-        let mut colony = ColonyBuilder::new()
-            .with_persistence(&tmp)
-            .build()
-            .unwrap();
+        let mut colony = ColonyBuilder::new().with_persistence(&tmp).build().unwrap();
 
         assert!(colony.has_persistence());
         assert_eq!(colony.persistence_path(), Some(tmp.as_path()));
@@ -433,13 +449,16 @@ mod tests {
 
         // Create colony, add data, save
         let (node_count, edge_count) = {
-            let mut colony = ColonyBuilder::new()
-                .with_persistence(&tmp)
-                .build()
-                .unwrap();
+            let mut colony = ColonyBuilder::new().with_persistence(&tmp).build().unwrap();
 
-            colony.ingest_document("Biology 101", "Cell membrane proteins transport molecules", Position::new(0.0, 0.0));
-            colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(50)));
+            colony.ingest_document(
+                "Biology 101",
+                "Cell membrane proteins transport molecules",
+                Position::new(0.0, 0.0),
+            );
+            colony.spawn(Box::new(
+                Digester::new(Position::new(0.0, 0.0)).with_max_idle(50),
+            ));
             colony.run(15);
 
             let stats = colony.stats();
@@ -448,16 +467,19 @@ mod tests {
         };
 
         // Load into new colony
-        let colony2 = ColonyBuilder::new()
-            .with_persistence(&tmp)
-            .build()
-            .unwrap();
+        let colony2 = ColonyBuilder::new().with_persistence(&tmp).build().unwrap();
 
         let stats2 = colony2.stats();
 
         // Verify data was loaded
-        assert_eq!(stats2.graph_nodes, node_count, "Node count should match after reload");
-        assert_eq!(stats2.graph_edges, edge_count, "Edge count should match after reload");
+        assert_eq!(
+            stats2.graph_nodes, node_count,
+            "Node count should match after reload"
+        );
+        assert_eq!(
+            stats2.graph_edges, edge_count,
+            "Edge count should match after reload"
+        );
 
         let _ = std::fs::remove_file(&tmp);
     }

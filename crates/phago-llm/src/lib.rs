@@ -21,12 +21,12 @@
 //! ```
 
 mod backend;
-mod types;
 mod prompt;
+mod types;
 
 pub use backend::{LlmBackend, LlmError, LlmResult};
-pub use types::{Concept, Relationship, ConceptType, RelationType};
-pub use prompt::{PromptTemplate, ConceptPrompt, RelationshipPrompt};
+pub use prompt::{ConceptPrompt, PromptTemplate, RelationshipPrompt};
+pub use types::{Concept, ConceptType, RelationType, Relationship};
 
 #[cfg(feature = "local")]
 mod ollama;
@@ -45,9 +45,9 @@ pub use openai::OpenAiBackend;
 
 /// Prelude for convenient imports.
 pub mod prelude {
+    pub use crate::{Concept, ConceptType, RelationType, Relationship};
+    pub use crate::{ConceptPrompt, PromptTemplate};
     pub use crate::{LlmBackend, LlmError, LlmResult};
-    pub use crate::{Concept, Relationship, ConceptType, RelationType};
-    pub use crate::{PromptTemplate, ConceptPrompt};
 
     #[cfg(feature = "local")]
     pub use crate::OllamaBackend;

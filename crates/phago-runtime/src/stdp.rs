@@ -122,7 +122,8 @@ impl StdpGraph {
                 let distance = (j - i) as f64;
 
                 // Weight decays exponentially with distance
-                let weight = self.config.base_weight * self.config.distance_decay.powf(distance - 1.0);
+                let weight =
+                    self.config.base_weight * self.config.distance_decay.powf(distance - 1.0);
 
                 // Check if edge already exists
                 if let Some(edge_idx) = self.graph.find_edge(from_idx, to_idx) {
@@ -131,7 +132,8 @@ impl StdpGraph {
                     edge.count += 1;
                     edge.last_reinforced_tick = tick;
                 } else {
-                    self.graph.add_edge(from_idx, to_idx, DirectedEdge::new(weight, tick));
+                    self.graph
+                        .add_edge(from_idx, to_idx, DirectedEdge::new(weight, tick));
                 }
             }
         }
@@ -184,18 +186,18 @@ impl StdpGraph {
     /// Find directed shortest path from `from` to `to`.
     ///
     /// Uses inverse weight as cost (stronger edges = cheaper paths).
-    pub fn directed_shortest_path(
-        &self,
-        from: &NodeId,
-        to: &NodeId,
-    ) -> Option<(Vec<NodeId>, f64)> {
+    pub fn directed_shortest_path(&self, from: &NodeId, to: &NodeId) -> Option<(Vec<NodeId>, f64)> {
         let from_idx = *self.node_index.get(from)?;
         let to_idx = *self.node_index.get(to)?;
 
         // Dijkstra with inverse weight
         let costs = petgraph::algo::dijkstra(&self.graph, from_idx, Some(to_idx), |e| {
             let w = e.weight().weight;
-            if w > 0.0 { 1.0 / w } else { f64::INFINITY }
+            if w > 0.0 {
+                1.0 / w
+            } else {
+                f64::INFINITY
+            }
         });
 
         let cost = *costs.get(&to_idx)?;
@@ -232,7 +234,10 @@ impl StdpGraph {
                 return Some(path);
             }
 
-            for neighbor in self.graph.neighbors_directed(current, petgraph::Direction::Outgoing) {
+            for neighbor in self
+                .graph
+                .neighbors_directed(current, petgraph::Direction::Outgoing)
+            {
                 if !visited.contains_key(&neighbor) {
                     visited.insert(neighbor, Some(current));
                     queue.push_back(neighbor);
@@ -286,7 +291,8 @@ impl StdpGraph {
             edge.weight = weight;
             edge.last_reinforced_tick = tick;
         } else {
-            self.graph.add_edge(from_idx, to_idx, DirectedEdge::new(weight, tick));
+            self.graph
+                .add_edge(from_idx, to_idx, DirectedEdge::new(weight, tick));
         }
     }
 }
@@ -316,18 +322,27 @@ mod tests {
 
         // A→B should exist
         let succ_a = stdp.successors(&a);
-        assert!(succ_a.iter().any(|(id, _)| *id == b), "A should have successor B");
+        assert!(
+            succ_a.iter().any(|(id, _)| *id == b),
+            "A should have successor B"
+        );
 
         // B→C should exist
         let succ_b = stdp.successors(&b);
-        assert!(succ_b.iter().any(|(id, _)| *id == c), "B should have successor C");
+        assert!(
+            succ_b.iter().any(|(id, _)| *id == c),
+            "B should have successor C"
+        );
 
         // C should have no successors
         assert!(stdp.successors(&c).is_empty());
 
         // Predecessors
         let pred_c = stdp.predecessors(&c);
-        assert!(pred_c.iter().any(|(id, _)| *id == b), "C should have predecessor B");
+        assert!(
+            pred_c.iter().any(|(id, _)| *id == b),
+            "C should have predecessor B"
+        );
     }
 
     #[test]
@@ -380,11 +395,13 @@ mod tests {
 
         // With default config (0.01 decay rate, 0.05 threshold), after 1000 ticks
         // the edge should be pruned
-        assert!(pruned > 0 || stdp.edge_count() < initial_count || {
-            // Check if weight is significantly reduced
-            let succ = stdp.successors(&a);
-            succ.is_empty() || succ[0].1 < 0.1
-        });
+        assert!(
+            pruned > 0 || stdp.edge_count() < initial_count || {
+                // Check if weight is significantly reduced
+                let succ = stdp.successors(&a);
+                succ.is_empty() || succ[0].1 < 0.1
+            }
+        );
     }
 
     #[test]

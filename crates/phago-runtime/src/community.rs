@@ -85,7 +85,9 @@ pub fn detect_communities(colony: &Colony, max_iterations: usize) -> CommunityRe
 
         // Shuffle node processing order using Fisher-Yates with deterministic seed
         let mut order: Vec<usize> = (0..node_list.len()).collect();
-        let mut seed: u64 = (iter as u64).wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        let mut seed: u64 = (iter as u64)
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         for i in (1..order.len()).rev() {
             seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
             let j = (seed >> 33) as usize % (i + 1);
@@ -115,7 +117,8 @@ pub fn detect_communities(colony: &Colony, max_iterations: usize) -> CommunityRe
             }
 
             // Adopt the highest-weighted label
-            if let Some((&best_label, _)) = label_weights.iter()
+            if let Some((&best_label, _)) = label_weights
+                .iter()
                 .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
             {
                 let current = labels.get(nid).copied().unwrap_or(0);
@@ -137,7 +140,10 @@ pub fn detect_communities(colony: &Colony, max_iterations: usize) -> CommunityRe
 
     for nid in &node_list {
         if let (Some(&label), Some(node)) = (labels.get(nid), graph.get_node(nid)) {
-            community_members.entry(label).or_default().push(node.label.clone());
+            community_members
+                .entry(label)
+                .or_default()
+                .push(node.label.clone());
             assignments.insert(node.label.clone(), label);
         }
     }
@@ -153,7 +159,8 @@ pub fn detect_communities(colony: &Colony, max_iterations: usize) -> CommunityRe
         });
     }
 
-    let mut communities: Vec<Community> = community_members.into_iter()
+    let mut communities: Vec<Community> = community_members
+        .into_iter()
         .map(|(old_id, members)| {
             let new_id = renumber[&old_id];
             Community {
@@ -198,7 +205,8 @@ pub fn compute_nmi(
     }
 
     // Find nodes present in both
-    let common_nodes: Vec<&String> = assignments.keys()
+    let common_nodes: Vec<&String> = assignments
+        .keys()
         .filter(|k| gt_assignments.contains_key(*k))
         .collect();
 
@@ -232,11 +240,25 @@ pub fn compute_nmi(
     }
 
     // Compute entropies
-    let h_detected: f64 = detected_counts.values()
-        .map(|&c| if c > 0.0 { -(c / n) * (c / n).ln() } else { 0.0 })
+    let h_detected: f64 = detected_counts
+        .values()
+        .map(|&c| {
+            if c > 0.0 {
+                -(c / n) * (c / n).ln()
+            } else {
+                0.0
+            }
+        })
         .sum();
-    let h_gt: f64 = gt_counts.values()
-        .map(|&c| if c > 0.0 { -(c / n) * (c / n).ln() } else { 0.0 })
+    let h_gt: f64 = gt_counts
+        .values()
+        .map(|&c| {
+            if c > 0.0 {
+                -(c / n) * (c / n).ln()
+            } else {
+                0.0
+            }
+        })
         .sum();
 
     // NMI = 2 * MI / (H_detected + H_gt)

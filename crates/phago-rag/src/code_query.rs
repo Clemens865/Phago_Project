@@ -34,13 +34,18 @@ pub fn code_query(colony: &Colony, query: &str, max_results: usize) -> Vec<CodeQ
     // BFS with cumulative edge weight scoring
     // (cumulative_weight, node_id, depth)
     let mut frontier: Vec<(f64, phago_core::types::NodeId, usize)> = Vec::new();
-    let mut visited: std::collections::HashSet<phago_core::types::NodeId> = std::collections::HashSet::new();
+    let mut visited: std::collections::HashSet<phago_core::types::NodeId> =
+        std::collections::HashSet::new();
     let mut scored: Vec<(String, f64, phago_core::types::NodeId)> = Vec::new();
 
     for seed_id in &seed_ids {
         visited.insert(*seed_id);
         if let Some(node) = graph.get_node(seed_id) {
-            scored.push((node.label.clone(), (node.access_count as f64 + 1.0) * 10.0, *seed_id));
+            scored.push((
+                node.label.clone(),
+                (node.access_count as f64 + 1.0) * 10.0,
+                *seed_id,
+            ));
         }
         frontier.push((1.0, *seed_id, 0));
     }
@@ -86,7 +91,8 @@ pub fn code_query(colony: &Colony, query: &str, max_results: usize) -> Vec<CodeQ
         seen.insert(label.clone());
 
         // Get neighbors for "related" field
-        let mut neighbors: Vec<_> = graph.neighbors(nid)
+        let mut neighbors: Vec<_> = graph
+            .neighbors(nid)
             .into_iter()
             .filter_map(|(neighbor_id, edge)| {
                 let n = graph.get_node(&neighbor_id)?;
@@ -95,10 +101,7 @@ pub fn code_query(colony: &Colony, query: &str, max_results: usize) -> Vec<CodeQ
             .collect();
         neighbors.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
-        let related: Vec<String> = neighbors.iter()
-            .take(10)
-            .map(|(l, _)| l.clone())
-            .collect();
+        let related: Vec<String> = neighbors.iter().take(10).map(|(l, _)| l.clone()).collect();
 
         results.push(CodeQueryResult {
             label: label.clone(),

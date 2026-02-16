@@ -10,10 +10,7 @@ pub fn run() -> Result<()> {
     let session_path = current_session_path()?;
 
     if !session_path.exists() {
-        bail!(
-            "No session found. Run {} first.",
-            "phago ingest".cyan()
-        );
+        bail!("No session found. Run {} first.", "phago ingest".cyan());
     }
 
     // Load session
@@ -78,8 +75,14 @@ pub fn run() -> Result<()> {
     println!();
 
     println!("{}", "Graph Structure".blue().bold());
-    println!("  Total nodes:       {}", stats.graph_nodes.to_string().cyan());
-    println!("  Total edges:       {}", stats.graph_edges.to_string().cyan());
+    println!(
+        "  Total nodes:       {}",
+        stats.graph_nodes.to_string().cyan()
+    );
+    println!(
+        "  Total edges:       {}",
+        stats.graph_edges.to_string().cyan()
+    );
     println!("  Components:        {}", components.to_string().cyan());
     println!();
 
@@ -90,9 +93,14 @@ pub fn run() -> Result<()> {
     println!();
 
     println!("{}", "Edge Quality".blue().bold());
-    println!("  Strong edges:      {} ({:.1}%)",
+    println!(
+        "  Strong edges:      {} ({:.1}%)",
         strong_edges.to_string().green(),
-        if edge_count > 0 { (strong_edges as f64 / edge_count as f64) * 100.0 } else { 0.0 }
+        if edge_count > 0 {
+            (strong_edges as f64 / edge_count as f64) * 100.0
+        } else {
+            0.0
+        }
     );
     println!("  Avg edge weight:   {:.4}", avg_weight);
     println!();

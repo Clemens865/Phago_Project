@@ -129,7 +129,11 @@ pub struct Relationship {
 
 impl Relationship {
     /// Create a new relationship.
-    pub fn new(source: impl Into<String>, target: impl Into<String>, label: impl Into<String>) -> Self {
+    pub fn new(
+        source: impl Into<String>,
+        target: impl Into<String>,
+        label: impl Into<String>,
+    ) -> Self {
         Self {
             source: source.into(),
             target: target.into(),

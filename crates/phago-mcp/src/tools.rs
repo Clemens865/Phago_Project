@@ -5,9 +5,7 @@
 
 use crate::worker::ColonyHandle;
 use rmcp::{
-    handler::server::wrapper::Parameters,
-    handler::server::router::tool::ToolRouter,
-    model::*,
+    handler::server::router::tool::ToolRouter, handler::server::wrapper::Parameters, model::*,
     schemars, tool, tool_handler, tool_router, ServerHandler,
 };
 use serde::Deserialize;
@@ -107,10 +105,7 @@ impl PhagoTools {
         name = "phago_recall",
         description = "Query the knowledge graph with hybrid TF-IDF + graph-topology scoring. Returns concepts ranked by combined text and structural relevance."
     )]
-    async fn recall(
-        &self,
-        params: Parameters<RecallParams>,
-    ) -> Result<CallToolResult, McpError> {
+    async fn recall(&self, params: Parameters<RecallParams>) -> Result<CallToolResult, McpError> {
         let params = params.0;
         let req = phago_rag::mcp::RecallRequest {
             query: params.query,
@@ -135,10 +130,7 @@ impl PhagoTools {
         name = "phago_explore",
         description = "Explore the graph structure. Supports: 'path' (shortest path between concepts), 'centrality' (hub nodes), 'bridges' (cross-cluster connectors), 'stats' (colony metrics)."
     )]
-    async fn explore(
-        &self,
-        params: Parameters<ExploreParams>,
-    ) -> Result<CallToolResult, McpError> {
+    async fn explore(&self, params: Parameters<ExploreParams>) -> Result<CallToolResult, McpError> {
         let params = params.0;
         let req = match params.query_type.as_str() {
             "path" => {

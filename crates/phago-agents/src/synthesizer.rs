@@ -14,8 +14,8 @@
 //! of the collective.
 
 use phago_core::agent::Agent;
-use phago_core::primitives::{Apoptose, Digest, Emerge, Sense};
 use phago_core::primitives::symbiose::AgentProfile;
+use phago_core::primitives::{Apoptose, Digest, Emerge, Sense};
 use phago_core::substrate::Substrate;
 use phago_core::types::*;
 
@@ -132,8 +132,7 @@ impl Synthesizer {
                     // Check if this bridge hasn't been reported yet
                     let existing_insights = substrate.all_nodes().iter().any(|nid| {
                         substrate.get_node(nid).map_or(false, |n| {
-                            n.node_type == NodeType::Insight
-                                && n.label.contains(&node.label)
+                            n.node_type == NodeType::Insight && n.label.contains(&node.label)
                         })
                     });
 
@@ -142,9 +141,7 @@ impl Synthesizer {
                         let neighbors = substrate.neighbors(node_id);
                         let connected: Vec<String> = neighbors
                             .iter()
-                            .filter_map(|(nid, _)| {
-                                substrate.get_node(nid).map(|n| n.label.clone())
-                            })
+                            .filter_map(|(nid, _)| substrate.get_node(nid).map(|n| n.label.clone()))
                             .take(5)
                             .collect();
 
@@ -180,7 +177,9 @@ impl Synthesizer {
                     .iter()
                     .filter_map(|(nid, edge)| {
                         if edge.weight >= MIN_CLUSTER_WEIGHT {
-                            substrate.get_node(nid).map(|n| (n.label.clone(), edge.weight))
+                            substrate
+                                .get_node(nid)
+                                .map(|n| (n.label.clone(), edge.weight))
                         } else {
                             None
                         }
@@ -251,10 +250,7 @@ impl Digest for Synthesizer {
     }
 
     fn lyse(&mut self) -> Vec<String> {
-        self.engulfed
-            .take()
-            .map(|s| vec![s])
-            .unwrap_or_default()
+        self.engulfed.take().map(|s| vec![s]).unwrap_or_default()
     }
 
     fn present(&self) -> Vec<String> {
@@ -396,7 +392,9 @@ impl Agent for Synthesizer {
                         InsightType::BridgeConcept { access_count } => *access_count as f64,
                         InsightType::TopicCluster { size, avg_weight } => *size as f64 * avg_weight,
                     };
-                    score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+                    score_b
+                        .partial_cmp(&score_a)
+                        .unwrap_or(std::cmp::Ordering::Equal)
                 });
                 insights.truncate(10);
 
@@ -478,8 +476,7 @@ impl Agent for Synthesizer {
 // --- Serialization ---
 
 use crate::serialize::{
-    SerializableAgent, SerializedAgent,
-    SynthesizerState as SerializedSynthesizerState,
+    SerializableAgent, SerializedAgent, SynthesizerState as SerializedSynthesizerState,
 };
 
 impl SerializableAgent for Synthesizer {

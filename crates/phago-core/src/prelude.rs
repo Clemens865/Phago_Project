@@ -6,19 +6,10 @@
 
 // Re-export commonly used types
 pub use crate::types::{
-    AgentId, NodeId, DocumentId,
-    Position, Document,
-    Signal, SignalType, Gradient,
-    Trace, TraceType,
-    CellHealth, DeathSignal, DeathCause,
-    NodeData, NodeType, EdgeData,
-    AgentAction, FragmentPresentation,
-    DigestionResult,
-    SymbiosisEval, SymbiontInfo, SymbiosisFailure,
-    Classification,
-    BoundaryContext,
-    Orientation,
-    Tick,
+    AgentAction, AgentId, BoundaryContext, CellHealth, Classification, DeathCause, DeathSignal,
+    DigestionResult, Document, DocumentId, EdgeData, FragmentPresentation, Gradient, NodeData,
+    NodeId, NodeType, Orientation, Position, Signal, SignalType, SymbiontInfo, SymbiosisEval,
+    SymbiosisFailure, Tick, Trace, TraceType,
 };
 
 // Re-export the Agent trait
@@ -35,10 +26,9 @@ pub use crate::error::{PhagoError, Result};
 
 // Re-export semantic utilities
 pub use crate::semantic::{
-    cosine_similarity, normalized_similarity, compute_semantic_weight,
-    l2_distance, dot_product, l2_normalize, l2_normalized,
-    SemanticWiringConfig,
+    compute_semantic_weight, cosine_similarity, dot_product, l2_distance, l2_normalize,
+    l2_normalized, normalized_similarity, SemanticWiringConfig,
 };
 
 // Re-export Louvain community detection
-pub use crate::louvain::{louvain_communities, compute_modularity, LouvainResult};
+pub use crate::louvain::{compute_modularity, louvain_communities, LouvainResult};

@@ -31,23 +31,53 @@ pub enum ColonyEvent {
     /// An agent engulfed a document.
     Engulfed { id: AgentId, document: DocumentId },
     /// An agent presented fragments to the knowledge graph.
-    Presented { id: AgentId, fragment_count: usize, node_ids: Vec<NodeId> },
+    Presented {
+        id: AgentId,
+        fragment_count: usize,
+        node_ids: Vec<NodeId>,
+    },
     /// An agent deposited a trace.
-    Deposited { id: AgentId, location: SubstrateLocation },
+    Deposited {
+        id: AgentId,
+        location: SubstrateLocation,
+    },
     /// An agent wired connections in the graph.
-    Wired { id: AgentId, connection_count: usize },
+    Wired {
+        id: AgentId,
+        connection_count: usize,
+    },
     /// An agent triggered apoptosis.
     Died { signal: DeathSignal },
     /// A tick completed.
-    TickComplete { tick: Tick, alive: usize, dead_this_tick: usize },
+    TickComplete {
+        tick: Tick,
+        alive: usize,
+        dead_this_tick: usize,
+    },
     /// An agent exported its vocabulary as a capability deposit.
-    CapabilityExported { agent_id: AgentId, terms_count: usize },
+    CapabilityExported {
+        agent_id: AgentId,
+        terms_count: usize,
+    },
     /// An agent integrated vocabulary from a capability deposit.
-    CapabilityIntegrated { agent_id: AgentId, from_agent: AgentId, terms_count: usize },
+    CapabilityIntegrated {
+        agent_id: AgentId,
+        from_agent: AgentId,
+        terms_count: usize,
+    },
     /// An agent absorbed another through symbiosis.
-    Symbiosis { host: AgentId, absorbed: AgentId, host_type: String, absorbed_type: String },
+    Symbiosis {
+        host: AgentId,
+        absorbed: AgentId,
+        host_type: String,
+        absorbed_type: String,
+    },
     /// An agent's boundary dissolved, externalizing vocabulary.
-    Dissolved { agent_id: AgentId, permeability: f64, terms_externalized: usize },
+    Dissolved {
+        agent_id: AgentId,
+        permeability: f64,
+        terms_externalized: usize,
+    },
 }
 
 /// Statistics about the colony.
@@ -250,7 +280,12 @@ impl Colony {
     ///
     /// Places the document at the given position and emits an Input signal
     /// to attract nearby agents via chemotaxis.
-    pub fn ingest_document(&mut self, title: &str, content: &str, position: Position) -> DocumentId {
+    pub fn ingest_document(
+        &mut self,
+        title: &str,
+        content: &str,
+        position: Position,
+    ) -> DocumentId {
         let doc = Document {
             id: DocumentId::new(),
             title: title.to_string(),
@@ -323,7 +358,9 @@ impl Colony {
                         let existing = self.substrate.graph().find_nodes_by_label(&frag.label);
                         let node_id = if let Some(&existing_id) = existing.first() {
                             // Reinforce existing node
-                            if let Some(node) = self.substrate.graph_mut().get_node_mut(&existing_id) {
+                            if let Some(node) =
+                                self.substrate.graph_mut().get_node_mut(&existing_id)
+                            {
                                 node.access_count += 1;
                             }
                             existing_id
@@ -357,10 +394,16 @@ impl Colony {
                     // - If nodes have embeddings, modulate edge weight by similarity
                     // - weight = base_weight * (1 + similarity_influence * similarity)
                     // - Below min_similarity threshold: skip or use base weight
-                    let concept_node_ids: Vec<NodeId> = node_ids.iter().filter(|id| {
-                        self.substrate.graph().get_node(id)
-                            .map_or(false, |n| n.node_type == NodeType::Concept)
-                    }).copied().collect();
+                    let concept_node_ids: Vec<NodeId> = node_ids
+                        .iter()
+                        .filter(|id| {
+                            self.substrate
+                                .graph()
+                                .get_node(id)
+                                .map_or(false, |n| n.node_type == NodeType::Concept)
+                        })
+                        .copied()
+                        .collect();
                     let mut wire_events = Vec::new();
                     for i in 0..concept_node_ids.len() {
                         for j in (i + 1)..concept_node_ids.len() {
@@ -368,9 +411,15 @@ impl Colony {
                             let to = concept_node_ids[j];
 
                             // Get embeddings for semantic wiring (clone to avoid borrow issues)
-                            let embedding_from = self.substrate.graph().get_node(&from)
+                            let embedding_from = self
+                                .substrate
+                                .graph()
+                                .get_node(&from)
                                 .and_then(|n| n.embedding.clone());
-                            let embedding_to = self.substrate.graph().get_node(&to)
+                            let embedding_to = self
+                                .substrate
+                                .graph()
+                                .get_node(&to)
                                 .and_then(|n| n.embedding.clone());
 
                             // Compute semantic weight before mutating graph
@@ -382,7 +431,8 @@ impl Colony {
                                 &self.semantic_wiring,
                             );
 
-                            if let Some(edge) = self.substrate.graph_mut().get_edge_mut(&from, &to) {
+                            if let Some(edge) = self.substrate.graph_mut().get_edge_mut(&from, &to)
+                            {
                                 // Edge already exists: strengthen it (Hebbian reinforcement)
                                 // Use semantic similarity to modulate reinforcement
                                 let reinforcement = semantic_weight.unwrap_or(base_weight);
@@ -397,12 +447,16 @@ impl Colony {
 
                                 // Only create edge if semantic check passes
                                 if let Some(w) = weight {
-                                    self.substrate.set_edge(from, to, EdgeData {
-                                        weight: w,
-                                        co_activations: 1,
-                                        created_tick: tick,
-                                        last_activated_tick: tick,
-                                    });
+                                    self.substrate.set_edge(
+                                        from,
+                                        to,
+                                        EdgeData {
+                                            weight: w,
+                                            co_activations: 1,
+                                            created_tick: tick,
+                                            last_activated_tick: tick,
+                                        },
+                                    );
                                     wire_events.push((from, to));
                                 }
                             }
@@ -442,9 +496,15 @@ impl Colony {
                     let mut wired_count = 0;
                     for (from, to, base_weight) in &connections {
                         // Get embeddings for semantic wiring (clone to avoid borrow issues)
-                        let embedding_from = self.substrate.graph().get_node(from)
+                        let embedding_from = self
+                            .substrate
+                            .graph()
+                            .get_node(from)
                             .and_then(|n| n.embedding.clone());
-                        let embedding_to = self.substrate.graph().get_node(to)
+                        let embedding_to = self
+                            .substrate
+                            .graph()
+                            .get_node(to)
                             .and_then(|n| n.embedding.clone());
 
                         // Compute semantic weight before mutating graph
@@ -461,12 +521,16 @@ impl Colony {
                                 edge.co_activations += 1;
                                 edge.last_activated_tick = tick;
                             } else {
-                                self.substrate.set_edge(*from, *to, EdgeData {
-                                    weight: w,
-                                    co_activations: 1,
-                                    created_tick: tick,
-                                    last_activated_tick: tick,
-                                });
+                                self.substrate.set_edge(
+                                    *from,
+                                    *to,
+                                    EdgeData {
+                                        weight: w,
+                                        co_activations: 1,
+                                        created_tick: tick,
+                                        last_activated_tick: tick,
+                                    },
+                                );
                             }
                             wired_count += 1;
                         }
@@ -484,9 +548,10 @@ impl Colony {
                     let agent_pos = self.agents[idx].position();
                     if let Some(vocab_bytes) = self.agents[idx].export_vocabulary() {
                         // Count terms for event
-                        let terms_count = serde_json::from_slice::<VocabularyCapability>(&vocab_bytes)
-                            .map(|v| v.terms.len())
-                            .unwrap_or(0);
+                        let terms_count =
+                            serde_json::from_slice::<VocabularyCapability>(&vocab_bytes)
+                                .map(|v| v.terms.len())
+                                .unwrap_or(0);
 
                         // Deposit as CapabilityDeposit trace at agent position
                         let trace = Trace {
@@ -496,10 +561,8 @@ impl Colony {
                             tick: self.substrate.current_tick(),
                             payload: vocab_bytes,
                         };
-                        self.substrate.deposit_trace(
-                            &SubstrateLocation::Spatial(agent_pos),
-                            trace,
-                        );
+                        self.substrate
+                            .deposit_trace(&SubstrateLocation::Spatial(agent_pos), trace);
 
                         // Emit Capability signal to attract other agents
                         self.substrate.emit_signal(Signal::new(
@@ -525,7 +588,8 @@ impl Colony {
                     if let Some(target_idx) = self.agents.iter().position(|a| a.id() == target_id) {
                         // Build target's profile and extract vocabulary
                         let target_profile = self.agents[target_idx].profile();
-                        let target_vocab = self.agents[target_idx].export_vocabulary()
+                        let target_vocab = self.agents[target_idx]
+                            .export_vocabulary()
                             .unwrap_or_default();
 
                         // Evaluate symbiosis
@@ -607,7 +671,11 @@ impl Colony {
                     // Reuse cached vocab_terms instead of calling externalize_vocabulary again
                     let mut terms_externalized = 0usize;
                     for term in &vocab_terms {
-                        let matching: Vec<NodeId> = self.substrate.graph().find_nodes_by_exact_label(term).to_vec();
+                        let matching: Vec<NodeId> = self
+                            .substrate
+                            .graph()
+                            .find_nodes_by_exact_label(term)
+                            .to_vec();
                         for nid in &matching {
                             if let Some(node) = self.substrate.graph_mut().get_node_mut(nid) {
                                 node.access_count += 1;
@@ -627,7 +695,8 @@ impl Colony {
                 // Any permeability > 0: internalize nearby concept labels
                 if permeability > 0.0 {
                     let all_nodes = self.substrate.graph().all_nodes();
-                    let nearby_labels: Vec<String> = all_nodes.iter()
+                    let nearby_labels: Vec<String> = all_nodes
+                        .iter()
                         .filter_map(|nid| {
                             let node = self.substrate.graph().get_node(nid)?;
                             if node.position.distance_to(&agent_pos) <= 15.0
@@ -645,15 +714,11 @@ impl Colony {
                 }
 
                 // Capability integration: check for CapabilityDeposit traces near agent
-                let traces = self.substrate.traces_near(
-                    &agent_pos,
-                    10.0,
-                    &TraceType::CapabilityDeposit,
-                );
+                let traces =
+                    self.substrate
+                        .traces_near(&agent_pos, 10.0, &TraceType::CapabilityDeposit);
                 for trace in &traces {
-                    if trace.agent_id != agent_id
-                        && !trace.payload.is_empty()
-                    {
+                    if trace.agent_id != agent_id && !trace.payload.is_empty() {
                         let payload = trace.payload.clone();
                         let from_agent = trace.agent_id;
                         let terms_count = serde_json::from_slice::<VocabularyCapability>(&payload)
@@ -720,11 +785,18 @@ impl Colony {
         // Phase 4b: Fitness tracking — wire colony events to the tracker
         for event in &events {
             match event {
-                ColonyEvent::Presented { id, fragment_count, .. } => {
-                    self.fitness_tracker.record_concepts(id, *fragment_count as u64);
+                ColonyEvent::Presented {
+                    id, fragment_count, ..
+                } => {
+                    self.fitness_tracker
+                        .record_concepts(id, *fragment_count as u64);
                 }
-                ColonyEvent::Wired { id, connection_count } => {
-                    self.fitness_tracker.record_edges(id, *connection_count as u64);
+                ColonyEvent::Wired {
+                    id,
+                    connection_count,
+                } => {
+                    self.fitness_tracker
+                        .record_edges(id, *connection_count as u64);
                 }
                 _ => {}
             }
@@ -807,38 +879,54 @@ impl Colony {
     pub fn snapshot(&self) -> ColonySnapshot {
         let graph = self.substrate.graph();
 
-        let agents: Vec<AgentSnapshot> = self.agents.iter().map(|a| {
-            AgentSnapshot {
+        let agents: Vec<AgentSnapshot> = self
+            .agents
+            .iter()
+            .map(|a| AgentSnapshot {
                 id: a.id(),
                 agent_type: a.agent_type().to_string(),
                 position: a.position(),
                 age: a.age(),
                 permeability: a.permeability(),
                 vocabulary_size: a.vocabulary_size(),
-            }
-        }).collect();
-
-        let nodes: Vec<NodeSnapshot> = graph.all_nodes().iter().filter_map(|nid| {
-            let n = graph.get_node(nid)?;
-            Some(NodeSnapshot {
-                id: n.id,
-                label: n.label.clone(),
-                node_type: n.node_type.clone(),
-                position: n.position,
-                access_count: n.access_count,
             })
-        }).collect();
+            .collect();
 
-        let edges: Vec<EdgeSnapshot> = graph.all_edges().iter().map(|(from, to, data)| {
-            let from_label = graph.get_node(from).map(|n| n.label.clone()).unwrap_or_default();
-            let to_label = graph.get_node(to).map(|n| n.label.clone()).unwrap_or_default();
-            EdgeSnapshot {
-                from_label,
-                to_label,
-                weight: data.weight,
-                co_activations: data.co_activations,
-            }
-        }).collect();
+        let nodes: Vec<NodeSnapshot> = graph
+            .all_nodes()
+            .iter()
+            .filter_map(|nid| {
+                let n = graph.get_node(nid)?;
+                Some(NodeSnapshot {
+                    id: n.id,
+                    label: n.label.clone(),
+                    node_type: n.node_type.clone(),
+                    position: n.position,
+                    access_count: n.access_count,
+                })
+            })
+            .collect();
+
+        let edges: Vec<EdgeSnapshot> = graph
+            .all_edges()
+            .iter()
+            .map(|(from, to, data)| {
+                let from_label = graph
+                    .get_node(from)
+                    .map(|n| n.label.clone())
+                    .unwrap_or_default();
+                let to_label = graph
+                    .get_node(to)
+                    .map(|n| n.label.clone())
+                    .unwrap_or_default();
+                EdgeSnapshot {
+                    from_label,
+                    to_label,
+                    weight: data.weight,
+                    co_activations: data.co_activations,
+                }
+            })
+            .collect();
 
         ColonySnapshot {
             tick: self.substrate.current_tick(),
@@ -855,7 +943,9 @@ impl Colony {
     }
 
     /// Get a reference to the agents.
-    pub fn agents(&self) -> &[Box<dyn Agent<Input = String, Fragment = String, Presentation = Vec<String>>>] {
+    pub fn agents(
+        &self,
+    ) -> &[Box<dyn Agent<Input = String, Fragment = String, Presentation = Vec<String>>>] {
         &self.agents
     }
 
@@ -971,8 +1061,16 @@ mod tests {
 
         let stats = colony.stats();
         assert_eq!(stats.documents_digested, 1, "Document should be digested");
-        assert!(stats.graph_nodes > 0, "Should have concept nodes: got {}", stats.graph_nodes);
-        assert!(stats.graph_edges > 0, "Should have edges: got {}", stats.graph_edges);
+        assert!(
+            stats.graph_nodes > 0,
+            "Should have concept nodes: got {}",
+            stats.graph_nodes
+        );
+        assert!(
+            stats.graph_edges > 0,
+            "Should have edges: got {}",
+            stats.graph_edges
+        );
     }
 
     #[test]
@@ -1004,10 +1102,17 @@ mod tests {
         colony.run(20);
 
         let stats = colony.stats();
-        assert_eq!(stats.documents_digested, 2, "Both documents should be digested");
+        assert_eq!(
+            stats.documents_digested, 2,
+            "Both documents should be digested"
+        );
         // Shared concepts (cell, membrane, transport, proteins) should create
         // overlapping graph nodes and strengthen edges
-        assert!(stats.graph_nodes >= 5, "Expected at least 5 concept nodes, got {}", stats.graph_nodes);
+        assert!(
+            stats.graph_nodes >= 5,
+            "Expected at least 5 concept nodes, got {}",
+            stats.graph_nodes
+        );
     }
 
     #[test]
@@ -1042,8 +1147,7 @@ mod tests {
     fn with_semantic_wiring_configures_colony() {
         use phago_core::semantic::SemanticWiringConfig;
 
-        let colony = Colony::new()
-            .with_semantic_wiring(SemanticWiringConfig::strict());
+        let colony = Colony::new().with_semantic_wiring(SemanticWiringConfig::strict());
 
         let config = colony.semantic_wiring_config();
         assert!(config.require_embeddings);
@@ -1054,11 +1158,10 @@ mod tests {
     fn semantic_wiring_boosts_similar_concept_edges() {
         use phago_core::semantic::SemanticWiringConfig;
 
-        let mut colony = Colony::new()
-            .with_semantic_wiring(SemanticWiringConfig::default());
+        let mut colony = Colony::new().with_semantic_wiring(SemanticWiringConfig::default());
 
         // Manually add two nodes with similar embeddings
-        let emb_a = vec![1.0, 0.0, 0.0];  // Unit vector along x
+        let emb_a = vec![1.0, 0.0, 0.0]; // Unit vector along x
         let emb_b = vec![0.95, 0.31, 0.0]; // ~18° from emb_a (high similarity)
 
         let node_a = colony.substrate_mut().add_node(NodeData {
@@ -1082,14 +1185,22 @@ mod tests {
         });
 
         // Wire them manually using WireNodes action
-        colony.substrate_mut().set_edge(node_a, node_b, EdgeData {
-            weight: 0.1,
-            co_activations: 1,
-            created_tick: 0,
-            last_activated_tick: 0,
-        });
+        colony.substrate_mut().set_edge(
+            node_a,
+            node_b,
+            EdgeData {
+                weight: 0.1,
+                co_activations: 1,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
 
-        let edge = colony.substrate().graph().get_edge(&node_a, &node_b).unwrap();
+        let edge = colony
+            .substrate()
+            .graph()
+            .get_edge(&node_a, &node_b)
+            .unwrap();
         assert!(edge.weight >= 0.1, "Edge should have at least base weight");
     }
 
@@ -1097,8 +1208,7 @@ mod tests {
     fn semantic_wiring_with_no_embeddings_uses_base_weight() {
         use phago_core::semantic::SemanticWiringConfig;
 
-        let mut colony = Colony::new()
-            .with_semantic_wiring(SemanticWiringConfig::default());
+        let mut colony = Colony::new().with_semantic_wiring(SemanticWiringConfig::default());
 
         // Add two nodes WITHOUT embeddings
         let node_a = colony.substrate_mut().add_node(NodeData {
@@ -1122,15 +1232,27 @@ mod tests {
         });
 
         // Wire them
-        colony.substrate_mut().set_edge(node_a, node_b, EdgeData {
-            weight: 0.1,
-            co_activations: 1,
-            created_tick: 0,
-            last_activated_tick: 0,
-        });
+        colony.substrate_mut().set_edge(
+            node_a,
+            node_b,
+            EdgeData {
+                weight: 0.1,
+                co_activations: 1,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
 
-        let edge = colony.substrate().graph().get_edge(&node_a, &node_b).unwrap();
+        let edge = colony
+            .substrate()
+            .graph()
+            .get_edge(&node_a, &node_b)
+            .unwrap();
         // With default config, no embeddings means base weight is used
-        assert!((edge.weight - 0.1).abs() < 0.01, "Edge should use base weight: got {}", edge.weight);
+        assert!(
+            (edge.weight - 0.1).abs() < 0.01,
+            "Edge should use base weight: got {}",
+            edge.weight
+        );
     }
 }

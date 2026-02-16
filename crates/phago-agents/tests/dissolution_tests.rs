@@ -7,7 +7,11 @@ use phago_core::types::*;
 #[test]
 fn permeability_zero_initially() {
     let d = Digester::new(Position::new(0.0, 0.0));
-    assert_eq!(d.permeability(), 0.0, "fresh digester should have zero permeability");
+    assert_eq!(
+        d.permeability(),
+        0.0,
+        "fresh digester should have zero permeability"
+    );
 }
 
 #[test]
@@ -24,9 +28,11 @@ fn permeability_increases_with_context() {
     };
     d.modulate_boundary(&context);
 
-    assert!(d.permeability() > 0.5,
+    assert!(
+        d.permeability() > 0.5,
         "high context should produce permeability > 0.5, got {}",
-        d.permeability());
+        d.permeability()
+    );
 }
 
 #[test]
@@ -45,8 +51,13 @@ fn externalize_includes_all_vocab() {
     let externalized = d.externalize_vocabulary();
 
     // Should contain own presentations
-    assert!(externalized.contains(&"cell".to_string()), "should contain own term 'cell'");
+    assert!(
+        externalized.contains(&"cell".to_string()),
+        "should contain own term 'cell'"
+    );
     // Should contain integrated terms
-    assert!(externalized.contains(&"mitochondria".to_string()),
-        "should contain integrated term 'mitochondria'");
+    assert!(
+        externalized.contains(&"mitochondria".to_string()),
+        "should contain integrated term 'mitochondria'"
+    );
 }

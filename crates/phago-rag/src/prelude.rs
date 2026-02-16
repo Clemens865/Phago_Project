@@ -5,18 +5,18 @@
 //! ```
 
 // Re-export query types
-pub use crate::query::{Query, QueryResult, QueryEngine};
+pub use crate::baseline::{random_query, static_graph_query, tfidf_query};
 pub use crate::hybrid::{hybrid_query, HybridConfig, HybridResult};
-pub use crate::scoring::{QueryScores, AggregateScores, precision_at_k, mrr, ndcg_at_k, score_query, aggregate};
-pub use crate::baseline::{tfidf_query, static_graph_query, random_query};
+pub use crate::query::{Query, QueryEngine, QueryResult};
+pub use crate::scoring::{
+    aggregate, mrr, ndcg_at_k, precision_at_k, score_query, AggregateScores, QueryScores,
+};
 
 // Re-export MCP types
 pub use crate::mcp::{
-    phago_remember, phago_recall, phago_explore,
-    RememberRequest, RememberResponse,
-    RecallRequest, RecallResponse, RecallResult,
-    ExploreRequest, ExploreResponse,
-    CentralityEntry, BridgeEntry,
+    phago_explore, phago_recall, phago_remember, BridgeEntry, CentralityEntry, ExploreRequest,
+    ExploreResponse, RecallRequest, RecallResponse, RecallResult, RememberRequest,
+    RememberResponse,
 };
 
 // Re-export from runtime

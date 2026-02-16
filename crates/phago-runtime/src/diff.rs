@@ -139,8 +139,18 @@ pub fn diff_sessions(before: &GraphState, after: &GraphState) -> GraphDiff {
     }
 
     // Sort by absolute delta
-    edges_strengthened.sort_by(|a, b| b.delta().abs().partial_cmp(&a.delta().abs()).unwrap_or(std::cmp::Ordering::Equal));
-    edges_weakened.sort_by(|a, b| b.delta().abs().partial_cmp(&a.delta().abs()).unwrap_or(std::cmp::Ordering::Equal));
+    edges_strengthened.sort_by(|a, b| {
+        b.delta()
+            .abs()
+            .partial_cmp(&a.delta().abs())
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    edges_weakened.sort_by(|a, b| {
+        b.delta()
+            .abs()
+            .partial_cmp(&a.delta().abs())
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     GraphDiff {
         nodes_added,
@@ -339,10 +349,7 @@ mod tests {
         };
 
         let after = GraphState {
-            nodes: vec![
-                make_node("cell"),
-                make_node("membrane"),
-            ],
+            nodes: vec![make_node("cell"), make_node("membrane")],
             edges: vec![make_edge("cell", "membrane", 0.5)],
             agents: vec![],
             metadata: make_metadata(10, 2, 1),

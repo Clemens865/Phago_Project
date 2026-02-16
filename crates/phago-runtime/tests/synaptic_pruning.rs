@@ -6,9 +6,9 @@
 //! 3. Caps per-node degree via competitive pruning
 
 use phago_agents::digester::Digester;
+use phago_core::topology::TopologyGraph;
 use phago_core::types::*;
 use phago_runtime::colony::Colony;
-use phago_core::topology::TopologyGraph;
 
 #[test]
 fn stale_edges_decay_while_active_edges_survive() {
@@ -42,7 +42,9 @@ fn stale_edges_decay_while_active_edges_survive() {
 
     // Spawn digesters to process everything
     for _ in 0..3 {
-        colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(200)));
+        colony.spawn(Box::new(
+            Digester::new(Position::new(0.0, 0.0)).with_max_idle(200),
+        ));
     }
 
     // Let agents build the graph
@@ -64,15 +66,24 @@ fn stale_edges_decay_while_active_edges_survive() {
 
     if !cell_nodes.is_empty() && !membrane_nodes.is_empty() {
         if let Some(edge) = graph.get_edge(&cell_nodes[0], &membrane_nodes[0]) {
-            println!("cell-membrane edge: weight={:.3}, co_activations={}", edge.weight, edge.co_activations);
-            assert!(edge.co_activations >= 2, "Shared terms should have multiple co-activations");
+            println!(
+                "cell-membrane edge: weight={:.3}, co_activations={}",
+                edge.weight, edge.co_activations
+            );
+            assert!(
+                edge.co_activations >= 2,
+                "Shared terms should have multiple co-activations"
+            );
         }
     }
 
     if !quantum_nodes.is_empty() {
         let q_neighbors = graph.neighbors(&quantum_nodes[0]);
         if let Some((_, edge)) = q_neighbors.first() {
-            println!("quantum edge: weight={:.3}, co_activations={}", edge.weight, edge.co_activations);
+            println!(
+                "quantum edge: weight={:.3}, co_activations={}",
+                edge.weight, edge.co_activations
+            );
         }
     }
 
@@ -137,12 +148,16 @@ fn competitive_pruning_enforces_degree_cap() {
             created_tick: 0,
             embedding: None,
         });
-        graph.set_edge(hub_id, spoke_id, EdgeData {
-            weight: 0.1 + (i as f64) * 0.02, // weights from 0.1 to 0.88
-            co_activations: 1,
-            created_tick: 0,
-            last_activated_tick: 0,
-        });
+        graph.set_edge(
+            hub_id,
+            spoke_id,
+            EdgeData {
+                weight: 0.1 + (i as f64) * 0.02, // weights from 0.1 to 0.88
+                co_activations: 1,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
     }
 
     assert_eq!(graph.edge_count(), 40);
@@ -150,12 +165,24 @@ fn competitive_pruning_enforces_degree_cap() {
     // Prune to max degree 30
     let pruned = graph.prune_to_max_degree(30);
 
-    println!("Pruned {} edges, remaining: {}", pruned.len(), graph.edge_count());
-    assert!(graph.edge_count() <= 30, "Should enforce degree cap: got {}", graph.edge_count());
+    println!(
+        "Pruned {} edges, remaining: {}",
+        pruned.len(),
+        graph.edge_count()
+    );
+    assert!(
+        graph.edge_count() <= 30,
+        "Should enforce degree cap: got {}",
+        graph.edge_count()
+    );
 
     // The 10 weakest edges should have been removed
     let hub_neighbors = graph.neighbors(&hub_id);
     for (_, edge) in &hub_neighbors {
-        assert!(edge.weight >= 0.3, "Weakest remaining edge should be >= 0.3, got {:.3}", edge.weight);
+        assert!(
+            edge.weight >= 0.3,
+            "Weakest remaining edge should be >= 0.3, got {:.3}",
+            edge.weight
+        );
     }
 }

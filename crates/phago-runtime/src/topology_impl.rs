@@ -159,7 +159,12 @@ impl TopologyGraph for PetTopologyGraph {
         for edge_idx in self.graph.edge_indices() {
             if self.graph[edge_idx].weight < prune_threshold {
                 let (a, b) = self.graph.edge_endpoints(edge_idx).unwrap();
-                to_remove.push((edge_idx, self.graph[a].id, self.graph[b].id, self.graph[edge_idx].weight));
+                to_remove.push((
+                    edge_idx,
+                    self.graph[a].id,
+                    self.graph[b].id,
+                    self.graph[edge_idx].weight,
+                ));
             }
         }
 
@@ -215,7 +220,12 @@ impl TopologyGraph for PetTopologyGraph {
             let age = current_tick.saturating_sub(edge.created_tick);
             if age >= maturation_ticks && edge.weight < prune_threshold {
                 let (a, b) = self.graph.edge_endpoints(edge_idx).unwrap();
-                to_remove.push((edge_idx, self.graph[a].id, self.graph[b].id, self.graph[edge_idx].weight));
+                to_remove.push((
+                    edge_idx,
+                    self.graph[a].id,
+                    self.graph[b].id,
+                    self.graph[edge_idx].weight,
+                ));
             }
         }
 
@@ -264,7 +274,12 @@ impl TopologyGraph for PetTopologyGraph {
         let mut to_remove = Vec::new();
         for &edge_idx in &dropped_edges {
             if let Some((a, b)) = self.graph.edge_endpoints(edge_idx) {
-                to_remove.push((edge_idx, self.graph[a].id, self.graph[b].id, self.graph[edge_idx].weight));
+                to_remove.push((
+                    edge_idx,
+                    self.graph[a].id,
+                    self.graph[b].id,
+                    self.graph[edge_idx].weight,
+                ));
             }
         }
 
@@ -296,8 +311,8 @@ impl TopologyGraph for PetTopologyGraph {
     }
 
     fn shortest_path(&self, from: &NodeId, to: &NodeId) -> Option<(Vec<NodeId>, f64)> {
-        use std::collections::BinaryHeap;
         use std::cmp::Ordering;
+        use std::collections::BinaryHeap;
 
         let from_idx = *self.node_index.get(from)?;
         let to_idx = *self.node_index.get(to)?;
@@ -325,7 +340,10 @@ impl TopologyGraph for PetTopologyGraph {
         let mut heap = BinaryHeap::new();
 
         dist.insert(from_idx, 0.0);
-        heap.push(State { cost: 0.0, node: from_idx });
+        heap.push(State {
+            cost: 0.0,
+            node: from_idx,
+        });
 
         while let Some(State { cost, node }) = heap.pop() {
             if node == to_idx {
@@ -346,7 +364,11 @@ impl TopologyGraph for PetTopologyGraph {
             }
 
             for edge in self.graph.edges(node) {
-                let next = if edge.source() == node { edge.target() } else { edge.source() };
+                let next = if edge.source() == node {
+                    edge.target()
+                } else {
+                    edge.source()
+                };
                 // Cost = 1/weight so strong edges are "shorter"
                 let edge_cost = 1.0 / edge.weight().weight.max(0.001);
                 let next_cost = cost + edge_cost;
@@ -354,7 +376,10 @@ impl TopologyGraph for PetTopologyGraph {
                 if next_cost < *dist.get(&next).unwrap_or(&f64::INFINITY) {
                     dist.insert(next, next_cost);
                     prev.insert(next, node);
-                    heap.push(State { cost: next_cost, node: next });
+                    heap.push(State {
+                        cost: next_cost,
+                        node: next,
+                    });
                 }
             }
         }
@@ -384,7 +409,9 @@ impl TopologyGraph for PetTopologyGraph {
             let i = (seed >> 33) as usize % n;
             seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
             let j = (seed >> 33) as usize % n;
-            if i == j { continue; }
+            if i == j {
+                continue;
+            }
             sampled += 1;
 
             let from_id = self.graph[nodes[i]].id;
@@ -418,7 +445,9 @@ impl TopologyGraph for PetTopologyGraph {
 
         for &node_idx in &nodes {
             let degree = self.graph.edges(node_idx).count();
-            if degree == 0 { continue; }
+            if degree == 0 {
+                continue;
+            }
 
             // Simulate removal: count how many components would result
             // by doing BFS on the remaining graph
@@ -427,7 +456,9 @@ impl TopologyGraph for PetTopologyGraph {
             let mut components = 0;
 
             for &start in &nodes {
-                if visited.contains(&start) { continue; }
+                if visited.contains(&start) {
+                    continue;
+                }
                 components += 1;
                 // BFS from start, skipping node_idx
                 let mut queue = std::collections::VecDeque::new();
@@ -435,7 +466,11 @@ impl TopologyGraph for PetTopologyGraph {
                 visited.insert(start);
                 while let Some(current) = queue.pop_front() {
                     for edge in self.graph.edges(current) {
-                        let next = if edge.source() == current { edge.target() } else { edge.source() };
+                        let next = if edge.source() == current {
+                            edge.target()
+                        } else {
+                            edge.source()
+                        };
                         if !visited.contains(&next) {
                             visited.insert(next);
                             queue.push_back(next);
@@ -461,14 +496,20 @@ impl TopologyGraph for PetTopologyGraph {
         let mut components = 0;
 
         for node_idx in self.graph.node_indices() {
-            if visited.contains(&node_idx) { continue; }
+            if visited.contains(&node_idx) {
+                continue;
+            }
             components += 1;
             let mut queue = std::collections::VecDeque::new();
             queue.push_back(node_idx);
             visited.insert(node_idx);
             while let Some(current) = queue.pop_front() {
                 for edge in self.graph.edges(current) {
-                    let next = if edge.source() == current { edge.target() } else { edge.source() };
+                    let next = if edge.source() == current {
+                        edge.target()
+                    } else {
+                        edge.source()
+                    };
                     if !visited.contains(&next) {
                         visited.insert(next);
                         queue.push_back(next);
@@ -591,19 +632,27 @@ mod tests {
         graph.add_node(n3);
 
         // Strong edge
-        graph.set_edge(id1, id2, EdgeData {
-            weight: 1.0,
-            co_activations: 10,
-            created_tick: 0,
-            last_activated_tick: 0,
-        });
+        graph.set_edge(
+            id1,
+            id2,
+            EdgeData {
+                weight: 1.0,
+                co_activations: 10,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
         // Weak edge
-        graph.set_edge(id2, id3, EdgeData {
-            weight: 0.1,
-            co_activations: 1,
-            created_tick: 0,
-            last_activated_tick: 0,
-        });
+        graph.set_edge(
+            id2,
+            id3,
+            EdgeData {
+                weight: 0.1,
+                co_activations: 1,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
 
         // Decay by 50% — strong edge survives, weak edge gets pruned
         let pruned = graph.decay_edges(0.5, 0.08);
@@ -660,19 +709,27 @@ mod tests {
         graph.add_node(n3);
 
         // Recently activated edge
-        graph.set_edge(id1, id2, EdgeData {
-            weight: 0.5,
-            co_activations: 5,
-            created_tick: 0,
-            last_activated_tick: 95, // activated 5 ticks ago
-        });
+        graph.set_edge(
+            id1,
+            id2,
+            EdgeData {
+                weight: 0.5,
+                co_activations: 5,
+                created_tick: 0,
+                last_activated_tick: 95, // activated 5 ticks ago
+            },
+        );
         // Stale edge (same initial weight, same co_activations but not activated recently)
-        graph.set_edge(id2, id3, EdgeData {
-            weight: 0.5,
-            co_activations: 1,
-            created_tick: 0,
-            last_activated_tick: 10, // activated 90 ticks ago
-        });
+        graph.set_edge(
+            id2,
+            id3,
+            EdgeData {
+                weight: 0.5,
+                co_activations: 1,
+                created_tick: 0,
+                last_activated_tick: 10, // activated 90 ticks ago
+            },
+        );
 
         let current_tick = 100;
         graph.decay_edges_activity(0.005, 0.01, current_tick, 4.0, 30);
@@ -702,12 +759,16 @@ mod tests {
             let nid = n.id;
             graph.add_node(n);
             // Assign decreasing weights so we know which survive
-            graph.set_edge(hub_id, nid, EdgeData {
-                weight: 1.0 - (i as f64 * 0.02), // 1.0, 0.98, 0.96, ...
-                co_activations: 1,
-                created_tick: 0,
-                last_activated_tick: 0,
-            });
+            graph.set_edge(
+                hub_id,
+                nid,
+                EdgeData {
+                    weight: 1.0 - (i as f64 * 0.02), // 1.0, 0.98, 0.96, ...
+                    co_activations: 1,
+                    created_tick: 0,
+                    last_activated_tick: 0,
+                },
+            );
             neighbor_ids.push(nid);
         }
 
@@ -728,7 +789,11 @@ mod tests {
         let hub_neighbors = graph.neighbors(&hub_id);
         assert_eq!(hub_neighbors.len(), 10);
         for (_, edge) in &hub_neighbors {
-            assert!(edge.weight >= 0.8, "surviving edges should be the strongest, got {:.2}", edge.weight);
+            assert!(
+                edge.weight >= 0.8,
+                "surviving edges should be the strongest, got {:.2}",
+                edge.weight
+            );
         }
 
         // Now test with a clique where all nodes exceed max_degree
@@ -747,12 +812,16 @@ mod tests {
         for i in 0..n_nodes {
             for j in (i + 1)..n_nodes {
                 let dist = (j - i) as f64;
-                clique.set_edge(ids[i], ids[j], EdgeData {
-                    weight: 1.0 - dist / n_nodes as f64,
-                    co_activations: 1,
-                    created_tick: 0,
-                    last_activated_tick: 0,
-                });
+                clique.set_edge(
+                    ids[i],
+                    ids[j],
+                    EdgeData {
+                        weight: 1.0 - dist / n_nodes as f64,
+                        co_activations: 1,
+                        created_tick: 0,
+                        last_activated_tick: 0,
+                    },
+                );
             }
         }
         let initial_edges = clique.edge_count();
@@ -794,9 +863,36 @@ mod tests {
         graph.add_node(a);
         graph.add_node(b);
         graph.add_node(c);
-        graph.set_edge(id_a, id_b, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
-        graph.set_edge(id_b, id_c, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
-        graph.set_edge(id_a, id_c, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
+        graph.set_edge(
+            id_a,
+            id_b,
+            EdgeData {
+                weight: 1.0,
+                co_activations: 5,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
+        graph.set_edge(
+            id_b,
+            id_c,
+            EdgeData {
+                weight: 1.0,
+                co_activations: 5,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
+        graph.set_edge(
+            id_a,
+            id_c,
+            EdgeData {
+                weight: 1.0,
+                co_activations: 5,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
 
         // Cluster 2: d, e, f (fully connected)
         let d = make_node("d", 0);
@@ -808,20 +904,65 @@ mod tests {
         graph.add_node(d);
         graph.add_node(e);
         graph.add_node(f);
-        graph.set_edge(id_d, id_e, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
-        graph.set_edge(id_e, id_f, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
-        graph.set_edge(id_d, id_f, EdgeData { weight: 1.0, co_activations: 5, created_tick: 0, last_activated_tick: 0 });
+        graph.set_edge(
+            id_d,
+            id_e,
+            EdgeData {
+                weight: 1.0,
+                co_activations: 5,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
+        graph.set_edge(
+            id_e,
+            id_f,
+            EdgeData {
+                weight: 1.0,
+                co_activations: 5,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
+        graph.set_edge(
+            id_d,
+            id_f,
+            EdgeData {
+                weight: 1.0,
+                co_activations: 5,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
 
         // Weak inter-cluster connection
-        graph.set_edge(id_c, id_d, EdgeData { weight: 0.1, co_activations: 1, created_tick: 0, last_activated_tick: 0 });
+        graph.set_edge(
+            id_c,
+            id_d,
+            EdgeData {
+                weight: 0.1,
+                co_activations: 1,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
 
         let result = graph.louvain_communities();
 
         // Should find 2 communities
-        assert_eq!(result.communities.len(), 2, "Expected 2 communities, found {}", result.communities.len());
+        assert_eq!(
+            result.communities.len(),
+            2,
+            "Expected 2 communities, found {}",
+            result.communities.len()
+        );
 
         // Modularity should be positive
-        assert!(result.modularity > 0.0, "Modularity should be positive, got {}", result.modularity);
+        assert!(
+            result.modularity > 0.0,
+            "Modularity should be positive, got {}",
+            result.modularity
+        );
 
         // Each community should have 3 nodes
         let sizes: Vec<usize> = result.communities.iter().map(|c| c.len()).collect();
@@ -843,19 +984,27 @@ mod tests {
         graph.add_node(n3);
 
         // High co_activation edge, but stale
-        graph.set_edge(id1, id2, EdgeData {
-            weight: 0.3,
-            co_activations: 20, // well-established connection
-            created_tick: 0,
-            last_activated_tick: 10,
-        });
+        graph.set_edge(
+            id1,
+            id2,
+            EdgeData {
+                weight: 0.3,
+                co_activations: 20, // well-established connection
+                created_tick: 0,
+                last_activated_tick: 10,
+            },
+        );
         // Low co_activation edge, equally stale
-        graph.set_edge(id2, id3, EdgeData {
-            weight: 0.3,
-            co_activations: 1, // weak connection
-            created_tick: 0,
-            last_activated_tick: 10,
-        });
+        graph.set_edge(
+            id2,
+            id3,
+            EdgeData {
+                weight: 0.3,
+                co_activations: 1, // weak connection
+                created_tick: 0,
+                last_activated_tick: 10,
+            },
+        );
 
         // Run many decay rounds
         for tick in 100..120 {

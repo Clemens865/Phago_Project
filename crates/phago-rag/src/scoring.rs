@@ -36,7 +36,10 @@ pub fn precision_at_k(retrieved: &[String], relevant: &HashSet<String>, k: usize
     if top_k.is_empty() {
         return 0.0;
     }
-    let hits = top_k.iter().filter(|r| relevant.contains(r.as_str())).count();
+    let hits = top_k
+        .iter()
+        .filter(|r| relevant.contains(r.as_str()))
+        .count();
     hits as f64 / top_k.len() as f64
 }
 
@@ -46,7 +49,10 @@ pub fn recall_at_k(retrieved: &[String], relevant: &HashSet<String>, k: usize) -
         return 0.0;
     }
     let top_k: Vec<&String> = retrieved.iter().take(k).collect();
-    let hits = top_k.iter().filter(|r| relevant.contains(r.as_str())).count();
+    let hits = top_k
+        .iter()
+        .filter(|r| relevant.contains(r.as_str()))
+        .count();
     hits as f64 / relevant.len() as f64
 }
 
@@ -76,7 +82,11 @@ fn dcg(retrieved: &[String], relevant: &HashSet<String>, k: usize) -> f64 {
         .take(k)
         .enumerate()
         .map(|(i, item)| {
-            let rel = if relevant.contains(item.as_str()) { 1.0 } else { 0.0 };
+            let rel = if relevant.contains(item.as_str()) {
+                1.0
+            } else {
+                0.0
+            };
             rel / (i as f64 + 2.0).log2()
         })
         .sum()
@@ -139,7 +149,10 @@ mod tests {
     #[test]
     fn perfect_precision() {
         let relevant: HashSet<String> = ["a", "b", "c"].iter().map(|s| s.to_string()).collect();
-        let retrieved: Vec<String> = ["a", "b", "c", "d", "e"].iter().map(|s| s.to_string()).collect();
+        let retrieved: Vec<String> = ["a", "b", "c", "d", "e"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
         assert!((precision_at_k(&retrieved, &relevant, 3) - 1.0).abs() < 1e-10);
     }
 

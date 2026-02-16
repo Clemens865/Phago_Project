@@ -112,7 +112,9 @@ pub fn random_query(colony: &Colony, max_results: usize, seed: u64) -> Vec<Strin
     let mut indices: Vec<usize> = (0..all_nodes.len()).collect();
     let mut rng_state = seed;
     for i in (1..indices.len()).rev() {
-        rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        rng_state = rng_state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         let j = (rng_state >> 33) as usize % (i + 1);
         indices.swap(i, j);
     }
@@ -121,9 +123,9 @@ pub fn random_query(colony: &Colony, max_results: usize, seed: u64) -> Vec<Strin
         .into_iter()
         .take(max_results)
         .filter_map(|i| {
-            all_nodes.get(i).and_then(|nid| {
-                graph.get_node(nid).map(|n| n.label.clone())
-            })
+            all_nodes
+                .get(i)
+                .and_then(|nid| graph.get_node(nid).map(|n| n.label.clone()))
         })
         .collect()
 }
@@ -131,14 +133,12 @@ pub fn random_query(colony: &Colony, max_results: usize, seed: u64) -> Vec<Strin
 /// Simple tokenizer matching the one in query.rs.
 fn tokenize(text: &str) -> Vec<String> {
     let stopwords: std::collections::HashSet<&str> = [
-        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "do", "does", "did", "will", "would", "could",
-        "should", "may", "might", "shall", "can", "need", "to", "of", "in",
-        "for", "on", "with", "at", "by", "from", "as", "into", "through",
-        "during", "before", "after", "above", "below", "between", "out",
-        "off", "over", "under", "again", "further", "then", "once", "and",
-        "but", "or", "if", "while", "what", "which", "who", "this", "that",
-        "these", "those", "it", "its", "how",
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+        "do", "does", "did", "will", "would", "could", "should", "may", "might", "shall", "can",
+        "need", "to", "of", "in", "for", "on", "with", "at", "by", "from", "as", "into", "through",
+        "during", "before", "after", "above", "below", "between", "out", "off", "over", "under",
+        "again", "further", "then", "once", "and", "but", "or", "if", "while", "what", "which",
+        "who", "this", "that", "these", "those", "it", "its", "how",
     ]
     .iter()
     .cloned()

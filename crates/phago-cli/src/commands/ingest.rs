@@ -138,10 +138,7 @@ fn collect_files(path: &Path, extensions: &[&str]) -> Result<Vec<std::path::Path
         files.push(path.to_path_buf());
     } else if path.is_dir() {
         for entry in walkdir(path)? {
-            let ext = entry
-                .extension()
-                .and_then(|e| e.to_str())
-                .unwrap_or("");
+            let ext = entry.extension().and_then(|e| e.to_str()).unwrap_or("");
             if extensions.contains(&ext) {
                 files.push(entry);
             }

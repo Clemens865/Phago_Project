@@ -33,11 +33,7 @@ impl Corpus {
         let mut documents = Vec::new();
         let mut entries: Vec<_> = std::fs::read_dir(path)?
             .filter_map(|e| e.ok())
-            .filter(|e| {
-                e.path()
-                    .extension()
-                    .map_or(false, |ext| ext == "txt")
-            })
+            .filter(|e| e.path().extension().map_or(false, |ext| ext == "txt"))
             .collect();
 
         entries.sort_by_key(|e| e.file_name());
@@ -51,16 +47,14 @@ impl Corpus {
             let title = filename.trim_end_matches(".txt").to_string();
 
             // Infer category from filename prefix (everything before last _NN)
-            let category = title
-                .rfind('_')
-                .and_then(|pos| {
-                    let suffix = &title[pos + 1..];
-                    if suffix.chars().all(|c| c.is_ascii_digit()) {
-                        Some(title[..pos].to_string())
-                    } else {
-                        None
-                    }
-                });
+            let category = title.rfind('_').and_then(|pos| {
+                let suffix = &title[pos + 1..];
+                if suffix.chars().all(|c| c.is_ascii_digit()) {
+                    Some(title[..pos].to_string())
+                } else {
+                    None
+                }
+            });
 
             let row = i / cols;
             let col = i % cols;
@@ -198,11 +192,7 @@ impl Corpus {
     pub fn ground_truth(&self) -> std::collections::HashMap<String, String> {
         self.documents
             .iter()
-            .filter_map(|d| {
-                d.category
-                    .as_ref()
-                    .map(|c| (d.title.clone(), c.clone()))
-            })
+            .filter_map(|d| d.category.as_ref().map(|c| (d.title.clone(), c.clone())))
             .collect()
     }
 
@@ -228,7 +218,9 @@ impl Corpus {
         let per_cat = max / cats.len().max(1);
         let mut limited = Vec::new();
         for cat in &cats {
-            let cat_docs: Vec<_> = self.documents.iter()
+            let cat_docs: Vec<_> = self
+                .documents
+                .iter()
                 .filter(|d| d.category.as_deref() == Some(cat))
                 .cloned()
                 .collect();
@@ -253,7 +245,11 @@ mod tests {
     #[test]
     fn embedded_corpus_has_at_least_20_documents() {
         let corpus = Corpus::from_embedded();
-        assert!(corpus.len() >= 20, "corpus has {} docs, expected >= 20", corpus.len());
+        assert!(
+            corpus.len() >= 20,
+            "corpus has {} docs, expected >= 20",
+            corpus.len()
+        );
     }
 
     #[test]
@@ -269,7 +265,11 @@ mod tests {
     fn ground_truth_maps_all_documents() {
         let corpus = Corpus::from_embedded();
         let gt = corpus.ground_truth();
-        assert!(gt.len() >= 20, "ground truth has {} entries, expected >= 20", gt.len());
+        assert!(
+            gt.len() >= 20,
+            "ground truth has {} entries, expected >= 20",
+            gt.len()
+        );
     }
 
     #[test]
@@ -288,7 +288,11 @@ mod tests {
             .join("poc/data/corpus");
         if path.exists() {
             let corpus = Corpus::from_directory(&path).unwrap();
-            assert!(corpus.len() >= 20, "directory corpus has {} docs", corpus.len());
+            assert!(
+                corpus.len() >= 20,
+                "directory corpus has {} docs",
+                corpus.len()
+            );
         }
     }
 }

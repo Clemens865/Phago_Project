@@ -38,11 +38,7 @@ pub fn start_coordinator(port: u16, num_shards: u32) -> Result<()> {
 }
 
 /// Start a shard node and register with the coordinator.
-pub fn start_shard(
-    shard_port: u16,
-    coordinator_addr: &str,
-    shard_id: u32,
-) -> Result<()> {
+pub fn start_shard(shard_port: u16, coordinator_addr: &str, shard_id: u32) -> Result<()> {
     println!(
         "{} Starting shard {} on port {}, coordinator at {}...",
         "cluster".green().bold(),
@@ -67,10 +63,7 @@ pub fn start_shard(
         let coord_addr: std::net::SocketAddr = coordinator_addr.parse()?;
         let coord_client = connect_to_coordinator(coord_addr).await?;
 
-        let info = ShardInfo::new(
-            ShardId::new(shard_id),
-            format!("127.0.0.1:{}", shard_port),
-        );
+        let info = ShardInfo::new(ShardId::new(shard_id), format!("127.0.0.1:{}", shard_port));
 
         let registered_id = coord_client
             .register(tarpc::context::current(), info)
@@ -168,8 +161,7 @@ pub fn bench(mode: &str) -> Result<()> {
                 results.print_summary();
             }
             "scaling" => {
-                let results =
-                    phago_distributed::scaling_benchmark(100, 10).await;
+                let results = phago_distributed::scaling_benchmark(100, 10).await;
                 phago_distributed::print_scaling_results(&results);
             }
             other => {

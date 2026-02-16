@@ -54,7 +54,9 @@ impl From<&Position> for OrderedPosition {
 impl From<&SubstrateLocation> for TraceLocationKey {
     fn from(loc: &SubstrateLocation) -> Self {
         match loc {
-            SubstrateLocation::Spatial(pos) => TraceLocationKey::Spatial(OrderedPosition::from(pos)),
+            SubstrateLocation::Spatial(pos) => {
+                TraceLocationKey::Spatial(OrderedPosition::from(pos))
+            }
             SubstrateLocation::GraphNode(id) => TraceLocationKey::GraphNode(*id),
         }
     }
@@ -102,7 +104,12 @@ impl SubstrateImpl {
     }
 
     /// Get all traces of a given type within a radius of a position.
-    pub fn traces_near(&self, position: &Position, radius: f64, trace_type: &TraceType) -> Vec<&Trace> {
+    pub fn traces_near(
+        &self,
+        position: &Position,
+        radius: f64,
+        trace_type: &TraceType,
+    ) -> Vec<&Trace> {
         let r_grid = (radius * 10.0).ceil() as i64;
         let cx = (position.x * 10.0).round() as i64;
         let cy = (position.y * 10.0).round() as i64;
@@ -325,20 +332,26 @@ mod tests {
     fn trace_decay_removes_weak_traces() {
         let mut sub = SubstrateImpl::new();
         let loc = SubstrateLocation::Spatial(Position::new(0.0, 0.0));
-        sub.deposit_trace(&loc, Trace {
-            agent_id: AgentId::new(),
-            trace_type: TraceType::Visit,
-            intensity: 1.0,
-            tick: 0,
-            payload: vec![],
-        });
-        sub.deposit_trace(&loc, Trace {
-            agent_id: AgentId::new(),
-            trace_type: TraceType::Visit,
-            intensity: 0.02,
-            tick: 0,
-            payload: vec![],
-        });
+        sub.deposit_trace(
+            &loc,
+            Trace {
+                agent_id: AgentId::new(),
+                trace_type: TraceType::Visit,
+                intensity: 1.0,
+                tick: 0,
+                payload: vec![],
+            },
+        );
+        sub.deposit_trace(
+            &loc,
+            Trace {
+                agent_id: AgentId::new(),
+                trace_type: TraceType::Visit,
+                intensity: 0.02,
+                tick: 0,
+                payload: vec![],
+            },
+        );
 
         sub.decay_traces(0.5, 0.02);
         // Strong trace decays to 0.5, weak to 0.01 (removed)
@@ -368,12 +381,16 @@ mod tests {
             embedding: None,
         });
 
-        sub.set_edge(n1, n2, EdgeData {
-            weight: 0.8,
-            co_activations: 1,
-            created_tick: 0,
-            last_activated_tick: 0,
-        });
+        sub.set_edge(
+            n1,
+            n2,
+            EdgeData {
+                weight: 0.8,
+                co_activations: 1,
+                created_tick: 0,
+                last_activated_tick: 0,
+            },
+        );
 
         assert_eq!(sub.node_count(), 2);
         assert_eq!(sub.edge_count(), 1);

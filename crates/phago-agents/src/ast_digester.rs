@@ -129,10 +129,7 @@ impl AstDigester {
             for capture in m.captures {
                 let capture_name = &query.capture_names()[capture.index as usize];
                 let node = capture.node;
-                let text = node
-                    .utf8_text(source_bytes)
-                    .unwrap_or("")
-                    .to_string();
+                let text = node.utf8_text(source_bytes).unwrap_or("").to_string();
                 let line = node.start_position().row + 1;
 
                 let kind = match &**capture_name {
@@ -269,7 +266,11 @@ impl Display for Colony {
             .iter()
             .filter(|e| e.kind == CodeElementKind::Impl)
             .collect();
-        assert!(impls.len() >= 2, "Should find at least 2 impl blocks, got: {:?}", impls);
+        assert!(
+            impls.len() >= 2,
+            "Should find at least 2 impl blocks, got: {:?}",
+            impls
+        );
     }
 
     #[test]
@@ -296,7 +297,11 @@ def helper(a, b):
             .filter(|e| e.kind == CodeElementKind::Function)
             .collect();
         // hello, __init__, forward, helper
-        assert!(fns.len() >= 3, "Should find at least 3 functions, got: {:?}", fns);
+        assert!(
+            fns.len() >= 3,
+            "Should find at least 3 functions, got: {:?}",
+            fns
+        );
 
         let classes: Vec<_> = elements
             .iter()

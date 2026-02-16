@@ -196,7 +196,10 @@ pub enum CellHealth {
 impl CellHealth {
     /// Whether this health state suggests the agent should die.
     pub fn should_die(&self) -> bool {
-        matches!(self, CellHealth::Compromised | CellHealth::Redundant | CellHealth::Senescent)
+        matches!(
+            self,
+            CellHealth::Compromised | CellHealth::Redundant | CellHealth::Senescent
+        )
     }
 }
 

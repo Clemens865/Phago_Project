@@ -36,9 +36,7 @@
 //! }
 //! ```
 
-use crate::{
-    DistanceMetric, SearchResult, VectorError, VectorRecord, VectorResult, VectorStore,
-};
+use crate::{DistanceMetric, SearchResult, VectorError, VectorRecord, VectorResult, VectorStore};
 use async_trait::async_trait;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -173,7 +171,8 @@ impl PineconeStore {
 
     /// Get index statistics.
     async fn stats(&self) -> VectorResult<StatsResponse> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/describe_index_stats", self.host))
             .header("Api-Key", &self.api_key)
             .send()
@@ -236,7 +235,8 @@ impl VectorStore for PineconeStore {
             namespace: "".to_string(),
         };
 
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/vectors/upsert", self.host))
             .header("Api-Key", &self.api_key)
             .json(&request)
@@ -282,7 +282,8 @@ impl VectorStore for PineconeStore {
             },
         };
 
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/query", self.host))
             .header("Api-Key", &self.api_key)
             .json(&request)
@@ -328,7 +329,8 @@ impl VectorStore for PineconeStore {
             ids.join(",")
         );
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .header("Api-Key", &self.api_key)
             .send()
@@ -366,7 +368,8 @@ impl VectorStore for PineconeStore {
             namespace: "".to_string(),
         };
 
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/vectors/delete", self.host))
             .header("Api-Key", &self.api_key)
             .json(&request)
@@ -390,7 +393,8 @@ impl VectorStore for PineconeStore {
     async fn clear(&self) -> VectorResult<()> {
         // Pinecone requires deleting by filter or IDs
         // For a full clear, we delete the default namespace
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/vectors/delete", self.host))
             .header("Api-Key", &self.api_key)
             .json(&serde_json::json!({

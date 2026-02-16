@@ -12,10 +12,10 @@
 mod evolution_metrics;
 
 use phago_agents::digester::Digester;
-use phago_core::agent::Agent;
 use phago_agents::fitness::FitnessTracker;
 use phago_agents::genome::AgentGenome;
 use phago_agents::spawn::{FitnessSpawnPolicy, NoSpawnPolicy, RandomSpawnPolicy, SpawnPolicy};
+use phago_core::agent::Agent;
 use phago_core::types::*;
 use phago_runtime::colony::{Colony, ColonyEvent, ColonySnapshot};
 use phago_runtime::corpus::Corpus;
@@ -35,31 +35,53 @@ fn main() {
 
     // --- Condition 1: Static Population ---
     println!("── Condition 1: Static Population (11 agents) ────────");
-    let (_static_snapshots, static_checkpoints, static_evo_snapshots) =
-        run_condition("static", &corpus, total_ticks, &checkpoint_ticks,
-            11, &mut NoSpawnPolicy, 0.0);
+    let (_static_snapshots, static_checkpoints, static_evo_snapshots) = run_condition(
+        "static",
+        &corpus,
+        total_ticks,
+        &checkpoint_ticks,
+        11,
+        &mut NoSpawnPolicy,
+        0.0,
+    );
 
     // --- Condition 2: Evolving Population ---
     println!("── Condition 2: Evolving Population (5→15, mutation) ──");
-    let (evolved_snapshots, evolved_checkpoints, evolved_evo_snapshots) =
-        run_condition("evolved", &corpus, total_ticks, &checkpoint_ticks,
-            5, &mut FitnessSpawnPolicy::new(15, 0.15), 0.15);
+    let (evolved_snapshots, evolved_checkpoints, evolved_evo_snapshots) = run_condition(
+        "evolved",
+        &corpus,
+        total_ticks,
+        &checkpoint_ticks,
+        5,
+        &mut FitnessSpawnPolicy::new(15, 0.15),
+        0.15,
+    );
 
     // --- Condition 3: Random Spawn (control) ---
     println!("── Condition 3: Random Spawn (5→15, random genomes) ──");
-    let (_random_snapshots, random_checkpoints, random_evo_snapshots) =
-        run_condition("random", &corpus, total_ticks, &checkpoint_ticks,
-            5, &mut RandomSpawnPolicy::new(15), 0.5);
+    let (_random_snapshots, random_checkpoints, random_evo_snapshots) = run_condition(
+        "random",
+        &corpus,
+        total_ticks,
+        &checkpoint_ticks,
+        5,
+        &mut RandomSpawnPolicy::new(15),
+        0.5,
+    );
 
     // --- Comparison ---
     println!();
     println!("── Comparison at Checkpoints ──────────────────────────");
     println!();
 
-    println!("  {:>12} │ {:>6} {:>6} {:>7} {:>7} {:>8}",
-        "Condition", "Nodes", "Edges", "Densty", "Clustr", "AvgDeg");
-    println!("  {:─>12}─┼─{:─>6}─{:─>6}─{:─>7}─{:─>7}─{:─>8}",
-        "", "", "", "", "", "");
+    println!(
+        "  {:>12} │ {:>6} {:>6} {:>7} {:>7} {:>8}",
+        "Condition", "Nodes", "Edges", "Densty", "Clustr", "AvgDeg"
+    );
+    println!(
+        "  {:─>12}─┼─{:─>6}─{:─>6}─{:─>7}─{:─>7}─{:─>8}",
+        "", "", "", "", "", ""
+    );
 
     for (tick_idx, tick) in checkpoint_ticks.iter().enumerate() {
         println!("  Tick {}:", tick);
@@ -69,13 +91,15 @@ fn main() {
             ("Random", &random_checkpoints),
         ] {
             if let Some(m) = checkpoints.get(tick_idx) {
-                println!("    {:>10} │ {:>6} {:>6} {:>7.3} {:>7.3} {:>8.2}",
+                println!(
+                    "    {:>10} │ {:>6} {:>6} {:>7.3} {:>7.3} {:>8.2}",
                     name,
                     m.graph_richness.node_count,
                     m.graph_richness.edge_count,
                     m.graph_richness.density,
                     m.graph_richness.clustering_coefficient,
-                    m.graph_richness.avg_degree);
+                    m.graph_richness.avg_degree
+                );
             }
         }
         println!();
@@ -102,20 +126,27 @@ fn main() {
         let st_clustering = st.graph_richness.clustering_coefficient;
         let rn_clustering = rn.graph_richness.clustering_coefficient;
 
-        println!("  Final clustering: Evolved={:.3} Static={:.3} Random={:.3}",
-            ev_clustering, st_clustering, rn_clustering);
+        println!(
+            "  Final clustering: Evolved={:.3} Static={:.3} Random={:.3}",
+            ev_clustering, st_clustering, rn_clustering
+        );
 
         let ev_edges = ev.graph_richness.edge_count;
         let st_edges = st.graph_richness.edge_count;
 
-        println!("  Final edges:      Evolved={} Static={} Random={}",
-            ev_edges, st_edges, rn.graph_richness.edge_count);
+        println!(
+            "  Final edges:      Evolved={} Static={} Random={}",
+            ev_edges, st_edges, rn.graph_richness.edge_count
+        );
         println!();
 
         if ev_clustering > st_clustering || ev_edges > st_edges {
             println!("  HYPOTHESIS SUPPORTED: Evolved population produces richer graph.");
         } else {
-            println!("  HYPOTHESIS NOT SUPPORTED at tick {}. Results may improve with more ticks.", total_ticks);
+            println!(
+                "  HYPOTHESIS NOT SUPPORTED at tick {}. Results may improve with more ticks.",
+                total_ticks
+            );
         }
     }
 
@@ -132,28 +163,40 @@ fn main() {
             ("random", &random_checkpoints, &random_evo_snapshots),
         ] {
             if let Some(m) = checkpoints.get(tick_idx) {
-                let div = evo_snaps.iter()
+                let div = evo_snaps
+                    .iter()
                     .find(|s| s.tick == *tick)
                     .map(|s| s.genome_divergence)
                     .unwrap_or(0.0);
-                csv.push_str(&format!("{},{},{},{},{:.4},{:.4},{:.2},{:.4}\n",
-                    tick, name,
+                csv.push_str(&format!(
+                    "{},{},{},{},{:.4},{:.4},{:.2},{:.4}\n",
+                    tick,
+                    name,
                     m.graph_richness.node_count,
                     m.graph_richness.edge_count,
                     m.graph_richness.density,
                     m.graph_richness.clustering_coefficient,
                     m.graph_richness.avg_degree,
-                    div));
+                    div
+                ));
             }
         }
     }
-    std::fs::write("poc/agent-evolution-demo/output/agent-evolution-benchmark.csv", &csv).ok();
+    std::fs::write(
+        "poc/agent-evolution-demo/output/agent-evolution-benchmark.csv",
+        &csv,
+    )
+    .ok();
     println!();
     println!("  CSV: poc/agent-evolution-demo/output/agent-evolution-benchmark.csv");
 
     // HTML visualization (use evolved run)
     let html = phago_viz::generate_html(&evolved_snapshots, &[]);
-    std::fs::write("poc/agent-evolution-demo/output/agent-evolution.html", &html).ok();
+    std::fs::write(
+        "poc/agent-evolution-demo/output/agent-evolution.html",
+        &html,
+    )
+    .ok();
     println!("  HTML: poc/agent-evolution-demo/output/agent-evolution.html");
     println!();
     println!("══════════════════════════════════════════════════════");
@@ -168,7 +211,11 @@ fn run_condition(
     initial_agents: usize,
     spawn_policy: &mut dyn SpawnPolicy,
     mutation_rate: f64,
-) -> (Vec<ColonySnapshot>, Vec<metrics::ColonyMetrics>, Vec<evolution_metrics::EvolutionSnapshot>) {
+) -> (
+    Vec<ColonySnapshot>,
+    Vec<metrics::ColonyMetrics>,
+    Vec<evolution_metrics::EvolutionSnapshot>,
+) {
     let mut colony = Colony::new();
     corpus.ingest_into(&mut colony);
 
@@ -184,12 +231,8 @@ fn run_condition(
             AgentGenome::default_genome()
         };
 
-        let pos = Position::new(
-            (i % 5) as f64 * 5.0,
-            (i / 5) as f64 * 5.0,
-        );
-        let digester = Digester::new(pos)
-            .with_max_idle(genome.max_idle);
+        let pos = Position::new((i % 5) as f64 * 5.0, (i / 5) as f64 * 5.0);
+        let digester = Digester::new(pos).with_max_idle(genome.max_idle);
         let id = digester.id();
         agent_genomes.insert(id, genome);
         fitness_tracker.register(id, 0);
@@ -212,10 +255,15 @@ fn run_condition(
 
         for event in &events {
             match event {
-                ColonyEvent::Presented { id, fragment_count, .. } => {
+                ColonyEvent::Presented {
+                    id, fragment_count, ..
+                } => {
                     fitness_tracker.record_concepts(id, *fragment_count as u64);
                 }
-                ColonyEvent::Wired { id, connection_count } => {
+                ColonyEvent::Wired {
+                    id,
+                    connection_count,
+                } => {
                     fitness_tracker.record_edges(id, *connection_count as u64);
                 }
                 ColonyEvent::Died { signal } => {
@@ -223,7 +271,9 @@ fn run_condition(
                     let fittest = fitness_tracker.fittest(&alive_ids);
                     let fittest_genome = fittest.and_then(|f| agent_genomes.get(&f.agent_id));
                     let fittest_pos = fittest.and_then(|f| {
-                        colony.agents().iter()
+                        colony
+                            .agents()
+                            .iter()
                             .find(|a| a.id() == f.agent_id)
                             .map(|a| a.position())
                     });
@@ -235,8 +285,7 @@ fn run_condition(
                         fittest_pos,
                     ) {
                         let generation = fitness_tracker.next_generation();
-                        let digester = Digester::new(pos)
-                            .with_max_idle(genome.max_idle);
+                        let digester = Digester::new(pos).with_max_idle(genome.max_idle);
                         let id = digester.id();
                         agent_genomes.insert(id, genome);
                         fitness_tracker.register(id, generation);
@@ -260,10 +309,12 @@ fn run_condition(
 
             // Evolution snapshot
             let alive_ids: Vec<AgentId> = colony.agents().iter().map(|a| a.id()).collect();
-            let genomes: Vec<AgentGenome> = alive_ids.iter()
+            let genomes: Vec<AgentGenome> = alive_ids
+                .iter()
                 .filter_map(|id| agent_genomes.get(id).cloned())
                 .collect();
-            let fitness_data: Vec<&phago_agents::fitness::AgentFitness> = alive_ids.iter()
+            let fitness_data: Vec<&phago_agents::fitness::AgentFitness> = alive_ids
+                .iter()
                 .filter_map(|id| fitness_tracker.get(id))
                 .collect();
             let evo_snap = evolution_metrics::build_snapshot(tick, &genomes, &fitness_data);
@@ -272,9 +323,10 @@ fn run_condition(
     }
 
     let stats = colony.stats();
-    println!("  {} complete: {} nodes, {} edges, {} alive, {} total spawned",
-        name, stats.graph_nodes, stats.graph_edges,
-        stats.agents_alive, stats.total_spawned);
+    println!(
+        "  {} complete: {} nodes, {} edges, {} alive, {} total spawned",
+        name, stats.graph_nodes, stats.graph_edges, stats.agents_alive, stats.total_spawned
+    );
 
     (snapshots, checkpoint_metrics, evo_snapshots)
 }

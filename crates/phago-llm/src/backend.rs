@@ -210,7 +210,8 @@ impl MockBackend {
 
     /// Add a canned response for a prompt pattern.
     pub fn with_response(mut self, pattern: &str, response: &str) -> Self {
-        self.responses.insert(pattern.to_string(), response.to_string());
+        self.responses
+            .insert(pattern.to_string(), response.to_string());
         self
     }
 }
@@ -265,9 +266,7 @@ impl LlmBackend for MockBackend {
         // Create simple relationships between consecutive concepts
         let relationships: Vec<Relationship> = concepts
             .windows(2)
-            .map(|pair| {
-                Relationship::new(&pair[0].label, &pair[1].label, "related_to")
-            })
+            .map(|pair| Relationship::new(&pair[0].label, &pair[1].label, "related_to"))
             .collect();
 
         Ok(relationships)
@@ -280,8 +279,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_mock_backend() {
-        let backend = MockBackend::new()
-            .with_response("test", "Test response");
+        let backend = MockBackend::new().with_response("test", "Test response");
 
         let response = backend.complete("This is a test").await.unwrap();
         assert_eq!(response, "Test response");
@@ -308,10 +306,7 @@ mod tests {
             Concept::new("cell"),
         ];
 
-        let relationships = backend
-            .identify_relationships("", &concepts)
-            .await
-            .unwrap();
+        let relationships = backend.identify_relationships("", &concepts).await.unwrap();
 
         assert_eq!(relationships.len(), 2);
         assert_eq!(relationships[0].source, "mitochondria");

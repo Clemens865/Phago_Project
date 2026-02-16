@@ -11,12 +11,12 @@
 //! receptors that recognize semantic patterns, not just surface keywords.
 
 use phago_core::agent::Agent;
-use phago_core::primitives::{Apoptose, Digest, Sense};
 use phago_core::primitives::symbiose::AgentProfile;
+use phago_core::primitives::{Apoptose, Digest, Sense};
 use phago_core::signal::compute_gradient;
 use phago_core::substrate::Substrate;
 use phago_core::types::*;
-use phago_embeddings::{Embedder, Chunker, ChunkConfig, cosine_similarity};
+use phago_embeddings::{cosine_similarity, ChunkConfig, Chunker, Embedder};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
@@ -222,7 +222,8 @@ impl SemanticDigester {
         self.chunks = chunk_data.iter().map(|c| c.text.clone()).collect();
 
         // Step 2: Embed all chunks
-        self.chunk_embeddings = self.chunks
+        self.chunk_embeddings = self
+            .chunks
             .iter()
             .filter_map(|chunk| self.embedder.embed(chunk).ok())
             .collect();
@@ -231,10 +232,7 @@ impl SemanticDigester {
         self.extract_concepts();
 
         // Step 4: Generate labels for presentation
-        self.fragments = self.concepts
-            .iter()
-            .map(|c| c.label.clone())
-            .collect();
+        self.fragments = self.concepts.iter().map(|c| c.label.clone()).collect();
 
         if !self.fragments.is_empty() {
             self.useful_outputs += 1;
@@ -252,7 +250,12 @@ impl SemanticDigester {
         }
 
         // Find representative concepts from each chunk
-        for (i, (chunk, embedding)) in self.chunks.iter().zip(self.chunk_embeddings.iter()).enumerate() {
+        for (i, (chunk, embedding)) in self
+            .chunks
+            .iter()
+            .zip(self.chunk_embeddings.iter())
+            .enumerate()
+        {
             // Extract key terms from this chunk
             let terms = extract_key_terms(chunk);
 
@@ -260,7 +263,8 @@ impl SemanticDigester {
                 // Check if we already have a similar concept
                 let is_duplicate = self.concepts.iter().any(|c| {
                     if let Ok(term_emb) = self.embedder.embed(&term) {
-                        cosine_similarity(&term_emb, &c.embedding) > self.config.similarity_threshold
+                        cosine_similarity(&term_emb, &c.embedding)
+                            > self.config.similarity_threshold
                     } else {
                         c.label.to_lowercase() == term.to_lowercase()
                     }
@@ -291,7 +295,11 @@ impl SemanticDigester {
         }
 
         // Sort by confidence and keep top concepts
-        self.concepts.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
+        self.concepts.sort_by(|a, b| {
+            b.confidence
+                .partial_cmp(&a.confidence)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         self.concepts.truncate(self.config.max_concepts);
     }
 
@@ -300,10 +308,16 @@ impl SemanticDigester {
         let similarity = cosine_similarity(term_embedding, chunk_embedding);
 
         // Check if this matches any known concepts (Transfer boost)
-        let known_boost = self.known_concepts.values()
+        let known_boost = self
+            .known_concepts
+            .values()
             .filter_map(|known_emb| {
                 let sim = cosine_similarity(term_embedding, known_emb);
-                if sim > 0.8 { Some(sim * 0.2) } else { None }
+                if sim > 0.8 {
+                    Some(sim * 0.2)
+                } else {
+                    None
+                }
             })
             .sum::<f32>();
 
@@ -317,7 +331,8 @@ impl SemanticDigester {
             Err(_) => return Vec::new(),
         };
 
-        let mut results: Vec<(String, f32)> = self.all_presentations
+        let mut results: Vec<(String, f32)> = self
+            .all_presentations
             .iter()
             .filter_map(|concept| {
                 let concept_emb = self.embedder.embed(concept).ok()?;
@@ -340,19 +355,16 @@ impl SemanticDigester {
 /// Extract key terms from a text chunk.
 fn extract_key_terms(text: &str) -> Vec<String> {
     let stopwords: HashSet<&str> = [
-        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "do", "does", "did", "will", "would", "shall",
-        "should", "may", "might", "must", "can", "could", "of", "in", "to",
-        "for", "with", "on", "at", "from", "by", "about", "as", "into",
-        "through", "during", "before", "after", "above", "below", "between",
-        "out", "off", "over", "under", "again", "further", "then", "once",
-        "here", "there", "when", "where", "why", "how", "all", "each",
-        "every", "both", "few", "more", "most", "other", "some", "such",
-        "no", "nor", "not", "only", "own", "same", "so", "than", "too",
-        "very", "just", "because", "but", "and", "or", "if", "while",
-        "that", "this", "these", "those", "it", "its", "they", "them",
-        "their", "we", "our", "you", "your", "he", "she", "his", "her",
-        "which", "what", "who", "whom",
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+        "do", "does", "did", "will", "would", "shall", "should", "may", "might", "must", "can",
+        "could", "of", "in", "to", "for", "with", "on", "at", "from", "by", "about", "as", "into",
+        "through", "during", "before", "after", "above", "below", "between", "out", "off", "over",
+        "under", "again", "further", "then", "once", "here", "there", "when", "where", "why",
+        "how", "all", "each", "every", "both", "few", "more", "most", "other", "some", "such",
+        "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "just", "because",
+        "but", "and", "or", "if", "while", "that", "this", "these", "those", "it", "its", "they",
+        "them", "their", "we", "our", "you", "your", "he", "she", "his", "her", "which", "what",
+        "who", "whom",
     ]
     .into_iter()
     .collect();
@@ -452,7 +464,11 @@ impl Sense for SemanticDigester {
         let strongest = gradients
             .iter()
             .filter(|g| matches!(g.signal_type, SignalType::Input))
-            .max_by(|a, b| a.magnitude.partial_cmp(&b.magnitude).unwrap_or(std::cmp::Ordering::Equal));
+            .max_by(|a, b| {
+                a.magnitude
+                    .partial_cmp(&b.magnitude)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
 
         match strongest {
             Some(g) => Orientation::Toward(Position::new(
@@ -497,9 +513,9 @@ impl Agent for SemanticDigester {
         match self.state.clone() {
             SemanticState::Seeking => {
                 let docs = substrate.undigested_documents();
-                let nearby_doc = docs.iter().find(|d| {
-                    d.position.distance_to(&self.position) <= self.sense_radius
-                });
+                let nearby_doc = docs
+                    .iter()
+                    .find(|d| d.position.distance_to(&self.position) <= self.sense_radius);
 
                 if let Some(doc) = nearby_doc {
                     let doc_id = doc.id;
@@ -526,10 +542,7 @@ impl Agent for SemanticDigester {
                             + (self.id.0.as_u128() % 100) as f64 * 0.1;
                         let dx = angle.cos() * 2.0;
                         let dy = angle.sin() * 2.0;
-                        AgentAction::Move(Position::new(
-                            self.position.x + dx,
-                            self.position.y + dy,
-                        ))
+                        AgentAction::Move(Position::new(self.position.x + dx, self.position.y + dy))
                     }
                 }
             }
@@ -588,10 +601,7 @@ impl Agent for SemanticDigester {
                     tick: self.age_ticks,
                     payload: Vec::new(),
                 };
-                AgentAction::Deposit(
-                    SubstrateLocation::Spatial(self.position),
-                    trace,
-                )
+                AgentAction::Deposit(SubstrateLocation::Spatial(self.position), trace)
             }
         }
     }
@@ -655,12 +665,15 @@ mod tests {
 
         let text = "The mitochondria is the powerhouse of the cell. \
                    ATP is produced through oxidative phosphorylation \
-                   in the inner membrane.".to_string();
+                   in the inner membrane."
+            .to_string();
 
         let fragments = digester.digest_text(text);
 
         assert!(!fragments.is_empty());
-        assert!(fragments.iter().any(|f| f.contains("mitochondria") || f.contains("cell") || f.contains("membrane")));
+        assert!(fragments
+            .iter()
+            .any(|f| f.contains("mitochondria") || f.contains("cell") || f.contains("membrane")));
     }
 
     #[test]
@@ -679,8 +692,14 @@ mod tests {
         let embedder = test_embedder();
         let mut digester = SemanticDigester::new(Position::new(0.0, 0.0), embedder);
 
-        assert_eq!(digester.engulf("".to_string()), DigestionResult::Indigestible);
-        assert_eq!(digester.engulf("   ".to_string()), DigestionResult::Indigestible);
+        assert_eq!(
+            digester.engulf("".to_string()),
+            DigestionResult::Indigestible
+        );
+        assert_eq!(
+            digester.engulf("   ".to_string()),
+            DigestionResult::Indigestible
+        );
     }
 
     #[test]
@@ -697,8 +716,8 @@ mod tests {
     #[test]
     fn senescent_after_idle_threshold() {
         let embedder = test_embedder();
-        let mut digester = SemanticDigester::new(Position::new(0.0, 0.0), embedder)
-            .with_max_idle(10);
+        let mut digester =
+            SemanticDigester::new(Position::new(0.0, 0.0), embedder).with_max_idle(10);
 
         digester.set_idle_ticks(10);
 

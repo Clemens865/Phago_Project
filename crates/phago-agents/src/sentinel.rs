@@ -12,8 +12,8 @@
 //! flags everything that deviates — without needing to enumerate threats.
 
 use phago_core::agent::Agent;
-use phago_core::primitives::{Apoptose, Digest, Negate, Sense};
 use phago_core::primitives::symbiose::AgentProfile;
+use phago_core::primitives::{Apoptose, Digest, Negate, Sense};
 use phago_core::substrate::Substrate;
 use phago_core::types::*;
 use std::collections::HashMap;
@@ -156,7 +156,11 @@ impl Sentinel {
         if total > 0 {
             for (label, count) in &concept_counts {
                 let freq = *count as f64 / total as f64;
-                let existing = self.self_model.concept_freq.entry(label.clone()).or_insert(0.0);
+                let existing = self
+                    .self_model
+                    .concept_freq
+                    .entry(label.clone())
+                    .or_insert(0.0);
                 // Running average
                 *existing = (*existing * self.self_model.observation_count as f64 + freq)
                     / (self.self_model.observation_count + 1) as f64;
@@ -168,7 +172,8 @@ impl Sentinel {
         if !all_edges.is_empty() {
             let weights: Vec<f64> = all_edges.iter().map(|(_, _, e)| e.weight).collect();
             let mean = weights.iter().sum::<f64>() / weights.len() as f64;
-            let variance = weights.iter().map(|w| (w - mean).powi(2)).sum::<f64>() / weights.len() as f64;
+            let variance =
+                weights.iter().map(|w| (w - mean).powi(2)).sum::<f64>() / weights.len() as f64;
             let std = variance.sqrt();
 
             // Running average
@@ -246,8 +251,14 @@ impl Sentinel {
             for (from_id, to_id, edge) in &all_edges {
                 let z_score = (edge.weight - mean).abs() / std;
                 if z_score > 3.0 {
-                    let from_label = substrate.get_node(from_id).map(|n| n.label.as_str()).unwrap_or("?");
-                    let to_label = substrate.get_node(to_id).map(|n| n.label.as_str()).unwrap_or("?");
+                    let from_label = substrate
+                        .get_node(from_id)
+                        .map(|n| n.label.as_str())
+                        .unwrap_or("?");
+                    let to_label = substrate
+                        .get_node(to_id)
+                        .map(|n| n.label.as_str())
+                        .unwrap_or("?");
                     anomalies.push(format!(
                         "Edge '{}'-'{}' has anomalous weight {:.3} (z-score: {:.1})",
                         from_label, to_label, edge.weight, z_score
@@ -336,7 +347,11 @@ impl Negate for Sentinel {
             }
             for (label, count) in obs {
                 let freq = *count as f64 / total as f64;
-                let existing = self.self_model.concept_freq.entry(label.clone()).or_insert(0.0);
+                let existing = self
+                    .self_model
+                    .concept_freq
+                    .entry(label.clone())
+                    .or_insert(0.0);
                 let n = self.self_model.observation_count as f64;
                 *existing = (*existing * n + freq) / (n + 1.0);
             }
@@ -503,8 +518,7 @@ impl Agent for Sentinel {
 // --- Serialization ---
 
 use crate::serialize::{
-    SerializableAgent, SerializedAgent,
-    SentinelState as SerializedSentinelState,
+    SentinelState as SerializedSentinelState, SerializableAgent, SerializedAgent,
 };
 
 impl SerializableAgent for Sentinel {

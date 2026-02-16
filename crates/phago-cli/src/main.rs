@@ -197,13 +197,17 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Init { path } => commands::init::run(path),
-        Commands::Ingest { path, ticks, extensions } => {
-            commands::ingest::run(&path, ticks, &extensions, cli.verbose)
-        }
+        Commands::Ingest {
+            path,
+            ticks,
+            extensions,
+        } => commands::ingest::run(&path, ticks, &extensions, cli.verbose),
         Commands::Run { ticks } => commands::run::run(ticks, cli.verbose),
-        Commands::Query { query, max_results, alpha } => {
-            commands::query::run(&query, max_results, alpha)
-        }
+        Commands::Query {
+            query,
+            max_results,
+            alpha,
+        } => commands::query::run(&query, max_results, alpha),
         Commands::Explore { command } => match command {
             ExploreCommands::Centrality { top } => commands::explore::centrality(top),
             ExploreCommands::Bridges { top } => commands::explore::bridges(top),
@@ -244,9 +248,7 @@ fn main() -> Result<()> {
                 coordinator,
                 id,
             } => commands::cluster::start_shard(port, &coordinator, id),
-            ClusterCommands::Status { coordinator } => {
-                commands::cluster::status(&coordinator)
-            }
+            ClusterCommands::Status { coordinator } => commands::cluster::status(&coordinator),
             ClusterCommands::Bench { mode } => commands::cluster::bench(&mode),
         },
     }

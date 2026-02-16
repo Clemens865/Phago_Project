@@ -37,16 +37,14 @@
 //! }
 //! ```
 
-use crate::{
-    DistanceMetric, SearchResult, VectorError, VectorRecord, VectorResult, VectorStore,
-};
+use crate::{DistanceMetric, SearchResult, VectorError, VectorRecord, VectorResult, VectorStore};
 use async_trait::async_trait;
-use qdrant_client::Qdrant;
 use qdrant_client::qdrant::{
-    CreateCollectionBuilder, Distance, PointStruct, SearchPointsBuilder,
-    UpsertPointsBuilder, VectorParamsBuilder, DeletePointsBuilder,
-    PointsIdsList, PointId, GetPointsBuilder, ScrollPointsBuilder,
+    CreateCollectionBuilder, DeletePointsBuilder, Distance, GetPointsBuilder, PointId, PointStruct,
+    PointsIdsList, ScrollPointsBuilder, SearchPointsBuilder, UpsertPointsBuilder,
+    VectorParamsBuilder,
 };
+use qdrant_client::Qdrant;
 use std::collections::HashMap;
 
 /// Qdrant vector database adapter.
@@ -92,7 +90,8 @@ impl QdrantStore {
 
     /// Ensure the collection exists, creating it if necessary.
     async fn ensure_collection(&self) -> VectorResult<()> {
-        let collections = self.client
+        let collections = self
+            .client
             .list_collections()
             .await
             .map_err(|e| VectorError::Connection(e.to_string()))?;
@@ -112,10 +111,7 @@ impl QdrantStore {
             self.client
                 .create_collection(
                     CreateCollectionBuilder::new(&self.collection)
-                        .vectors_config(VectorParamsBuilder::new(
-                            self.dimension as u64,
-                            distance,
-                        )),
+                        .vectors_config(VectorParamsBuilder::new(self.dimension as u64, distance)),
                 )
                 .await
                 .map_err(|e| VectorError::Collection(e.to_string()))?;
@@ -125,14 +121,14 @@ impl QdrantStore {
     }
 
     /// Convert metadata to Qdrant payload.
-    fn to_payload(metadata: &HashMap<String, serde_json::Value>) -> HashMap<String, qdrant_client::qdrant::Value> {
+    fn to_payload(
+        metadata: &HashMap<String, serde_json::Value>,
+    ) -> HashMap<String, qdrant_client::qdrant::Value> {
         metadata
             .iter()
             .filter_map(|(k, v)| {
                 let value = match v {
-                    serde_json::Value::String(s) => {
-                        qdrant_client::qdrant::Value::from(s.clone())
-                    }
+                    serde_json::Value::String(s) => qdrant_client::qdrant::Value::from(s.clone()),
                     serde_json::Value::Number(n) => {
                         if let Some(i) = n.as_i64() {
                             qdrant_client::qdrant::Value::from(i)
@@ -142,9 +138,7 @@ impl QdrantStore {
                             return None;
                         }
                     }
-                    serde_json::Value::Bool(b) => {
-                        qdrant_client::qdrant::Value::from(*b)
-                    }
+                    serde_json::Value::Bool(b) => qdrant_client::qdrant::Value::from(*b),
                     _ => return None,
                 };
                 Some((k.clone(), value))
@@ -153,7 +147,9 @@ impl QdrantStore {
     }
 
     /// Convert Qdrant payload to metadata.
-    fn from_payload(payload: &HashMap<String, qdrant_client::qdrant::Value>) -> HashMap<String, serde_json::Value> {
+    fn from_payload(
+        payload: &HashMap<String, qdrant_client::qdrant::Value>,
+    ) -> HashMap<String, serde_json::Value> {
         payload
             .iter()
             .filter_map(|(k, v)| {
@@ -189,11 +185,7 @@ impl VectorStore for QdrantStore {
         let points: Vec<PointStruct> = records
             .into_iter()
             .map(|record| {
-                PointStruct::new(
-                    record.id,
-                    record.vector,
-                    Self::to_payload(&record.metadata),
-                )
+                PointStruct::new(record.id, record.vector, Self::to_payload(&record.metadata))
             })
             .collect();
 
@@ -222,7 +214,8 @@ impl VectorStore for QdrantStore {
             });
         }
 
-        let response = self.client
+        let response = self
+            .client
             .search_points(
                 SearchPointsBuilder::new(&self.collection, vector.to_vec(), k as u64)
                     .with_payload(true)
@@ -236,22 +229,20 @@ impl VectorStore for QdrantStore {
             .into_iter()
             .map(|point| {
                 let id = match point.id {
-                    Some(PointId { point_id_options: Some(opt) }) => {
-                        match opt {
-                            qdrant_client::qdrant::point_id::PointIdOptions::Uuid(u) => u,
-                            qdrant_client::qdrant::point_id::PointIdOptions::Num(n) => n.to_string(),
-                        }
-                    }
+                    Some(PointId {
+                        point_id_options: Some(opt),
+                    }) => match opt {
+                        qdrant_client::qdrant::point_id::PointIdOptions::Uuid(u) => u,
+                        qdrant_client::qdrant::point_id::PointIdOptions::Num(n) => n.to_string(),
+                    },
                     _ => String::new(),
                 };
 
-                let vector = point.vectors.and_then(|v| {
-                    match v.vectors_options {
-                        Some(qdrant_client::qdrant::vectors_output::VectorsOptions::Vector(vec)) => {
-                            Some(vec.data.clone())
-                        }
-                        _ => None,
+                let vector = point.vectors.and_then(|v| match v.vectors_options {
+                    Some(qdrant_client::qdrant::vectors_output::VectorsOptions::Vector(vec)) => {
+                        Some(vec.data.clone())
                     }
+                    _ => None,
                 });
 
                 SearchResult {
@@ -272,12 +263,10 @@ impl VectorStore for QdrantStore {
     }
 
     async fn get_batch(&self, ids: &[&str]) -> VectorResult<Vec<VectorRecord>> {
-        let point_ids: Vec<PointId> = ids
-            .iter()
-            .map(|id| PointId::from(id.to_string()))
-            .collect();
+        let point_ids: Vec<PointId> = ids.iter().map(|id| PointId::from(id.to_string())).collect();
 
-        let response = self.client
+        let response = self
+            .client
             .get_points(
                 GetPointsBuilder::new(&self.collection, point_ids)
                     .with_payload(true)
@@ -291,23 +280,24 @@ impl VectorStore for QdrantStore {
             .into_iter()
             .map(|point| {
                 let id = match point.id {
-                    Some(PointId { point_id_options: Some(opt) }) => {
-                        match opt {
-                            qdrant_client::qdrant::point_id::PointIdOptions::Uuid(u) => u,
-                            qdrant_client::qdrant::point_id::PointIdOptions::Num(n) => n.to_string(),
-                        }
-                    }
+                    Some(PointId {
+                        point_id_options: Some(opt),
+                    }) => match opt {
+                        qdrant_client::qdrant::point_id::PointIdOptions::Uuid(u) => u,
+                        qdrant_client::qdrant::point_id::PointIdOptions::Num(n) => n.to_string(),
+                    },
                     _ => String::new(),
                 };
 
-                let vector = point.vectors.and_then(|v| {
-                    match v.vectors_options {
-                        Some(qdrant_client::qdrant::vectors_output::VectorsOptions::Vector(vec)) => {
-                            Some(vec.data.clone())
-                        }
+                let vector = point
+                    .vectors
+                    .and_then(|v| match v.vectors_options {
+                        Some(qdrant_client::qdrant::vectors_output::VectorsOptions::Vector(
+                            vec,
+                        )) => Some(vec.data.clone()),
                         _ => None,
-                    }
-                }).unwrap_or_default();
+                    })
+                    .unwrap_or_default();
 
                 VectorRecord {
                     id,
@@ -323,10 +313,7 @@ impl VectorStore for QdrantStore {
     }
 
     async fn delete_batch(&self, ids: &[&str]) -> VectorResult<()> {
-        let point_ids: Vec<PointId> = ids
-            .iter()
-            .map(|id| PointId::from(id.to_string()))
-            .collect();
+        let point_ids: Vec<PointId> = ids.iter().map(|id| PointId::from(id.to_string())).collect();
 
         self.client
             .delete_points(
@@ -341,12 +328,16 @@ impl VectorStore for QdrantStore {
     }
 
     async fn count(&self) -> VectorResult<usize> {
-        let info = self.client
+        let info = self
+            .client
             .collection_info(&self.collection)
             .await
             .map_err(|e| VectorError::Api(e.to_string()))?;
 
-        Ok(info.result.map(|r| r.points_count.unwrap_or(0) as usize).unwrap_or(0))
+        Ok(info
+            .result
+            .map(|r| r.points_count.unwrap_or(0) as usize)
+            .unwrap_or(0))
     }
 
     async fn clear(&self) -> VectorResult<()> {
@@ -358,7 +349,8 @@ impl VectorStore for QdrantStore {
                 builder = builder.offset(o.clone());
             }
 
-            let response = self.client
+            let response = self
+                .client
                 .scroll(builder)
                 .await
                 .map_err(|e| VectorError::Api(e.to_string()))?;
@@ -371,11 +363,11 @@ impl VectorStore for QdrantStore {
             let ids: Vec<&str> = points
                 .iter()
                 .filter_map(|p| {
-                    p.id.as_ref().and_then(|id| {
-                        match &id.point_id_options {
-                            Some(qdrant_client::qdrant::point_id::PointIdOptions::Uuid(u)) => Some(u.as_str()),
-                            _ => None,
+                    p.id.as_ref().and_then(|id| match &id.point_id_options {
+                        Some(qdrant_client::qdrant::point_id::PointIdOptions::Uuid(u)) => {
+                            Some(u.as_str())
                         }
+                        _ => None,
                     })
                 })
                 .collect();

@@ -3,8 +3,8 @@
 //! Tracks specialization emergence, genome divergence, and
 //! fitness trajectories across generations.
 
-use phago_agents::genome::AgentGenome;
 use phago_agents::fitness::AgentFitness;
+use phago_agents::genome::AgentGenome;
 use serde::Serialize;
 
 /// Metrics for one snapshot in time during evolution.
@@ -93,18 +93,27 @@ pub fn build_snapshot(
     } else {
         fitness_data.iter().map(|f| f.fitness).sum::<f64>() / fitness_data.len() as f64
     };
-    let max_fitness = fitness_data.iter().map(|f| f.fitness).fold(0.0f64, f64::max);
+    let max_fitness = fitness_data
+        .iter()
+        .map(|f| f.fitness)
+        .fold(0.0f64, f64::max);
     let max_generation = fitness_data.iter().map(|f| f.generation).max().unwrap_or(0);
 
     let divergence = genome_divergence(genomes);
 
-    let mean_sense_radius = if genomes.is_empty() { 0.0 } else {
+    let mean_sense_radius = if genomes.is_empty() {
+        0.0
+    } else {
         genomes.iter().map(|g| g.sense_radius).sum::<f64>() / genomes.len() as f64
     };
-    let mean_max_idle = if genomes.is_empty() { 0.0 } else {
+    let mean_max_idle = if genomes.is_empty() {
+        0.0
+    } else {
         genomes.iter().map(|g| g.max_idle as f64).sum::<f64>() / genomes.len() as f64
     };
-    let mean_explore_bias = if genomes.is_empty() { 0.0 } else {
+    let mean_explore_bias = if genomes.is_empty() {
+        0.0
+    } else {
         genomes.iter().map(|g| g.explore_bias).sum::<f64>() / genomes.len() as f64
     };
 

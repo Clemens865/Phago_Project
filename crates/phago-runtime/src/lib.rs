@@ -24,23 +24,23 @@
 //! colony.run(50);
 //! ```
 
-pub mod substrate_impl;
-pub mod topology_impl;
+pub mod backend;
+pub mod bench;
 pub mod colony;
 pub mod colony_builder;
-pub mod metrics;
-pub mod corpus;
-pub mod bench;
-pub mod export;
 pub mod community;
+pub mod corpus;
 pub mod curriculum;
-pub mod training_format;
 pub mod diff;
+pub mod export;
+pub mod metrics;
+pub mod prelude;
+pub mod project_context;
 pub mod session;
 pub mod stdp;
-pub mod project_context;
-pub mod backend;
-pub mod prelude;
+pub mod substrate_impl;
+pub mod topology_impl;
+pub mod training_format;
 
 #[cfg(feature = "sqlite")]
 pub mod sqlite_topology;

@@ -44,7 +44,7 @@
 
 #![cfg(feature = "async")]
 
-use crate::colony::{Colony, ColonyEvent, ColonyStats, ColonySnapshot};
+use crate::colony::{Colony, ColonyEvent, ColonySnapshot, ColonyStats};
 use phago_core::types::{DocumentId, Position};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -92,7 +92,10 @@ impl AsyncColony {
         content: &str,
         position: Position,
     ) -> DocumentId {
-        let id = self.colony.borrow_mut().ingest_document(title, content, position);
+        let id = self
+            .colony
+            .borrow_mut()
+            .ingest_document(title, content, position);
         // Yield to allow other tasks to progress
         tokio::task::yield_now().await;
         id
@@ -107,7 +110,10 @@ impl AsyncColony {
     ) -> Vec<DocumentId> {
         let mut ids = Vec::with_capacity(documents.len());
         for (title, content, position) in documents {
-            let id = self.colony.borrow_mut().ingest_document(title, content, *position);
+            let id = self
+                .colony
+                .borrow_mut()
+                .ingest_document(title, content, *position);
             ids.push(id);
             // Yield to allow other tasks to progress
             tokio::task::yield_now().await;
@@ -141,11 +147,7 @@ impl AsyncColony {
     ///
     /// Useful for progress reporting or early termination conditions.
     /// The callback receives (tick_number, events) and returns whether to continue.
-    pub async fn run_with_callback<F>(
-        &self,
-        ticks: u64,
-        mut callback: F,
-    ) -> Vec<Vec<ColonyEvent>>
+    pub async fn run_with_callback<F>(&self, ticks: u64, mut callback: F) -> Vec<Vec<ColonyEvent>>
     where
         F: FnMut(u64, &[ColonyEvent]) -> bool,
     {
@@ -224,7 +226,9 @@ pub async fn batch_ingest(
 
     for batch in documents.chunks(batch_size) {
         for (title, content, position) in batch {
-            let id = colony.borrow_mut().ingest_document(title, content, *position);
+            let id = colony
+                .borrow_mut()
+                .ingest_document(title, content, *position);
             ids.push(id);
         }
         // Yield between batches
@@ -256,11 +260,7 @@ impl TickTimer {
     }
 
     /// Run a colony at a controlled tick rate.
-    pub async fn run_timed(
-        &mut self,
-        colony: &AsyncColony,
-        ticks: u64,
-    ) -> Vec<Vec<ColonyEvent>> {
+    pub async fn run_timed(&mut self, colony: &AsyncColony, ticks: u64) -> Vec<Vec<ColonyEvent>> {
         let mut all_events = Vec::with_capacity(ticks as usize);
         for _ in 0..ticks {
             self.tick().await;
@@ -296,10 +296,12 @@ where
     Fut: std::future::Future<Output = T>,
 {
     let local = tokio::task::LocalSet::new();
-    local.run_until(async move {
-        let async_colony = AsyncColony::new(colony);
-        f(async_colony).await
-    }).await
+    local
+        .run_until(async move {
+            let async_colony = AsyncColony::new(colony);
+            f(async_colony).await
+        })
+        .await
 }
 
 #[cfg(test)]
@@ -333,7 +335,8 @@ mod tests {
             // Run simulation
             let events = async_colony.run_async(5).await;
             assert_eq!(events.len(), 5);
-        }).await;
+        })
+        .await;
     }
 
     #[tokio::test]
@@ -353,7 +356,8 @@ mod tests {
 
             let stats = async_colony.stats();
             assert_eq!(stats.documents_total, 3);
-        }).await;
+        })
+        .await;
     }
 
     #[tokio::test]
@@ -374,22 +378,25 @@ mod tests {
 
             assert_eq!(events.len(), 6); // 0..5 inclusive = 6 ticks
             assert_eq!(tick_count, 6);
-        }).await;
+        })
+        .await;
     }
 
     #[tokio::test]
     async fn spawn_simulation_local_works() {
         let local = LocalSet::new();
-        local.run_until(async {
-            let mut colony = Colony::new();
-            colony.ingest_document("Test", "Content", Position::new(0.0, 0.0));
+        local
+            .run_until(async {
+                let mut colony = Colony::new();
+                colony.ingest_document("Test", "Content", Position::new(0.0, 0.0));
 
-            let rc = Rc::new(RefCell::new(colony));
-            let handle = spawn_simulation_local(Rc::clone(&rc), 10);
+                let rc = Rc::new(RefCell::new(colony));
+                let handle = spawn_simulation_local(Rc::clone(&rc), 10);
 
-            let events = handle.await.unwrap();
-            assert_eq!(events.len(), 10);
-        }).await;
+                let events = handle.await.unwrap();
+                assert_eq!(events.len(), 10);
+            })
+            .await;
     }
 
     #[tokio::test]
@@ -399,7 +406,13 @@ mod tests {
             let rc = Rc::new(RefCell::new(colony));
 
             let docs: Vec<_> = (0..10)
-                .map(|i| (format!("Doc {}", i), format!("Content {}", i), Position::new(i as f64, 0.0)))
+                .map(|i| {
+                    (
+                        format!("Doc {}", i),
+                        format!("Content {}", i),
+                        Position::new(i as f64, 0.0),
+                    )
+                })
                 .collect();
 
             let ids = batch_ingest(Rc::clone(&rc), docs, 3).await;
@@ -407,7 +420,8 @@ mod tests {
 
             let stats = rc.borrow().stats();
             assert_eq!(stats.documents_total, 10);
-        }).await;
+        })
+        .await;
     }
 
     #[tokio::test]
@@ -425,7 +439,8 @@ mod tests {
             assert_eq!(events.len(), 5);
             // Should have taken at least 40ms (5 ticks * ~10ms, minus first immediate)
             assert!(elapsed.as_millis() >= 40);
-        }).await;
+        })
+        .await;
     }
 
     #[tokio::test]
@@ -433,7 +448,8 @@ mod tests {
         let colony = Colony::new();
         let events = run_in_local(colony, |async_colony| async move {
             async_colony.run_async(5).await
-        }).await;
+        })
+        .await;
         assert_eq!(events.len(), 5);
     }
 }

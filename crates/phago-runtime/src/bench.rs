@@ -5,7 +5,7 @@
 //! across multiple runs with different configurations.
 
 use crate::colony::{Colony, ColonySnapshot};
-use crate::metrics::{ColonyMetrics, compute_from_snapshots};
+use crate::metrics::{compute_from_snapshots, ColonyMetrics};
 use phago_core::types::Tick;
 use serde::Serialize;
 use std::time::Instant;
@@ -122,10 +122,7 @@ impl BenchmarkSuite {
             .runs
             .iter()
             .map(|run| {
-                let final_metrics = run
-                    .metrics_timeline
-                    .last()
-                    .map(|(_, m)| m.clone());
+                let final_metrics = run.metrics_timeline.last().map(|(_, m)| m.clone());
 
                 ComparisonRow {
                     name: run.name.clone(),
@@ -220,14 +217,21 @@ pub struct ComparisonRow {
 impl ComparisonTable {
     /// Print a formatted comparison table to the terminal.
     pub fn print(&self) {
-        println!("┌{:─<20}┬{:─<7}┬{:─<10}┬{:─<7}┬{:─<7}┬{:─<8}┬{:─<10}┬{:─<9}┐",
-            "", "", "", "", "", "", "", "");
-        println!("│{:<20}│{:>7}│{:>10}│{:>7}│{:>7}│{:>8}│{:>10}│{:>9}│",
-            " Run", " Nodes", " Edges", " Dense", " Clust", " AvgDeg", " Shared%", " Gini");
-        println!("├{:─<20}┼{:─<7}┼{:─<10}┼{:─<7}┼{:─<7}┼{:─<8}┼{:─<10}┼{:─<9}┤",
-            "", "", "", "", "", "", "", "");
+        println!(
+            "┌{:─<20}┬{:─<7}┬{:─<10}┬{:─<7}┬{:─<7}┬{:─<8}┬{:─<10}┬{:─<9}┐",
+            "", "", "", "", "", "", "", ""
+        );
+        println!(
+            "│{:<20}│{:>7}│{:>10}│{:>7}│{:>7}│{:>8}│{:>10}│{:>9}│",
+            " Run", " Nodes", " Edges", " Dense", " Clust", " AvgDeg", " Shared%", " Gini"
+        );
+        println!(
+            "├{:─<20}┼{:─<7}┼{:─<10}┼{:─<7}┼{:─<7}┼{:─<8}┼{:─<10}┼{:─<9}┤",
+            "", "", "", "", "", "", "", ""
+        );
         for row in &self.rows {
-            println!("│{:<20}│{:>7}│{:>10}│{:>7.3}│{:>7.3}│{:>8.2}│{:>9.1}%│{:>9.3}│",
+            println!(
+                "│{:<20}│{:>7}│{:>10}│{:>7.3}│{:>7.3}│{:>8.2}│{:>9.1}%│{:>9.3}│",
                 row.name,
                 row.graph_nodes,
                 row.graph_edges,
@@ -238,8 +242,10 @@ impl ComparisonTable {
                 row.gini,
             );
         }
-        println!("└{:─<20}┴{:─<7}┴{:─<10}┴{:─<7}┴{:─<7}┴{:─<8}┴{:─<10}┴{:─<9}┘",
-            "", "", "", "", "", "", "", "");
+        println!(
+            "└{:─<20}┴{:─<7}┴{:─<10}┴{:─<7}┴{:─<7}┴{:─<8}┴{:─<10}┴{:─<9}┘",
+            "", "", "", "", "", "", "", ""
+        );
     }
 }
 
@@ -256,7 +262,9 @@ mod tests {
         // Use inline corpus (fixed 20 docs) for deterministic test timing
         let corpus = Corpus::inline_corpus();
         corpus.ingest_into(&mut colony);
-        colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(80)));
+        colony.spawn(Box::new(
+            Digester::new(Position::new(0.0, 0.0)).with_max_idle(80),
+        ));
 
         let config = BenchmarkConfig::new("test", 20)
             .with_snapshot_interval(5)
@@ -274,7 +282,9 @@ mod tests {
         let mut suite = BenchmarkSuite::new();
 
         let mut colony1 = Colony::new();
-        colony1.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(80)));
+        colony1.spawn(Box::new(
+            Digester::new(Position::new(0.0, 0.0)).with_max_idle(80),
+        ));
         let run1 = run_benchmark(&mut colony1, &BenchmarkConfig::new("empty", 10));
         suite.add_run(run1);
 

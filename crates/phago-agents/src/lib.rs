@@ -19,15 +19,15 @@
 //! let synthesizer = Synthesizer::new(Position::new(2.0, 2.0));
 //! ```
 
-pub mod digester;
-pub mod sentinel;
-pub mod synthesizer;
-pub mod genome;
-pub mod fitness;
-pub mod spawn;
 pub mod code_digester;
-pub mod serialize;
+pub mod digester;
+pub mod fitness;
+pub mod genome;
 pub mod prelude;
+pub mod sentinel;
+pub mod serialize;
+pub mod spawn;
+pub mod synthesizer;
 
 pub mod lamarckian;
 

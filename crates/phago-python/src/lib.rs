@@ -8,8 +8,8 @@ use phago_agents::digester::Digester;
 use phago_core::types::Position as CorePosition;
 use phago_rag::{hybrid_query, HybridConfig};
 use phago_runtime::colony::{Colony as RustColony, ColonyConfig as RustColonyConfig};
-use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
+use pyo3::prelude::*;
 
 /// Python-friendly Position class.
 #[pyclass]
@@ -98,7 +98,10 @@ pub struct QueryResult {
 #[pymethods]
 impl QueryResult {
     fn __repr__(&self) -> String {
-        format!("QueryResult(label='{}', score={:.3})", self.label, self.score)
+        format!(
+            "QueryResult(label='{}', score={:.3})",
+            self.label, self.score
+        )
     }
 }
 
@@ -191,14 +194,20 @@ impl Colony {
     /// Returns:
     ///     Document ID string
     #[pyo3(signature = (title, content, position=None))]
-    fn ingest_document(&mut self, title: &str, content: &str, position: Option<Position>) -> String {
-        let pos = position.map(|p| p.into()).unwrap_or(CorePosition::new(0.0, 0.0));
+    fn ingest_document(
+        &mut self,
+        title: &str,
+        content: &str,
+        position: Option<Position>,
+    ) -> String {
+        let pos = position
+            .map(|p| p.into())
+            .unwrap_or(CorePosition::new(0.0, 0.0));
         let doc_id = self.inner.ingest_document(title, content, pos);
 
         // Spawn a digester to process the document
-        self.inner.spawn(Box::new(
-            Digester::new(pos).with_max_idle(30),
-        ));
+        self.inner
+            .spawn(Box::new(Digester::new(pos).with_max_idle(30)));
 
         format!("{}", doc_id.0)
     }

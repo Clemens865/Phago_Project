@@ -39,9 +39,7 @@ pub enum Intervention {
         to_label: String,
     },
     /// Remove a node (and all its edges) identified by label.
-    RemoveNode {
-        label: String,
-    },
+    RemoveNode { label: String },
     /// Set a specific edge weight.
     SetEdgeWeight {
         from_label: String,
@@ -203,25 +201,31 @@ pub fn counterfactual_query(
     }
 
     // Sort by absolute rank delta
-    rank_changes.sort_by(|a, b| {
-        b.rank_delta
-            .abs()
-            .cmp(&a.rank_delta.abs())
-    });
+    rank_changes.sort_by(|a, b| b.rank_delta.abs().cmp(&a.rank_delta.abs()));
 
     let significant = rank_changes
         .iter()
         .any(|c| c.rank_delta.unsigned_abs() as usize >= config.significance_threshold);
 
     let intervention_desc = match intervention {
-        Intervention::RemoveEdge { from_label, to_label } => {
+        Intervention::RemoveEdge {
+            from_label,
+            to_label,
+        } => {
             format!("Remove edge '{}' — '{}'", from_label, to_label)
         }
         Intervention::RemoveNode { label } => {
             format!("Remove node '{}'", label)
         }
-        Intervention::SetEdgeWeight { from_label, to_label, weight } => {
-            format!("Set edge '{}' — '{}' weight to {:.3}", from_label, to_label, weight)
+        Intervention::SetEdgeWeight {
+            from_label,
+            to_label,
+            weight,
+        } => {
+            format!(
+                "Set edge '{}' — '{}' weight to {:.3}",
+                from_label, to_label, weight
+            )
         }
     };
 
@@ -293,7 +297,10 @@ fn apply_intervention(state: &GraphState, intervention: &Intervention) -> GraphS
     let mut modified = state.clone();
 
     match intervention {
-        Intervention::RemoveEdge { from_label, to_label } => {
+        Intervention::RemoveEdge {
+            from_label,
+            to_label,
+        } => {
             let fl = from_label.to_lowercase();
             let tl = to_label.to_lowercase();
             modified.edges.retain(|e| {
@@ -305,9 +312,9 @@ fn apply_intervention(state: &GraphState, intervention: &Intervention) -> GraphS
         Intervention::RemoveNode { label } => {
             let ll = label.to_lowercase();
             modified.nodes.retain(|n| n.label.to_lowercase() != ll);
-            modified.edges.retain(|e| {
-                e.from_label.to_lowercase() != ll && e.to_label.to_lowercase() != ll
-            });
+            modified
+                .edges
+                .retain(|e| e.from_label.to_lowercase() != ll && e.to_label.to_lowercase() != ll);
         }
         Intervention::SetEdgeWeight {
             from_label,
@@ -393,7 +400,10 @@ mod tests {
             .counterfactual_ranks
             .iter()
             .any(|r| r.label.to_lowercase() == "membrane");
-        assert!(!has_membrane, "Removed node should not appear in counterfactual results");
+        assert!(
+            !has_membrane,
+            "Removed node should not appear in counterfactual results"
+        );
     }
 
     #[test]

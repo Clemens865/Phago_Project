@@ -31,7 +31,8 @@ pub fn to_jsonl(curriculum: &Curriculum) -> String {
         lines.push(triple_to_example(triple, "periphery"));
     }
 
-    lines.iter()
+    lines
+        .iter()
         .filter_map(|ex| serde_json::to_string(ex).ok())
         .collect::<Vec<_>>()
         .join("\n")
@@ -40,20 +41,29 @@ pub fn to_jsonl(curriculum: &Curriculum) -> String {
 /// Generate randomly-ordered JSONL from the same triples (baseline).
 pub fn to_jsonl_random(curriculum: &Curriculum, seed: u64) -> String {
     let mut all_triples: Vec<(&WeightedTriple, &str)> = Vec::new();
-    for t in &curriculum.foundation { all_triples.push((t, "foundation")); }
-    for t in &curriculum.bridges { all_triples.push((t, "bridge")); }
-    for t in &curriculum.periphery { all_triples.push((t, "periphery")); }
+    for t in &curriculum.foundation {
+        all_triples.push((t, "foundation"));
+    }
+    for t in &curriculum.bridges {
+        all_triples.push((t, "bridge"));
+    }
+    for t in &curriculum.periphery {
+        all_triples.push((t, "periphery"));
+    }
 
     // Deterministic shuffle
     let mut indices: Vec<usize> = (0..all_triples.len()).collect();
     let mut rng = seed;
     for i in (1..indices.len()).rev() {
-        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        rng = rng
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         let j = (rng >> 33) as usize % (i + 1);
         indices.swap(i, j);
     }
 
-    let lines: Vec<String> = indices.iter()
+    let lines: Vec<String> = indices
+        .iter()
         .filter_map(|&i| {
             let (triple, section) = all_triples.get(i)?;
             let ex = triple_to_example(triple, section);
@@ -73,11 +83,7 @@ fn triple_to_example(triple: &WeightedTriple, section: &str) -> TrainingExample 
         input: String::new(),
         output: format!(
             "'{}' is {} '{}'. This is a {} concept with connection strength {:.2}.",
-            triple.subject,
-            triple.predicate,
-            triple.object,
-            section,
-            triple.weight,
+            triple.subject, triple.predicate, triple.object, section, triple.weight,
         ),
         weight: triple.weight,
         section: section.to_string(),

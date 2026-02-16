@@ -64,7 +64,8 @@ impl OnnxEmbedder {
         // In a full implementation, this would load from the paths
         let _ = (model_path, tokenizer_path);
         Err(EmbeddingError::ModelNotLoaded(
-            "Custom model loading not yet implemented. Use from_pretrained() or SimpleEmbedder.".to_string()
+            "Custom model loading not yet implemented. Use from_pretrained() or SimpleEmbedder."
+                .to_string(),
         ))
     }
 }
@@ -92,7 +93,11 @@ impl Embedder for OnnxEmbedder {
 
             for j in 0..self.dimension {
                 let idx = (hash as usize + j * 31) % self.dimension;
-                let sign = if (hash >> (j % 64)) & 1 == 0 { 1.0 } else { -1.0 };
+                let sign = if (hash >> (j % 64)) & 1 == 0 {
+                    1.0
+                } else {
+                    -1.0
+                };
                 vector[idx] += sign * 0.1;
             }
         }

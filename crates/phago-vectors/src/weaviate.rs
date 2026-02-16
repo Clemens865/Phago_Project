@@ -36,9 +36,7 @@
 //! }
 //! ```
 
-use crate::{
-    DistanceMetric, SearchResult, VectorError, VectorRecord, VectorResult, VectorStore,
-};
+use crate::{DistanceMetric, SearchResult, VectorError, VectorRecord, VectorResult, VectorStore};
 use async_trait::async_trait;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -170,7 +168,9 @@ impl WeaviateStore {
 
     /// Build a request with optional API key header.
     fn build_request(&self, method: reqwest::Method, endpoint: &str) -> reqwest::RequestBuilder {
-        let mut req = self.client.request(method, format!("{}{}", self.url, endpoint));
+        let mut req = self
+            .client
+            .request(method, format!("{}{}", self.url, endpoint));
         if let Some(ref key) = self.api_key {
             req = req.header("Authorization", format!("Bearer {}", key));
         }
@@ -180,7 +180,8 @@ impl WeaviateStore {
     /// Ensure the class exists in the schema.
     async fn ensure_class(&self) -> VectorResult<()> {
         // Check if class exists
-        let response = self.build_request(reqwest::Method::GET, "/v1/schema")
+        let response = self
+            .build_request(reqwest::Method::GET, "/v1/schema")
             .send()
             .await
             .map_err(|e| VectorError::Connection(e.to_string()))?;
@@ -216,7 +217,8 @@ impl WeaviateStore {
                 ]
             });
 
-            let response = self.build_request(reqwest::Method::POST, "/v1/schema")
+            let response = self
+                .build_request(reqwest::Method::POST, "/v1/schema")
                 .json(&class_def)
                 .send()
                 .await
@@ -224,7 +226,10 @@ impl WeaviateStore {
 
             if !response.status().is_success() {
                 let error = response.text().await.unwrap_or_default();
-                return Err(VectorError::Collection(format!("Class creation failed: {}", error)));
+                return Err(VectorError::Collection(format!(
+                    "Class creation failed: {}",
+                    error
+                )));
             }
         }
 
@@ -233,7 +238,8 @@ impl WeaviateStore {
 
     /// Execute a GraphQL query.
     async fn graphql(&self, query: &str) -> VectorResult<GraphQLResponse> {
-        let response = self.build_request(reqwest::Method::POST, "/v1/graphql")
+        let response = self
+            .build_request(reqwest::Method::POST, "/v1/graphql")
             .json(&serde_json::json!({ "query": query }))
             .send()
             .await
@@ -285,15 +291,14 @@ impl VectorStore for WeaviateStore {
                 );
                 properties.insert(
                     "metadata_json".to_string(),
-                    serde_json::Value::String(serde_json::to_string(&r.metadata).unwrap_or_default()),
+                    serde_json::Value::String(
+                        serde_json::to_string(&r.metadata).unwrap_or_default(),
+                    ),
                 );
 
                 WeaviateObject {
                     class: self.class_name.clone(),
-                    id: uuid::Uuid::new_v5(
-                        &uuid::Uuid::NAMESPACE_DNS,
-                        r.id.as_bytes(),
-                    ).to_string(),
+                    id: uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_DNS, r.id.as_bytes()).to_string(),
                     properties,
                     vector: r.vector,
                 }
@@ -302,7 +307,8 @@ impl VectorStore for WeaviateStore {
 
         let request = BatchRequest { objects };
 
-        let response = self.build_request(reqwest::Method::POST, "/v1/batch/objects")
+        let response = self
+            .build_request(reqwest::Method::POST, "/v1/batch/objects")
             .json(&request)
             .send()
             .await
@@ -360,7 +366,10 @@ impl VectorStore for WeaviateStore {
             if conditions.is_empty() {
                 String::new()
             } else {
-                format!("where: {{ operator: And, operands: [{}] }}", conditions.join(", "))
+                format!(
+                    "where: {{ operator: And, operands: [{}] }}",
+                    conditions.join(", ")
+                )
             }
         };
 
@@ -406,13 +415,15 @@ impl VectorStore for WeaviateStore {
             .into_iter()
             .map(|r| {
                 let additional = r._additional.unwrap_or_default();
-                let phago_id = r.properties
+                let phago_id = r
+                    .properties
                     .get("phago_id")
                     .and_then(|v| v.as_str())
                     .unwrap_or("")
                     .to_string();
 
-                let metadata: HashMap<String, serde_json::Value> = r.properties
+                let metadata: HashMap<String, serde_json::Value> = r
+                    .properties
                     .get("metadata_json")
                     .and_then(|v| v.as_str())
                     .and_then(|s| serde_json::from_str(s).ok())
@@ -440,10 +451,12 @@ impl VectorStore for WeaviateStore {
         // Build OR filter for IDs
         let conditions: Vec<String> = ids
             .iter()
-            .map(|id| format!(
-                "{{ path: [\"phago_id\"], operator: Equal, valueText: \"{}\" }}",
-                id
-            ))
+            .map(|id| {
+                format!(
+                    "{{ path: [\"phago_id\"], operator: Equal, valueText: \"{}\" }}",
+                    id
+                )
+            })
             .collect();
 
         let query = format!(
@@ -476,13 +489,15 @@ impl VectorStore for WeaviateStore {
             .into_iter()
             .map(|r| {
                 let additional = r._additional.unwrap_or_default();
-                let phago_id = r.properties
+                let phago_id = r
+                    .properties
                     .get("phago_id")
                     .and_then(|v| v.as_str())
                     .unwrap_or("")
                     .to_string();
 
-                let metadata: HashMap<String, serde_json::Value> = r.properties
+                let metadata: HashMap<String, serde_json::Value> = r
+                    .properties
                     .get("metadata_json")
                     .and_then(|v| v.as_str())
                     .and_then(|s| serde_json::from_str(s).ok())
@@ -501,10 +516,11 @@ impl VectorStore for WeaviateStore {
         // Get the Weaviate UUID for this phago_id
         let uuid = uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_DNS, id.as_bytes());
 
-        let response = self.build_request(
-            reqwest::Method::DELETE,
-            &format!("/v1/objects/{}/{}", self.class_name, uuid),
-        )
+        let response = self
+            .build_request(
+                reqwest::Method::DELETE,
+                &format!("/v1/objects/{}/{}", self.class_name, uuid),
+            )
             .send()
             .await
             .map_err(|e| VectorError::Connection(e.to_string()))?;
@@ -539,7 +555,8 @@ impl VectorStore for WeaviateStore {
             class_name = self.class_name,
         );
 
-        let response: AggregateResponse = self.build_request(reqwest::Method::POST, "/v1/graphql")
+        let response: AggregateResponse = self
+            .build_request(reqwest::Method::POST, "/v1/graphql")
             .json(&serde_json::json!({ "query": query }))
             .send()
             .await
@@ -562,10 +579,11 @@ impl VectorStore for WeaviateStore {
 
     async fn clear(&self) -> VectorResult<()> {
         // Delete the class and recreate it
-        let response = self.build_request(
-            reqwest::Method::DELETE,
-            &format!("/v1/schema/{}", self.class_name),
-        )
+        let response = self
+            .build_request(
+                reqwest::Method::DELETE,
+                &format!("/v1/schema/{}", self.class_name),
+            )
             .send()
             .await
             .map_err(|e| VectorError::Connection(e.to_string()))?;

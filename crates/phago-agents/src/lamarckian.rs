@@ -316,8 +316,14 @@ mod tests {
         ];
 
         let patched = apply_patches(&genome, &patches);
-        assert!((patched.sense_radius - 30.0).abs() < 1e-6, "Should clamp to 30.0");
-        assert!((patched.explore_bias - 0.0).abs() < 1e-6, "Should clamp to 0.0");
+        assert!(
+            (patched.sense_radius - 30.0).abs() < 1e-6,
+            "Should clamp to 30.0"
+        );
+        assert!(
+            (patched.explore_bias - 0.0).abs() < 1e-6,
+            "Should clamp to 0.0"
+        );
     }
 
     #[test]
@@ -370,8 +376,7 @@ These changes should help.
 
     #[test]
     fn evolve_with_lamarckian_advice() {
-        let advisor = MockAdvisor::new()
-            .with_suggestion("sense_radius", 20.0);
+        let advisor = MockAdvisor::new().with_suggestion("sense_radius", 20.0);
 
         let genome = AgentGenome::default_genome();
         let death = make_death("SelfAssessed(LowEnergy)", 0.1);

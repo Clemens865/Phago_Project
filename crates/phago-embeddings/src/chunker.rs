@@ -134,9 +134,7 @@ impl Chunker {
             if (c == '.' || c == '!' || c == '?') && pos > self.config.min_size {
                 // Check if followed by space or end
                 let next_pos = pos + c.len_utf8();
-                if next_pos >= text.len()
-                    || text[next_pos..].starts_with(char::is_whitespace)
-                {
+                if next_pos >= text.len() || text[next_pos..].starts_with(char::is_whitespace) {
                     return Some(next_pos);
                 }
             }
@@ -208,7 +206,8 @@ mod tests {
             respect_sentences: false,
         });
 
-        let text = "This is a longer text that should be split into multiple chunks for processing.";
+        let text =
+            "This is a longer text that should be split into multiple chunks for processing.";
         let chunks = chunker.chunk(text);
 
         assert!(chunks.len() > 1);
@@ -237,7 +236,9 @@ mod tests {
                 let last_char = chunk.text.trim_end().chars().last();
                 // Either ends with punctuation or is the full text
                 assert!(
-                    last_char == Some('.') || last_char == Some('!') || last_char == Some('?')
+                    last_char == Some('.')
+                        || last_char == Some('!')
+                        || last_char == Some('?')
                         || chunk.text == text
                 );
             }

@@ -32,7 +32,11 @@ pub fn run(path: Option<String>) -> Result<()> {
         config.save(&config_path)?;
         println!("  {} Created {}", "✓".green(), config_path.display());
     } else {
-        println!("  {} {} already exists", "•".yellow(), config_path.display());
+        println!(
+            "  {} {} already exists",
+            "•".yellow(),
+            config_path.display()
+        );
     }
 
     // Create .gitignore for .phago

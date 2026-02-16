@@ -102,9 +102,8 @@ impl OpenAiBackend {
 
     /// Create from environment variable.
     pub fn from_env() -> LlmResult<Self> {
-        let api_key = std::env::var("OPENAI_API_KEY").map_err(|_| {
-            LlmError::AuthenticationFailed
-        })?;
+        let api_key =
+            std::env::var("OPENAI_API_KEY").map_err(|_| LlmError::AuthenticationFailed)?;
         Ok(Self::new(&api_key))
     }
 
@@ -242,12 +241,13 @@ impl LlmBackend for OpenAiBackend {
             .with_descriptions();
 
         let system = prompt.system_prompt();
-        let response = self
-            .request(&prompt.generate(), system.as_deref())
-            .await?;
+        let response = self.request(&prompt.generate(), system.as_deref()).await?;
 
         parse_concepts_json(&response).map_err(|e| {
-            LlmError::ParseError(format!("Failed to parse concepts: {}. Response: {}", e, response))
+            LlmError::ParseError(format!(
+                "Failed to parse concepts: {}. Response: {}",
+                e, response
+            ))
         })
     }
 
@@ -260,9 +260,7 @@ impl LlmBackend for OpenAiBackend {
         let prompt = RelationshipPrompt::new(text, concept_labels);
 
         let system = prompt.system_prompt();
-        let response = self
-            .request(&prompt.generate(), system.as_deref())
-            .await?;
+        let response = self.request(&prompt.generate(), system.as_deref()).await?;
 
         crate::ollama::parse_relationships_json(&response).map_err(|e| {
             LlmError::ParseError(format!(
@@ -275,14 +273,12 @@ impl LlmBackend for OpenAiBackend {
     async fn expand_query(&self, query: &str) -> LlmResult<Vec<String>> {
         let prompt = crate::prompt::QueryExpansionPrompt::new(query);
         let system = prompt.system_prompt();
-        let response = self
-            .request(&prompt.generate(), system.as_deref())
-            .await?;
+        let response = self.request(&prompt.generate(), system.as_deref()).await?;
 
         // Parse JSON array of strings
         let json_str = extract_json_array(&response);
-        let expanded: Vec<String> = serde_json::from_str(json_str)
-            .map_err(|e| LlmError::ParseError(e.to_string()))?;
+        let expanded: Vec<String> =
+            serde_json::from_str(json_str).map_err(|e| LlmError::ParseError(e.to_string()))?;
 
         let mut result = vec![query.to_string()];
         result.extend(expanded);
@@ -325,8 +321,9 @@ mod tests {
 
     #[test]
     fn test_custom_endpoint() {
-        let backend = OpenAiBackend::new("key")
-            .with_endpoint("https://my-azure.openai.azure.com/openai/deployments/gpt-4/chat/completions");
+        let backend = OpenAiBackend::new("key").with_endpoint(
+            "https://my-azure.openai.azure.com/openai/deployments/gpt-4/chat/completions",
+        );
 
         assert!(backend.endpoint.contains("azure"));
     }

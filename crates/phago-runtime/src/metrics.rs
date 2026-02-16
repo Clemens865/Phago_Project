@@ -161,7 +161,8 @@ fn compute_transfer(colony: &Colony) -> TransferMetrics {
     let total_terms = all_nodes.len();
 
     // Nodes with access_count > 1 were reinforced by multiple agents
-    let shared_terms = all_nodes.iter()
+    let shared_terms = all_nodes
+        .iter()
         .filter(|nid| graph.get_node(nid).map_or(false, |n| n.access_count > 1))
         .count();
     let shared_term_ratio = if total_terms > 0 {
@@ -171,7 +172,9 @@ fn compute_transfer(colony: &Colony) -> TransferMetrics {
     };
 
     // Avg vocabulary from integration events
-    let integrated_terms: usize = colony.event_history().iter()
+    let integrated_terms: usize = colony
+        .event_history()
+        .iter()
         .filter_map(|(_, event)| {
             if let ColonyEvent::CapabilityIntegrated { terms_count, .. } = event {
                 Some(*terms_count)
@@ -196,7 +199,10 @@ fn compute_transfer(colony: &Colony) -> TransferMetrics {
     }
 }
 
-fn compute_transfer_from_snapshots(colony: &Colony, snapshots: &[ColonySnapshot]) -> TransferMetrics {
+fn compute_transfer_from_snapshots(
+    colony: &Colony,
+    snapshots: &[ColonySnapshot],
+) -> TransferMetrics {
     let mut total_exports = 0usize;
     let mut total_integrations = 0usize;
 
@@ -209,13 +215,18 @@ fn compute_transfer_from_snapshots(colony: &Colony, snapshots: &[ColonySnapshot]
     }
 
     // Find the snapshot with the most agents alive (peak activity)
-    let best_snapshot = snapshots.iter()
+    let best_snapshot = snapshots
+        .iter()
         .max_by_key(|s| s.agents.len())
         .or(snapshots.last());
 
     if let Some(snap) = best_snapshot {
         if !snap.agents.is_empty() {
-            let sizes = &snap.agents.iter().map(|a| a.vocabulary_size).collect::<Vec<_>>();
+            let sizes = &snap
+                .agents
+                .iter()
+                .map(|a| a.vocabulary_size)
+                .collect::<Vec<_>>();
             let total_vocab: usize = sizes.iter().sum();
             let avg_vocabulary_size = total_vocab as f64 / snap.agents.len() as f64;
 
@@ -223,7 +234,8 @@ fn compute_transfer_from_snapshots(colony: &Colony, snapshots: &[ColonySnapshot]
             let graph = colony.substrate().graph();
             let all_nodes = graph.all_nodes();
             let total_terms = all_nodes.len();
-            let shared_terms = all_nodes.iter()
+            let shared_terms = all_nodes
+                .iter()
                 .filter(|nid| graph.get_node(nid).map_or(false, |n| n.access_count > 1))
                 .count();
             let shared_term_ratio = if total_terms > 0 {
@@ -252,7 +264,10 @@ fn compute_dissolution(colony: &Colony) -> DissolutionMetrics {
     let mut total_terms_externalized = 0usize;
 
     for (_, event) in colony.event_history() {
-        if let ColonyEvent::Dissolved { terms_externalized, .. } = event {
+        if let ColonyEvent::Dissolved {
+            terms_externalized, ..
+        } = event
+        {
             total_dissolutions += 1;
             total_terms_externalized += terms_externalized;
         }
@@ -315,7 +330,11 @@ fn compute_graph_richness(colony: &Colony) -> GraphRichnessMetrics {
 
     let max_edges = if n > 1 { n * (n - 1) / 2 } else { 1 };
     let density = e as f64 / max_edges as f64;
-    let avg_degree = if n > 0 { 2.0 * e as f64 / n as f64 } else { 0.0 };
+    let avg_degree = if n > 0 {
+        2.0 * e as f64 / n as f64
+    } else {
+        0.0
+    };
 
     // Approximate clustering coefficient
     let all_nodes = graph.all_nodes();
@@ -351,8 +370,13 @@ fn compute_graph_richness(colony: &Colony) -> GraphRichnessMetrics {
         0.0
     };
 
-    let bridge_threshold = if avg_degree > 0.0 { avg_degree * 1.5 } else { 2.0 };
-    let bridge_concepts = all_nodes.iter()
+    let bridge_threshold = if avg_degree > 0.0 {
+        avg_degree * 1.5
+    } else {
+        2.0
+    };
+    let bridge_concepts = all_nodes
+        .iter()
         .filter(|nid| graph.neighbors(nid).len() as f64 > bridge_threshold)
         .count();
 
@@ -386,10 +410,11 @@ fn compute_vocabulary_spread(colony: &Colony) -> VocabularySpreadMetrics {
     }
 }
 
-fn compute_vocabulary_spread_from_snapshots(snapshots: &[ColonySnapshot]) -> VocabularySpreadMetrics {
+fn compute_vocabulary_spread_from_snapshots(
+    snapshots: &[ColonySnapshot],
+) -> VocabularySpreadMetrics {
     // Find the snapshot with the most agents (peak activity)
-    let best_snapshot = snapshots.iter()
-        .max_by_key(|s| s.agents.len());
+    let best_snapshot = snapshots.iter().max_by_key(|s| s.agents.len());
 
     if let Some(snap) = best_snapshot {
         if !snap.agents.is_empty() {
@@ -420,7 +445,11 @@ fn compute_vocabulary_spread_from_events(colony: &Colony) -> VocabularySpreadMet
     let mut agent_terms: HashMap<String, usize> = HashMap::new();
 
     for (_, event) in colony.event_history() {
-        if let ColonyEvent::CapabilityExported { agent_id, terms_count } = event {
+        if let ColonyEvent::CapabilityExported {
+            agent_id,
+            terms_count,
+        } = event
+        {
             let key = agent_id.0.to_string();
             let entry = agent_terms.entry(key).or_insert(0);
             *entry = (*entry).max(*terms_count);
@@ -477,44 +506,70 @@ fn compute_gini(values: &[usize]) -> f64 {
 pub fn print_report(metrics: &ColonyMetrics) {
     println!("── Quantitative Proof ──────────────────────────────");
     println!("  Transfer Effect:");
-    println!("    Terms known by 2+ agents:  {} / {} ({:.1}%)",
+    println!(
+        "    Terms known by 2+ agents:  {} / {} ({:.1}%)",
         metrics.transfer.shared_terms,
         metrics.transfer.total_terms,
-        metrics.transfer.shared_term_ratio * 100.0);
-    println!("    Avg vocabulary size:       {:.1} terms/agent",
-        metrics.transfer.avg_vocabulary_size);
-    println!("    Exports / Integrations:    {} / {}",
-        metrics.transfer.total_exports,
-        metrics.transfer.total_integrations);
+        metrics.transfer.shared_term_ratio * 100.0
+    );
+    println!(
+        "    Avg vocabulary size:       {:.1} terms/agent",
+        metrics.transfer.avg_vocabulary_size
+    );
+    println!(
+        "    Exports / Integrations:    {} / {}",
+        metrics.transfer.total_exports, metrics.transfer.total_integrations
+    );
     println!();
     println!("  Dissolution Effect:");
-    println!("    Concept avg access:         {:.1}",
-        metrics.dissolution.dissolved_node_avg_access);
-    println!("    Non-concept avg access:     {:.1}",
-        metrics.dissolution.non_dissolved_avg_access);
-    println!("    Reinforcement ratio:        {:.2}x",
-        metrics.dissolution.reinforcement_ratio);
-    println!("    Dissolutions / Terms:       {} / {}",
-        metrics.dissolution.total_dissolutions,
-        metrics.dissolution.total_terms_externalized);
+    println!(
+        "    Concept avg access:         {:.1}",
+        metrics.dissolution.dissolved_node_avg_access
+    );
+    println!(
+        "    Non-concept avg access:     {:.1}",
+        metrics.dissolution.non_dissolved_avg_access
+    );
+    println!(
+        "    Reinforcement ratio:        {:.2}x",
+        metrics.dissolution.reinforcement_ratio
+    );
+    println!(
+        "    Dissolutions / Terms:       {} / {}",
+        metrics.dissolution.total_dissolutions, metrics.dissolution.total_terms_externalized
+    );
     println!();
     println!("  Graph Richness:");
-    println!("    Density:                    {:.2}",
-        metrics.graph_richness.density);
-    println!("    Avg degree:                 {:.1}",
-        metrics.graph_richness.avg_degree);
-    println!("    Clustering coefficient:     {:.2}",
-        metrics.graph_richness.clustering_coefficient);
-    println!("    Bridge concepts:            {}",
-        metrics.graph_richness.bridge_concepts);
+    println!(
+        "    Density:                    {:.2}",
+        metrics.graph_richness.density
+    );
+    println!(
+        "    Avg degree:                 {:.1}",
+        metrics.graph_richness.avg_degree
+    );
+    println!(
+        "    Clustering coefficient:     {:.2}",
+        metrics.graph_richness.clustering_coefficient
+    );
+    println!(
+        "    Bridge concepts:            {}",
+        metrics.graph_richness.bridge_concepts
+    );
     println!();
     println!("  Vocabulary Spread:");
-    println!("    Gini coefficient:           {:.2} (low = well-spread)",
-        metrics.vocabulary_spread.gini_coefficient);
-    println!("    Max vocabulary:             {} terms",
-        metrics.vocabulary_spread.max_vocabulary);
-    println!("    Min vocabulary:             {} terms",
-        metrics.vocabulary_spread.min_vocabulary);
+    println!(
+        "    Gini coefficient:           {:.2} (low = well-spread)",
+        metrics.vocabulary_spread.gini_coefficient
+    );
+    println!(
+        "    Max vocabulary:             {} terms",
+        metrics.vocabulary_spread.max_vocabulary
+    );
+    println!(
+        "    Min vocabulary:             {} terms",
+        metrics.vocabulary_spread.min_vocabulary
+    );
 }
 
 #[cfg(test)]
@@ -564,6 +619,10 @@ mod tests {
 
         let values = vec![0, 0, 0, 100];
         let g = compute_gini(&values);
-        assert!(g > 0.5, "Gini should be high for unequal distribution: {}", g);
+        assert!(
+            g > 0.5,
+            "Gini should be high for unequal distribution: {}",
+            g
+        );
     }
 }

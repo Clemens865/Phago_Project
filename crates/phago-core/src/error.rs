@@ -2,8 +2,8 @@
 //!
 //! Provides structured error handling instead of panics.
 
-use std::fmt;
 use std::error::Error;
+use std::fmt;
 
 /// Result type for Phago operations.
 pub type Result<T> = std::result::Result<T, PhagoError>;
@@ -157,7 +157,11 @@ impl fmt::Display for SessionError {
             SessionError::NotFound(path) => write!(f, "Session not found: {}", path),
             SessionError::Corrupt(msg) => write!(f, "Session file corrupt: {}", msg),
             SessionError::VersionMismatch { expected, found } => {
-                write!(f, "Version mismatch: expected {}, found {}", expected, found)
+                write!(
+                    f,
+                    "Version mismatch: expected {}, found {}",
+                    expected, found
+                )
             }
             SessionError::SaveFailed(msg) => write!(f, "Save failed: {}", msg),
             SessionError::LoadFailed(msg) => write!(f, "Load failed: {}", msg),
@@ -193,22 +197,44 @@ impl fmt::Display for QueryError {
 #[derive(Debug, Clone)]
 pub enum ConfigError {
     /// Invalid value.
-    InvalidValue { field: String, value: String, reason: String },
+    InvalidValue {
+        field: String,
+        value: String,
+        reason: String,
+    },
     /// Missing required field.
     MissingField(String),
     /// Out of range.
-    OutOfRange { field: String, min: f64, max: f64, value: f64 },
+    OutOfRange {
+        field: String,
+        min: f64,
+        max: f64,
+        value: f64,
+    },
 }
 
 impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ConfigError::InvalidValue { field, value, reason } => {
+            ConfigError::InvalidValue {
+                field,
+                value,
+                reason,
+            } => {
                 write!(f, "Invalid value for {}: {} ({})", field, value, reason)
             }
             ConfigError::MissingField(field) => write!(f, "Missing required field: {}", field),
-            ConfigError::OutOfRange { field, min, max, value } => {
-                write!(f, "{} out of range: {} (must be {}-{})", field, value, min, max)
+            ConfigError::OutOfRange {
+                field,
+                min,
+                max,
+                value,
+            } => {
+                write!(
+                    f,
+                    "{} out of range: {} (must be {}-{})",
+                    field, value, min, max
+                )
             }
         }
     }
@@ -232,7 +258,11 @@ impl PhagoError {
         PhagoError::Query(QueryError::EmptyQuery)
     }
 
-    pub fn invalid_config(field: impl Into<String>, value: impl Into<String>, reason: impl Into<String>) -> Self {
+    pub fn invalid_config(
+        field: impl Into<String>,
+        value: impl Into<String>,
+        reason: impl Into<String>,
+    ) -> Self {
         PhagoError::Config(ConfigError::InvalidValue {
             field: field.into(),
             value: value.into(),

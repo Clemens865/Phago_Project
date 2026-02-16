@@ -23,10 +23,12 @@ pub fn export_triples(colony: &Colony) -> Vec<WeightedTriple> {
     let mut triples = Vec::new();
 
     for (from_id, to_id, edge) in graph.all_edges() {
-        let from_label = graph.get_node(&from_id)
+        let from_label = graph
+            .get_node(&from_id)
             .map(|n| n.label.clone())
             .unwrap_or_else(|| "?".to_string());
-        let to_label = graph.get_node(&to_id)
+        let to_label = graph
+            .get_node(&to_id)
             .map(|n| n.label.clone())
             .unwrap_or_else(|| "?".to_string());
 
@@ -40,7 +42,11 @@ pub fn export_triples(colony: &Colony) -> Vec<WeightedTriple> {
     }
 
     // Sort by weight descending (most important triples first)
-    triples.sort_by(|a, b| b.weight.partial_cmp(&a.weight).unwrap_or(std::cmp::Ordering::Equal));
+    triples.sort_by(|a, b| {
+        b.weight
+            .partial_cmp(&a.weight)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     triples
 }
 
@@ -67,9 +73,8 @@ pub fn triple_stats(triples: &[WeightedTriple]) -> TripleStats {
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let median_weight = sorted[sorted.len() / 2];
 
-    let mean_co_activations = triples.iter()
-        .map(|t| t.co_activations as f64)
-        .sum::<f64>() / total as f64;
+    let mean_co_activations =
+        triples.iter().map(|t| t.co_activations as f64).sum::<f64>() / total as f64;
 
     TripleStats {
         total,

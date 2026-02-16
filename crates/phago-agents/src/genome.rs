@@ -53,20 +53,26 @@ impl AgentGenome {
     pub fn mutate(&self, mutation_rate: f64, seed: u64) -> Self {
         let mut rng = seed;
         let mut next = || -> f64 {
-            rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            rng = rng
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
             // Map to [-1.0, 1.0]
             ((rng >> 33) as f64 / (u32::MAX as f64)) * 2.0 - 1.0
         };
 
         Self {
             sense_radius: (self.sense_radius * (1.0 + next() * mutation_rate)).clamp(2.0, 30.0),
-            max_idle: ((self.max_idle as f64 * (1.0 + next() * mutation_rate)).round() as u64).clamp(5, 100),
+            max_idle: ((self.max_idle as f64 * (1.0 + next() * mutation_rate)).round() as u64)
+                .clamp(5, 100),
             keyword_boost: (self.keyword_boost * (1.0 + next() * mutation_rate)).clamp(0.5, 10.0),
             explore_bias: (self.explore_bias + next() * mutation_rate * 0.5).clamp(0.0, 1.0),
             boundary_bias: (self.boundary_bias + next() * mutation_rate * 0.5).clamp(-1.0, 1.0),
-            tentative_weight: (self.tentative_weight * (1.0 + next() * mutation_rate)).clamp(0.05, 0.5),
-            reinforcement_boost: (self.reinforcement_boost * (1.0 + next() * mutation_rate)).clamp(0.01, 0.3),
-            wiring_selectivity: (self.wiring_selectivity + next() * mutation_rate * 0.3).clamp(0.1, 1.0),
+            tentative_weight: (self.tentative_weight * (1.0 + next() * mutation_rate))
+                .clamp(0.05, 0.5),
+            reinforcement_boost: (self.reinforcement_boost * (1.0 + next() * mutation_rate))
+                .clamp(0.01, 0.3),
+            wiring_selectivity: (self.wiring_selectivity + next() * mutation_rate * 0.3)
+                .clamp(0.1, 1.0),
         }
     }
 
@@ -74,14 +80,32 @@ impl AgentGenome {
     /// Parameters are normalized to [0,1] range before computing distance.
     pub fn distance(&self, other: &AgentGenome) -> f64 {
         let dims = [
-            ((self.sense_radius - 2.0) / 28.0, (other.sense_radius - 2.0) / 28.0),
+            (
+                (self.sense_radius - 2.0) / 28.0,
+                (other.sense_radius - 2.0) / 28.0,
+            ),
             (self.max_idle as f64 / 100.0, other.max_idle as f64 / 100.0),
-            ((self.keyword_boost - 0.5) / 9.5, (other.keyword_boost - 0.5) / 9.5),
+            (
+                (self.keyword_boost - 0.5) / 9.5,
+                (other.keyword_boost - 0.5) / 9.5,
+            ),
             (self.explore_bias, other.explore_bias),
-            ((self.boundary_bias + 1.0) / 2.0, (other.boundary_bias + 1.0) / 2.0),
-            ((self.tentative_weight - 0.05) / 0.45, (other.tentative_weight - 0.05) / 0.45),
-            ((self.reinforcement_boost - 0.01) / 0.29, (other.reinforcement_boost - 0.01) / 0.29),
-            ((self.wiring_selectivity - 0.1) / 0.9, (other.wiring_selectivity - 0.1) / 0.9),
+            (
+                (self.boundary_bias + 1.0) / 2.0,
+                (other.boundary_bias + 1.0) / 2.0,
+            ),
+            (
+                (self.tentative_weight - 0.05) / 0.45,
+                (other.tentative_weight - 0.05) / 0.45,
+            ),
+            (
+                (self.reinforcement_boost - 0.01) / 0.29,
+                (other.reinforcement_boost - 0.01) / 0.29,
+            ),
+            (
+                (self.wiring_selectivity - 0.1) / 0.9,
+                (other.wiring_selectivity - 0.1) / 0.9,
+            ),
         ];
 
         let sum_sq: f64 = dims.iter().map(|(a, b)| (a - b).powi(2)).sum();
@@ -133,7 +157,9 @@ mod tests {
         let g = AgentGenome::default_genome();
         let m1 = g.mutate(0.1, 42);
         let m2 = g.mutate(0.5, 42);
-        assert!(g.distance(&m2) >= g.distance(&m1) * 0.5,
-            "Larger mutation should generally produce larger distance");
+        assert!(
+            g.distance(&m2) >= g.distance(&m1) * 0.5,
+            "Larger mutation should generally produce larger distance"
+        );
     }
 }

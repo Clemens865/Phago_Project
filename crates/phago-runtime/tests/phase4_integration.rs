@@ -52,9 +52,15 @@ fn full_sim_produces_all_event_types() {
 
     // Spawn agents with deterministic seeds for reproducible behavior
     // Each digester is positioned near 2 documents
-    colony.spawn(Box::new(Digester::with_seed(Position::new(0.0, 0.0), 1).with_max_idle(200)));
-    colony.spawn(Box::new(Digester::with_seed(Position::new(5.0, 0.0), 2).with_max_idle(200)));
-    colony.spawn(Box::new(Digester::with_seed(Position::new(0.0, 5.0), 3).with_max_idle(200)));
+    colony.spawn(Box::new(
+        Digester::with_seed(Position::new(0.0, 0.0), 1).with_max_idle(200),
+    ));
+    colony.spawn(Box::new(
+        Digester::with_seed(Position::new(5.0, 0.0), 2).with_max_idle(200),
+    ));
+    colony.spawn(Box::new(
+        Digester::with_seed(Position::new(0.0, 5.0), 3).with_max_idle(200),
+    ));
     colony.spawn(Box::new(Synthesizer::with_seed(Position::new(2.5, 2.5), 4)));
     colony.spawn(Box::new(Sentinel::with_seed(Position::new(2.5, 2.5), 5)));
 
@@ -74,9 +80,15 @@ fn full_sim_produces_all_event_types() {
         }
     }
 
-    assert!(has_exported, "should have at least one CapabilityExported event");
+    assert!(
+        has_exported,
+        "should have at least one CapabilityExported event"
+    );
     // Integration and dissolution depend on timing/proximity, so just log
-    println!("Integration occurred: {}, Dissolution occurred: {}", has_integrated, has_dissolved);
+    println!(
+        "Integration occurred: {}, Dissolution occurred: {}",
+        has_integrated, has_dissolved
+    );
 }
 
 #[test]
@@ -90,7 +102,9 @@ fn dissolution_boosts_access_count() {
         Position::new(0.0, 0.0),
     );
 
-    colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(80)));
+    colony.spawn(Box::new(
+        Digester::new(Position::new(0.0, 0.0)).with_max_idle(80),
+    ));
 
     // Run enough ticks for digestion + dissolution to occur
     colony.run(60);
@@ -109,5 +123,8 @@ fn dissolution_boosts_access_count() {
         }
     }
 
-    assert!(found_reinforced, "at least one node should have access_count > 1 from dissolution/reinforcement");
+    assert!(
+        found_reinforced,
+        "at least one node should have access_count > 1 from dissolution/reinforcement"
+    );
 }

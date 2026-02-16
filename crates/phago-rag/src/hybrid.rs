@@ -133,7 +133,9 @@ pub fn hybrid_query(colony: &Colony, query_text: &str, config: &HybridConfig) ->
         let mut max_edge_weight = 0.0_f64;
         let mut total_co_activations = 0_u64;
         for seed in &seed_ids {
-            if seed == nid { continue; }
+            if seed == nid {
+                continue;
+            }
             if let Some(edge) = graph.get_edge(seed, nid) {
                 max_edge_weight = max_edge_weight.max(edge.weight);
                 total_co_activations += edge.co_activations;
@@ -170,7 +172,11 @@ pub fn hybrid_query(colony: &Colony, query_text: &str, config: &HybridConfig) ->
     }
 
     // Sort by final score and take top results
-    results.sort_by(|a, b| b.final_score.partial_cmp(&a.final_score).unwrap_or(std::cmp::Ordering::Equal));
+    results.sort_by(|a, b| {
+        b.final_score
+            .partial_cmp(&a.final_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     results.truncate(config.max_results);
     results
 }
@@ -178,14 +184,12 @@ pub fn hybrid_query(colony: &Colony, query_text: &str, config: &HybridConfig) ->
 /// Simple tokenizer matching the ones in query.rs and baseline.rs.
 fn tokenize(text: &str) -> Vec<String> {
     let stopwords: std::collections::HashSet<&str> = [
-        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "do", "does", "did", "will", "would", "could",
-        "should", "may", "might", "shall", "can", "need", "to", "of", "in",
-        "for", "on", "with", "at", "by", "from", "as", "into", "through",
-        "during", "before", "after", "above", "below", "between", "out",
-        "off", "over", "under", "again", "further", "then", "once", "and",
-        "but", "or", "if", "while", "what", "which", "who", "this", "that",
-        "these", "those", "it", "its", "how",
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+        "do", "does", "did", "will", "would", "could", "should", "may", "might", "shall", "can",
+        "need", "to", "of", "in", "for", "on", "with", "at", "by", "from", "as", "into", "through",
+        "during", "before", "after", "above", "below", "between", "out", "off", "over", "under",
+        "again", "further", "then", "once", "and", "but", "or", "if", "while", "what", "which",
+        "who", "this", "that", "these", "those", "it", "its", "how",
     ]
     .iter()
     .cloned()
@@ -240,7 +244,10 @@ mod tests {
     #[test]
     fn hybrid_blends_scores() {
         let colony = setup_colony();
-        let config = HybridConfig { alpha: 0.5, ..Default::default() };
+        let config = HybridConfig {
+            alpha: 0.5,
+            ..Default::default()
+        };
         let results = hybrid_query(&colony, "cell membrane", &config);
 
         for r in &results {
@@ -250,7 +257,9 @@ mod tests {
             assert!(
                 r.final_score >= min * 0.9 && r.final_score <= max * 1.1,
                 "final_score {:.3} should blend tfidf {:.3} and graph {:.3}",
-                r.final_score, r.tfidf_score, r.graph_score
+                r.final_score,
+                r.tfidf_score,
+                r.graph_score
             );
         }
     }
@@ -258,14 +267,19 @@ mod tests {
     #[test]
     fn alpha_1_equals_pure_tfidf() {
         let colony = setup_colony();
-        let config = HybridConfig { alpha: 1.0, max_results: 5, candidate_multiplier: 3 };
+        let config = HybridConfig {
+            alpha: 1.0,
+            max_results: 5,
+            candidate_multiplier: 3,
+        };
         let results = hybrid_query(&colony, "cell", &config);
 
         for r in &results {
             assert!(
                 (r.final_score - r.tfidf_score).abs() < 1e-10,
                 "alpha=1.0 should give pure TF-IDF: final={:.4}, tfidf={:.4}",
-                r.final_score, r.tfidf_score
+                r.final_score,
+                r.tfidf_score
             );
         }
     }

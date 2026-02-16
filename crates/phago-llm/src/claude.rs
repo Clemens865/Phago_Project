@@ -97,9 +97,8 @@ impl ClaudeBackend {
 
     /// Create from environment variable.
     pub fn from_env() -> LlmResult<Self> {
-        let api_key = std::env::var("ANTHROPIC_API_KEY").map_err(|_| {
-            LlmError::AuthenticationFailed
-        })?;
+        let api_key =
+            std::env::var("ANTHROPIC_API_KEY").map_err(|_| LlmError::AuthenticationFailed)?;
         Ok(Self::new(&api_key))
     }
 
@@ -224,12 +223,13 @@ impl LlmBackend for ClaudeBackend {
             .with_descriptions();
 
         let system = prompt.system_prompt();
-        let response = self
-            .request(&prompt.generate(), system.as_deref())
-            .await?;
+        let response = self.request(&prompt.generate(), system.as_deref()).await?;
 
         parse_concepts_json(&response).map_err(|e| {
-            LlmError::ParseError(format!("Failed to parse concepts: {}. Response: {}", e, response))
+            LlmError::ParseError(format!(
+                "Failed to parse concepts: {}. Response: {}",
+                e, response
+            ))
         })
     }
 
@@ -242,9 +242,7 @@ impl LlmBackend for ClaudeBackend {
         let prompt = RelationshipPrompt::new(text, concept_labels);
 
         let system = prompt.system_prompt();
-        let response = self
-            .request(&prompt.generate(), system.as_deref())
-            .await?;
+        let response = self.request(&prompt.generate(), system.as_deref()).await?;
 
         crate::ollama::parse_relationships_json(&response).map_err(|e| {
             LlmError::ParseError(format!(
@@ -257,14 +255,12 @@ impl LlmBackend for ClaudeBackend {
     async fn expand_query(&self, query: &str) -> LlmResult<Vec<String>> {
         let prompt = crate::prompt::QueryExpansionPrompt::new(query);
         let system = prompt.system_prompt();
-        let response = self
-            .request(&prompt.generate(), system.as_deref())
-            .await?;
+        let response = self.request(&prompt.generate(), system.as_deref()).await?;
 
         // Parse JSON array of strings
         let json_str = extract_json_array(&response);
-        let expanded: Vec<String> = serde_json::from_str(json_str)
-            .map_err(|e| LlmError::ParseError(e.to_string()))?;
+        let expanded: Vec<String> =
+            serde_json::from_str(json_str).map_err(|e| LlmError::ParseError(e.to_string()))?;
 
         // Include original query
         let mut result = vec![query.to_string()];
@@ -286,7 +282,6 @@ fn extract_json_array(text: &str) -> &str {
         text
     }
 }
-
 
 #[cfg(test)]
 mod tests {

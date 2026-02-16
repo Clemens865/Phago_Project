@@ -49,7 +49,10 @@ pub fn extract_code_elements(source: &str, filename: &str) -> Vec<CodeElement> {
         let trimmed = line.trim();
 
         // Function definitions
-        if trimmed.starts_with("pub fn ") || trimmed.starts_with("fn ") || trimmed.starts_with("pub(crate) fn ") {
+        if trimmed.starts_with("pub fn ")
+            || trimmed.starts_with("fn ")
+            || trimmed.starts_with("pub(crate) fn ")
+        {
             if let Some(name) = extract_identifier(trimmed, "fn ") {
                 elements.push(CodeElement {
                     name,
@@ -139,10 +142,15 @@ pub fn extract_code_elements(source: &str, filename: &str) -> Vec<CodeElement> {
 /// Extract identifier after a keyword like "fn ", "struct ", etc.
 fn extract_identifier(line: &str, keyword: &str) -> Option<String> {
     let rest = line.split(keyword).nth(1)?;
-    let name: String = rest.chars()
+    let name: String = rest
+        .chars()
         .take_while(|c| c.is_alphanumeric() || *c == '_')
         .collect();
-    if name.is_empty() { None } else { Some(name) }
+    if name.is_empty() {
+        None
+    } else {
+        Some(name)
+    }
 }
 
 /// Extract type name from an impl block.
@@ -153,7 +161,8 @@ fn extract_impl_name(line: &str) -> Option<String> {
         // Check for "for" keyword indicating trait impl
         if let Some(for_idx) = parts.iter().position(|&p| p == "for") {
             if for_idx + 1 < parts.len() {
-                let name: String = parts[for_idx + 1].chars()
+                let name: String = parts[for_idx + 1]
+                    .chars()
                     .take_while(|c| c.is_alphanumeric() || *c == '_')
                     .collect();
                 return if name.is_empty() { None } else { Some(name) };
@@ -161,11 +170,14 @@ fn extract_impl_name(line: &str) -> Option<String> {
         }
         // Simple impl: "impl Foo"
         let type_part = parts[1];
-        let name: String = type_part.chars()
+        let name: String = type_part
+            .chars()
             .skip_while(|c| *c == '<' || *c == '>')
             .take_while(|c| c.is_alphanumeric() || *c == '_')
             .collect();
-        if !name.is_empty() { return Some(name); }
+        if !name.is_empty() {
+            return Some(name);
+        }
     }
     None
 }
@@ -175,17 +187,27 @@ fn extract_use_path(line: &str) -> Option<String> {
     let rest = line.split("use ").nth(1)?;
     let path = rest.trim_end_matches(';').trim();
     let last = path.rsplit("::").next()?;
-    let name: String = last.chars()
+    let name: String = last
+        .chars()
         .take_while(|c| c.is_alphanumeric() || *c == '_')
         .collect();
-    if name.is_empty() || name == "*" { None } else { Some(name) }
+    if name.is_empty() || name == "*" {
+        None
+    } else {
+        Some(name)
+    }
 }
 
 /// Generate a document string from code elements for colony ingestion.
 pub fn elements_to_document(elements: &[CodeElement], filename: &str) -> String {
     let mut doc = format!("Source file: {}. ", filename);
     for elem in elements {
-        doc.push_str(&format!("{} {} defined at line {}. ", elem.kind.as_str(), elem.name, elem.line));
+        doc.push_str(&format!(
+            "{} {} defined at line {}. ",
+            elem.kind.as_str(),
+            elem.name,
+            elem.line
+        ));
     }
     doc
 }
@@ -198,7 +220,8 @@ mod tests {
     fn extract_functions() {
         let source = "pub fn hello_world() {\n}\nfn private_fn() {}";
         let elements = extract_code_elements(source, "test.rs");
-        let fns: Vec<_> = elements.iter()
+        let fns: Vec<_> = elements
+            .iter()
             .filter(|e| e.kind == CodeElementKind::Function)
             .collect();
         assert_eq!(fns.len(), 2);
@@ -216,7 +239,8 @@ mod tests {
     fn extract_impl_blocks() {
         let source = "impl Foo {\n}\nimpl Display for Bar {}\nimpl<T> Clone for Baz<T> {}";
         let elements = extract_code_elements(source, "test.rs");
-        let impls: Vec<_> = elements.iter()
+        let impls: Vec<_> = elements
+            .iter()
             .filter(|e| e.kind == CodeElementKind::Impl)
             .collect();
         assert!(impls.len() >= 2);

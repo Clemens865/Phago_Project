@@ -83,7 +83,8 @@ pub fn save_session_with_agents(
     let graph = colony.substrate().graph();
     let all_nodes = graph.all_nodes();
 
-    let nodes: Vec<SerializedNode> = all_nodes.iter()
+    let nodes: Vec<SerializedNode> = all_nodes
+        .iter()
         .filter_map(|nid| graph.get_node(nid))
         .map(|n| SerializedNode {
             label: n.label.clone(),
@@ -96,7 +97,9 @@ pub fn save_session_with_agents(
         })
         .collect();
 
-    let edges: Vec<SerializedEdge> = graph.all_edges().iter()
+    let edges: Vec<SerializedEdge> = graph
+        .all_edges()
+        .iter()
         .filter_map(|(from, to, edge)| {
             let from_label = graph.get_node(from)?.label.clone();
             let to_label = graph.get_node(to)?.label.clone();
@@ -139,8 +142,7 @@ pub fn save_session_with_agents(
 /// Load a saved session from JSON.
 pub fn load_session(path: &Path) -> std::io::Result<GraphState> {
     let json = std::fs::read_to_string(path)?;
-    serde_json::from_str(&json)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+    serde_json::from_str(&json).map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
 }
 
 /// Restore a graph state into a colony.
@@ -198,12 +200,16 @@ pub fn restore_into_colony(colony: &mut Colony, state: &GraphState) {
             label_to_id.get(&edge.from_label),
             label_to_id.get(&edge.to_label),
         ) {
-            colony.substrate_mut().set_edge(from_id, to_id, EdgeData {
-                weight: edge.weight,
-                co_activations: edge.co_activations,
-                created_tick: edge.created_tick,
-                last_activated_tick: edge.last_activated_tick,
-            });
+            colony.substrate_mut().set_edge(
+                from_id,
+                to_id,
+                EdgeData {
+                    weight: edge.weight,
+                    co_activations: edge.co_activations,
+                    created_tick: edge.created_tick,
+                    last_activated_tick: edge.last_activated_tick,
+                },
+            );
         }
     }
 
@@ -221,8 +227,8 @@ pub fn restore_into_colony(colony: &mut Colony, state: &GraphState) {
 /// Returns the number of agents successfully restored.
 pub fn restore_agents(colony: &mut Colony, state: &GraphState) -> usize {
     use phago_agents::digester::Digester;
-    use phago_agents::serialize::SerializableAgent;
     use phago_agents::sentinel::Sentinel;
+    use phago_agents::serialize::SerializableAgent;
     use phago_agents::synthesizer::Synthesizer;
 
     let mut restored = 0;
@@ -275,7 +281,9 @@ mod tests {
         colony.ingest_document("test", "cell membrane protein", Position::new(0.0, 0.0));
 
         use phago_agents::digester::Digester;
-        colony.spawn(Box::new(Digester::new(Position::new(0.0, 0.0)).with_max_idle(80)));
+        colony.spawn(Box::new(
+            Digester::new(Position::new(0.0, 0.0)).with_max_idle(80),
+        ));
         colony.run(15);
 
         let tmp = std::env::temp_dir().join("phago_session_test.json");
@@ -303,7 +311,11 @@ mod tests {
         use phago_agents::serialize::SerializableAgent;
 
         let mut colony = Colony::new();
-        colony.ingest_document("test", "cell membrane protein biology", Position::new(0.0, 0.0));
+        colony.ingest_document(
+            "test",
+            "cell membrane protein biology",
+            Position::new(0.0, 0.0),
+        );
 
         // Create a digester and let it process
         let mut digester = Digester::new(Position::new(0.0, 0.0)).with_max_idle(100);
@@ -354,6 +366,9 @@ mod tests {
 
         assert_eq!(restored.position().x, 1.0);
         assert_eq!(restored.position().y, 2.0);
-        assert!(restored.total_fragments() > 0, "Vocabulary should be preserved");
+        assert!(
+            restored.total_fragments() > 0,
+            "Vocabulary should be preserved"
+        );
     }
 }

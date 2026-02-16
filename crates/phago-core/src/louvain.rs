@@ -281,10 +281,7 @@ impl LouvainGraph {
 ///
 /// # Returns
 /// A `LouvainResult` containing communities (as NodeIds), modularity score, and pass count.
-pub fn louvain_communities(
-    node_ids: &[NodeId],
-    edges: &[(usize, usize, f64)],
-) -> LouvainResult {
+pub fn louvain_communities(node_ids: &[NodeId], edges: &[(usize, usize, f64)]) -> LouvainResult {
     if node_ids.is_empty() {
         return LouvainResult {
             communities: Vec::new(),
@@ -459,11 +456,7 @@ mod tests {
     #[test]
     fn triangle() {
         let nodes = vec![node_id(1), node_id(2), node_id(3)];
-        let edges = vec![
-            (0, 1, 1.0),
-            (1, 2, 1.0),
-            (0, 2, 1.0),
-        ];
+        let edges = vec![(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)];
         let result = louvain_communities(&nodes, &edges);
         // All in one community
         assert_eq!(result.communities.len(), 1);
@@ -499,7 +492,11 @@ mod tests {
         assert_eq!(sizes.iter().sum::<usize>(), 6);
 
         // Modularity should be positive
-        assert!(result.modularity > 0.0, "modularity = {}", result.modularity);
+        assert!(
+            result.modularity > 0.0,
+            "modularity = {}",
+            result.modularity
+        );
     }
 
     #[test]
@@ -511,12 +508,18 @@ mod tests {
         let nodes: Vec<NodeId> = (0..8).map(|i| node_id(i as u64)).collect();
         let edges = vec![
             // Group A internal (complete)
-            (0, 1, 1.0), (0, 2, 1.0), (0, 3, 1.0),
-            (1, 2, 1.0), (1, 3, 1.0),
+            (0, 1, 1.0),
+            (0, 2, 1.0),
+            (0, 3, 1.0),
+            (1, 2, 1.0),
+            (1, 3, 1.0),
             (2, 3, 1.0),
             // Group B internal (complete)
-            (4, 5, 1.0), (4, 6, 1.0), (4, 7, 1.0),
-            (5, 6, 1.0), (5, 7, 1.0),
+            (4, 5, 1.0),
+            (4, 6, 1.0),
+            (4, 7, 1.0),
+            (5, 6, 1.0),
+            (5, 7, 1.0),
             (6, 7, 1.0),
             // Inter-group (sparse)
             (3, 4, 0.2),
@@ -525,7 +528,12 @@ mod tests {
         let result = louvain_communities(&nodes, &edges);
 
         // Should find 2 communities
-        assert_eq!(result.communities.len(), 2, "found {} communities", result.communities.len());
+        assert_eq!(
+            result.communities.len(),
+            2,
+            "found {} communities",
+            result.communities.len()
+        );
 
         // Modularity for this structure should be high (> 0.3)
         assert!(
@@ -553,11 +561,7 @@ mod tests {
     #[test]
     fn modularity_all_one_community() {
         // All nodes in one community should give Q = 0
-        let edges = vec![
-            (0, 1, 1.0),
-            (1, 2, 1.0),
-            (0, 2, 1.0),
-        ];
+        let edges = vec![(0, 1, 1.0), (1, 2, 1.0), (0, 2, 1.0)];
         let partition = vec![0, 0, 0]; // All in same community
 
         let q = compute_modularity(3, &edges, &partition);

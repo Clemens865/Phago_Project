@@ -10,10 +10,7 @@ pub fn run(query: &str, max_results: usize, alpha: f64) -> Result<()> {
     let session_path = current_session_path()?;
 
     if !session_path.exists() {
-        bail!(
-            "No session found. Run {} first.",
-            "phago ingest".cyan()
-        );
+        bail!("No session found. Run {} first.", "phago ingest".cyan());
     }
 
     // Load session

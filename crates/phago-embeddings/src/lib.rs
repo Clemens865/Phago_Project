@@ -23,18 +23,18 @@
 //! let similarity = embedder.cosine_similarity(&v1, &v2);
 //! ```
 
-mod embedder;
-mod simple;
 mod chunker;
+mod embedder;
 mod normalize;
+mod simple;
 
+pub use chunker::{ChunkConfig, Chunker};
 pub use embedder::{Embedder, EmbeddingError, EmbeddingResult};
-pub use simple::SimpleEmbedder;
-pub use chunker::{Chunker, ChunkConfig};
 pub use normalize::{
-    normalize_l2, normalize_l1, normalize_minmax, normalize_zscore,
-    cosine_similarity, euclidean_distance, dot_product,
+    cosine_similarity, dot_product, euclidean_distance, normalize_l1, normalize_l2,
+    normalize_minmax, normalize_zscore,
 };
+pub use simple::SimpleEmbedder;
 
 #[cfg(feature = "local")]
 mod onnx;
@@ -44,17 +44,17 @@ pub use onnx::OnnxEmbedder;
 #[cfg(feature = "api")]
 mod api;
 #[cfg(feature = "api")]
-pub use api::{ApiEmbedder, ApiConfig};
+pub use api::{ApiConfig, ApiEmbedder};
 
 /// Prelude for convenient imports.
 pub mod prelude {
+    pub use crate::{cosine_similarity, normalize_l2};
+    pub use crate::{ChunkConfig, Chunker, SimpleEmbedder};
     pub use crate::{Embedder, EmbeddingError, EmbeddingResult};
-    pub use crate::{SimpleEmbedder, Chunker, ChunkConfig};
-    pub use crate::{normalize_l2, cosine_similarity};
 
     #[cfg(feature = "local")]
     pub use crate::OnnxEmbedder;
 
     #[cfg(feature = "api")]
-    pub use crate::{ApiEmbedder, ApiConfig};
+    pub use crate::{ApiConfig, ApiEmbedder};
 }

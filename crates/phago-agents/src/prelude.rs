@@ -5,18 +5,20 @@
 //! ```
 
 // Re-export agent types
+pub use crate::code_digester::{
+    elements_to_document, extract_code_elements, CodeElement, CodeElementKind,
+};
 pub use crate::digester::Digester;
-pub use crate::sentinel::Sentinel;
-pub use crate::synthesizer::Synthesizer;
-pub use crate::code_digester::{CodeElement, CodeElementKind, extract_code_elements, elements_to_document};
-pub use crate::genome::AgentGenome;
 pub use crate::fitness::{AgentFitness, FitnessTracker};
-pub use crate::spawn::{SpawnPolicy, FitnessSpawnPolicy};
-pub use crate::serialize::{AgentType, SerializedAgent, SerializableAgent};
+pub use crate::genome::AgentGenome;
+pub use crate::sentinel::Sentinel;
+pub use crate::serialize::{AgentType, SerializableAgent, SerializedAgent};
+pub use crate::spawn::{FitnessSpawnPolicy, SpawnPolicy};
+pub use crate::synthesizer::Synthesizer;
 
 // Semantic digester (requires "semantic" feature)
 #[cfg(feature = "semantic")]
-pub use crate::semantic_digester::{SemanticDigester, SemanticConcept, SemanticConfig};
+pub use crate::semantic_digester::{SemanticConcept, SemanticConfig, SemanticDigester};
 
 // Re-export from core
 pub use phago_core::prelude::*;
