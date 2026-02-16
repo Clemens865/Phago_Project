@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Run tests
+        run: cargo test --workspace --exclude phago-python --exclude phago-web --exclude phago-wasm
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --exclude phago-python --exclude phago-web --exclude phago-wasm -- -D warnings
+
+  build-features:
+    name: Build (${{ matrix.features }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - features: "default"
+            package: "phago"
+          - features: "sqlite"
+            package: "phago-runtime"
+          - features: "async,streaming"
+            package: "phago-runtime"
+          - features: "semantic"
+            package: "phago-rag"
+          - features: "distributed"
+            package: "phago-cli"
+          - features: "default"
+            package: "phago-mcp"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build with features
+        run: |
+          if [ "${{ matrix.features }}" = "default" ]; then
+            cargo build -p ${{ matrix.package }}
+          else
+            cargo build -p ${{ matrix.package }} --features ${{ matrix.features }}
+          fi

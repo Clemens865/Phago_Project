@@ -87,6 +87,13 @@ enum Commands {
     /// Show colony statistics
     Stats,
 
+    /// Start the MCP server (delegates to phago-mcp binary)
+    Mcp {
+        /// Path to SQLite database for persistent knowledge storage
+        #[arg(long)]
+        db: Option<String>,
+    },
+
     /// Distributed cluster management
     #[cfg(feature = "distributed")]
     Cluster {
@@ -210,6 +217,22 @@ fn main() -> Result<()> {
             SessionCommands::List => commands::session::list(),
         },
         Commands::Stats => commands::stats::run(),
+        Commands::Mcp { db } => {
+            let mut cmd = std::process::Command::new("phago-mcp");
+            if let Some(path) = db {
+                cmd.arg("--db").arg(path);
+            }
+            let status = cmd.status().map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    anyhow::anyhow!(
+                        "phago-mcp binary not found. Install with: cargo install phago-mcp"
+                    )
+                } else {
+                    anyhow::anyhow!("Failed to start MCP server: {e}")
+                }
+            })?;
+            std::process::exit(status.code().unwrap_or(1));
+        }
 
         #[cfg(feature = "distributed")]
         Commands::Cluster { command } => match command {

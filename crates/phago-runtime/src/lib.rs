@@ -35,7 +35,9 @@ pub mod export;
 pub mod community;
 pub mod curriculum;
 pub mod training_format;
+pub mod diff;
 pub mod session;
+pub mod stdp;
 pub mod project_context;
 pub mod backend;
 pub mod prelude;
@@ -48,3 +50,6 @@ pub mod async_runtime;
 
 #[cfg(feature = "streaming")]
 pub mod streaming;
+
+#[cfg(feature = "vectors")]
+pub mod vector_integration;

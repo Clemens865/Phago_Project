@@ -29,6 +29,10 @@ futures = { version = "0.3", optional = true }
 notify = { version = "6", optional = true }
 notify-debouncer-mini = { version = "0.4", optional = true }
 
+# Vector store integration
+phago-vectors = { workspace = true, optional = true }
+phago-embeddings = { workspace = true, optional = true }
+
 [dev-dependencies]
 tempfile = "3"
 
@@ -37,3 +41,4 @@ default = []
 sqlite = ["rusqlite"]
 async = ["tokio", "async-trait", "futures"]
 streaming = ["async", "notify", "notify-debouncer-mini"]
+vectors = ["phago-vectors", "phago-embeddings"]

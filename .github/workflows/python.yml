@@ -1,0 +1,75 @@
+name: Python Wheels
+
+on:
+  push:
+    tags:
+      - 'py-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.9', '3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install maturin
+        run: pip install maturin
+      - name: Build wheel
+        working-directory: crates/phago-python
+        run: maturin build --release --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-py${{ matrix.python }}
+          path: crates/phago-python/dist/*.whl
+
+  sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install maturin
+        run: pip install maturin
+      - name: Build sdist
+        working-directory: crates/phago-python
+        run: maturin sdist --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: crates/phago-python/dist/*.tar.gz
+
+  publish:
+    name: Publish to PyPI
+    needs: [build, sdist]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/py-v')
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

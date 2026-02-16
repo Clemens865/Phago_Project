@@ -22,6 +22,7 @@ pub mod baseline;
 pub mod code_query;
 pub mod hybrid;
 pub mod mcp;
+pub mod counterfactual;
 pub mod prelude;
 
 pub use query::{Query, QueryResult, QueryEngine};

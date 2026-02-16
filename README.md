@@ -1,5 +1,7 @@
 # Phago — Biological Computing Primitives
 
+[![CI](https://github.com/Clemens865/Phago_Project/actions/workflows/ci.yml/badge.svg)](https://github.com/Clemens865/Phago_Project/actions/workflows/ci.yml)
+
 **Version 1.0.0 | Production-Ready**
 
 A Rust framework that maps cellular biology mechanisms to computational operations. Agents self-organize, consume documents, build a Hebbian knowledge graph, share vocabulary, detect anomalies, and exhibit emergent collective behavior — all without top-down orchestration. Now with distributed multi-node sharding for horizontal scaling.
@@ -8,7 +10,7 @@ A Rust framework that maps cellular biology mechanisms to computational operatio
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| Tests passing | **155+** | 100% pass rate across 14 crates |
+| Tests passing | **180+** | 100% pass rate across 15 crates |
 | Graph edge reduction | **98.3%** | 256k to 4.5k via Hebbian LTP |
 | Hybrid MRR | **0.800** | Beats TF-IDF (0.775) on first-result ranking |
 | Hybrid P@5 | **0.742** | Matches TF-IDF precision |
@@ -106,7 +108,7 @@ See [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md) for complete exampl
 - **Vector DB integration**: Qdrant, Pinecone, Weaviate adapters
 - **Streaming ingestion**: Async channels with backpressure and file watching
 - **Web dashboard**: Axum + D3.js real-time colony visualization
-- **Python bindings**: PyO3 with LangChain and LlamaIndex adapters
+- **Python bindings**: `pip install phago` — PyO3 with LangChain and LlamaIndex adapters
 - **Louvain communities**: Perfect topic clustering (NMI = 1.0)
 
 ### SQLite Persistence (Phase 10)
@@ -383,11 +385,109 @@ Architecture:
 - **Two-phase distributed TF-IDF** with scatter-gather for globally accurate scoring
 - **tarpc RPC** with connection pooling for inter-shard communication
 
-### MCP Integration
-External LLMs/agents can interact via typed request/response API:
-- `phago_remember(title, content, ticks)` — ingest document
-- `phago_recall(query, max_results, alpha)` — hybrid query
-- `phago_explore(type: path|centrality|bridges|stats)` — structural queries
+### MCP Server
+
+Phago ships a standalone MCP server binary that speaks the Model Context Protocol over stdio. Compatible with Claude Desktop, Cursor, and any MCP client.
+
+```bash
+# Run the MCP server directly
+cargo run --bin phago-mcp
+
+# Or via the CLI with optional SQLite persistence
+cargo run --bin phago -- mcp --db knowledge.db
+```
+
+Tools exposed:
+- `phago_remember(title, content, ticks)` — ingest a document into the colony
+- `phago_recall(query, max_results, alpha)` — hybrid query (TF-IDF + graph re-ranking)
+- `phago_explore(type: path|centrality|bridges|stats)` — structural graph queries
+
+Add to your Claude Desktop config (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "phago": {
+      "command": "cargo",
+      "args": ["run", "--bin", "phago-mcp", "--manifest-path", "/path/to/Phago_Project/Cargo.toml"]
+    }
+  }
+}
+```
+
+### Counterfactual Explanations
+
+Answer "what if?" questions about the knowledge graph:
+
+```rust,ignore
+use phago_rag::counterfactual::*;
+
+let intervention = Intervention::RemoveEdge {
+    from_label: "cell".into(),
+    to_label: "membrane".into(),
+};
+let result = counterfactual_query(&colony, &intervention, "cell biology", &Default::default());
+println!("Impact: {} rank changes", result.rank_changes.len());
+println!("Significant: {}", result.significant);
+```
+
+### STDP — Directed Temporal Edges
+
+Spike-Timing-Dependent Plasticity adds directed "predictive" edges alongside the existing undirected co-occurrence graph. Encodes "what comes next?" patterns.
+
+```rust,ignore
+use phago_runtime::stdp::StdpGraph;
+
+let mut stdp = StdpGraph::new();
+stdp.apply_sequence(&[node_a, node_b, node_c], tick);
+
+// "What comes after A?"
+let successors = stdp.successors(&node_a);
+
+// Directed shortest path
+let path = stdp.directed_shortest_path(&node_a, &node_c);
+```
+
+### Graph Diffing
+
+Compare two colony snapshots to understand knowledge graph evolution:
+
+```rust,ignore
+use phago_runtime::diff::diff_sessions;
+
+let diff = diff_sessions(&before_state, &after_state);
+println!("{}", diff.summary());
+// "Since tick 0 → 50: +15 nodes, -3 nodes, +20 edges, -5 edges, 12 edges strengthened"
+```
+
+### AST-Based Code Digester
+
+Tree-sitter powered multi-language code parsing (Rust, Python, JavaScript):
+
+```toml
+[dependencies]
+phago-agents = { version = "1.0", features = ["ast"] }
+```
+
+```rust,ignore
+use phago_agents::ast_digester::{AstDigester, CodeLanguage};
+
+let digester = AstDigester::new(CodeLanguage::Rust);
+let elements = digester.extract_symbols(source_code, "main.rs");
+// Extracts functions, structs, enums, traits, impls, modules — via AST, not regex
+```
+
+### Lamarckian LLM-Guided Evolution
+
+When an agent dies, optionally feed its death context + genome to an LLM for targeted evolution advice:
+
+```rust,ignore
+use phago_agents::lamarckian::*;
+
+let advisor = MockAdvisor::new().with_suggestion("sense_radius", 15.0);
+let evolved = evolve_genome(&genome, &death_context, &advisor, 0.1, seed);
+// Applies LLM-suggested patches + Darwinian mutation
+// Falls back to pure Darwinian mutation if advisor returns no patches
+```
 
 ## Architecture
 
@@ -396,11 +496,12 @@ crates/
 ├── phago/              # Unified facade crate (use this!)
 ├── phago-cli/          # CLI (ingest, query, stats, session, cluster)
 ├── phago-core/         # Traits (10 primitives) + shared types + Louvain
-├── phago-runtime/      # Colony, substrate, topology, sessions, SQLite, async, streaming
-├── phago-agents/       # Digester, Sentinel, Synthesizer, SemanticDigester, genome
+├── phago-runtime/      # Colony, substrate, topology, sessions, SQLite, async, STDP, diff
+├── phago-agents/       # Digester, Sentinel, Synthesizer, genome, AST digester, Lamarckian evolution
 ├── phago-embeddings/   # Vector embeddings (Simple, ONNX, API providers)
 ├── phago-llm/          # LLM integration (Ollama, Claude, OpenAI)
-├── phago-rag/          # Query engine, hybrid scoring, MCP adapter
+├── phago-rag/          # Query engine, hybrid scoring, counterfactual engine
+├── phago-mcp/          # Standalone MCP server (stdio transport, rmcp)
 ├── phago-viz/          # Self-contained HTML visualization (D3.js)
 ├── phago-web/          # Axum web dashboard + WebSocket
 ├── phago-python/       # PyO3 bindings (LangChain, LlamaIndex)
@@ -470,6 +571,14 @@ The POC also generates `output/phago-colony.html` — an interactive D3.js visua
 | Streaming Ingestion | 0.6.0 | ✅ Done | Async channels, backpressure, file watching |
 | Vector DB Integration | 0.7.0 | ✅ Done | Qdrant, Pinecone, Weaviate adapters |
 | **Distributed Colony** | **1.0.0** | ✅ Done | **Sharding, tarpc RPC, consistent hashing, ghost nodes** |
+| CI/CD Pipeline | 1.1.0 | ✅ Done | GitHub Actions: test, lint, feature matrix |
+| MCP Server | 1.1.0 | ✅ Done | Standalone binary, rmcp 0.15, stdio transport |
+| PyPI Publication | 1.1.0 | ✅ Done | maturin build + publish workflow |
+| STDP Directed Edges | 1.1.0 | ✅ Done | Directed temporal graph, predictive edges |
+| Graph Diffing | 1.1.0 | ✅ Done | Structural changelog between snapshots |
+| Counterfactual Engine | 1.1.0 | ✅ Done | "What if?" queries with intervention analysis |
+| AST Code Digester | 1.1.0 | ✅ Done | tree-sitter for Rust, Python, JavaScript |
+| Lamarckian Evolution | 1.1.0 | ✅ Done | LLM-guided genome patches + Darwinian mutation |
 
 ## Tests
 

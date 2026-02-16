@@ -15,6 +15,7 @@ members = [
     "crates/phago-python",
     "crates/phago-vectors",
     "crates/phago-distributed",
+    "crates/phago-mcp",
     "poc/knowledge-ecosystem",
     "poc/bio-rag-demo",
     "poc/agent-evolution-demo",
@@ -37,6 +38,7 @@ default-members = [
     "crates/phago-web",
     "crates/phago-vectors",
     "crates/phago-distributed",
+    "crates/phago-mcp",
 ]
 
 [workspace.package]

@@ -20,9 +20,16 @@ serde_json = { workspace = true }
 # Optional semantic embeddings support
 phago-embeddings = { workspace = true, optional = true }
 
+# Optional AST parsing support
+tree-sitter = { version = "0.26", optional = true }
+tree-sitter-rust = { version = "0.24", optional = true }
+tree-sitter-python = { version = "0.25", optional = true }
+tree-sitter-javascript = { version = "0.25", optional = true }
+
 [features]
 default = []
 semantic = ["phago-embeddings"]
+ast = ["tree-sitter", "tree-sitter-rust", "tree-sitter-python", "tree-sitter-javascript"]
 
 [dev-dependencies]
 phago-runtime = { workspace = true }

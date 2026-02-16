@@ -29,5 +29,10 @@ pub mod code_digester;
 pub mod serialize;
 pub mod prelude;
 
+pub mod lamarckian;
+
 #[cfg(feature = "semantic")]
 pub mod semantic_digester;
+
+#[cfg(feature = "ast")]
+pub mod ast_digester;
