@@ -574,6 +574,15 @@ impl TopologyGraph for SqliteTopologyGraph {
         // Would require union-find or BFS implementation
         1
     }
+
+    fn louvain_communities(&self) -> phago_core::louvain::LouvainResult {
+        // Stub: Louvain on SQLite would require loading the full graph
+        phago_core::louvain::LouvainResult {
+            communities: Vec::new(),
+            modularity: 0.0,
+            passes: 0,
+        }
+    }
 }
 
 #[cfg(all(test, feature = "sqlite"))]

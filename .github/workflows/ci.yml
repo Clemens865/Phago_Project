@@ -48,7 +48,7 @@ jobs:
           - features: "async,streaming"
             package: "phago-runtime"
           - features: "semantic"
-            package: "phago-rag"
+            package: "phago-agents"
           - features: "distributed"
             package: "phago-cli"
           - features: "default"
